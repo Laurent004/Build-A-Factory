@@ -1,117 +1,138 @@
 import { Component } from "@flamework/components";
 import { OnStart } from "@flamework/core";
-import { ItemName, ItemRecipe } from "shared/constants/items/types";
+import { ItemRecipe } from "shared/constants/items/types";
 import TransporterComponent from "./transporter";
-import { createItem, ITEM_RECIPES } from "shared/constants/items";
-import { getStructureItemNodeWorldCF } from "shared/constants/structures";
+import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
 import { Object } from "@rbxts/luau-polyfill";
-import StructureStateComponent from "./state";
-import IndicatorLightComponent from "./indicator-light";
+import { Workspace } from "@rbxts/services";
+import { StructureState } from "shared/constants/structures";
 
 @Component({ tag: "Manufacturer" })
 export default class ManufacturerComponent extends TransporterComponent implements OnStart {
-	private productionRecipe: ItemRecipe | undefined;
-	private productionItem: Model | undefined;
+	private selectedItemRecipe: ItemRecipe | undefined;
 	private productionStartTime: number | undefined;
+	private productionItemRecipe: ItemRecipe | undefined;
 
 	onStart(): void {
 		super.onStart();
-		this.initProductionRecipe();
-	}
-
-	protected override initComponents(): void {
-		super.initComponents();
-		this.components.addComponent<StructureStateComponent>(this.instance);
-		this.components.addComponent<IndicatorLightComponent>(this.instance.WaitForChild("IndicatorLight"));
+		this.initSelectedItemRecipe();
 	}
 
 	protected override initEvents(): void {
 		super.initEvents();
-		this.instance.Destroying.Connect(() => {
-			this.productionItem = undefined;
+		this.onStateChanged.Connect(() => {
+			if (this.canStartProduction()) {
+				this.startProduction();
+			}
 		});
 	}
 
-	private initProductionRecipe() {
-		const selectedItem = this.attributes.selectedItem;
-		if (selectedItem !== undefined) {
-			this.productionRecipe = ITEM_RECIPES.find(
-				(itemRecipe) =>
-					itemRecipe.structureName === this.instance.Name && itemRecipe.outputItem === selectedItem,
-			);
-		}
-
-		this.onAttributeChanged("selectedItem", (newSelectedItem) => {
-			this.productionRecipe =
-				newSelectedItem !== undefined
-					? ITEM_RECIPES.find(
-							(itemRecipe) =>
-								itemRecipe.structureName === this.instance.Name &&
-								itemRecipe.outputItem === newSelectedItem,
-					  )
-					: undefined;
+	private initSelectedItemRecipe(): void {
+		this.updateSelectedItemRecipe();
+		this.instance.GetAttributeChangedSignal("SelectedItem").Connect(() => {
+			this.updateSelectedItemRecipe();
 		});
+	}
+
+	private updateSelectedItemRecipe(): void {
+		const selectedItem = this.instance.GetAttribute("SelectedItem");
+		this.selectedItemRecipe = ITEM_RECIPES.find(
+			(itemRecipe) => itemRecipe.structureName === this.instance.Name && itemRecipe.outputItem === selectedItem,
+		);
+	}
+
+	private startProduction(): void {
+		this.productionStartTime = time();
+		this.productionItemRecipe = this.selectedItemRecipe;
+		this.items.clear();
+
+		const productionItem = ITEMS[this.selectedItemRecipe!.outputItem].model.Clone();
+		productionItem.PivotTo(new CFrame(this.instance.GetPivot().Position));
+		productionItem.Parent = Workspace;
+		this.items.push(productionItem);
+	}
+
+	private canStartProduction(): boolean {
+		return (
+			this.active &&
+			this.state !== "No Connection" &&
+			this.state !== "No Power" &&
+			this.productionStartTime === undefined &&
+			this.selectedItemRecipe !== undefined &&
+			Object.entries(this.selectedItemRecipe.inputItems).every(
+				([itemName, count]) =>
+					this.items.filter((bufferedItem) => bufferedItem.Name === itemName).size() === count,
+			)
+		);
+	}
+
+	public getProductionProgress(): number {
+		return this.productionStartTime !== undefined && this.productionItemRecipe !== undefined
+			? math.clamp((time() - this.productionStartTime) / this.productionItemRecipe.time, 0, 1)
+			: 0;
 	}
 
 	public override inputItem(item: Model): void {
 		super.inputItem(item);
 		item.Destroy();
+
 		if (this.canStartProduction()) {
 			this.startProduction();
 		}
 	}
 
-	public override outputItem(): Model {
-		const productionItem = this.productionItem;
+	public override outputItem() {
 		this.productionStartTime = undefined;
-		this.productionItem = undefined;
-		return productionItem!;
+		this.productionItemRecipe = undefined;
+		return super.outputItem();
 	}
 
-	public override canInputItem(itemName: ItemName): boolean {
-		if (this.productionRecipe === undefined) return false;
-		if (itemName in this.productionRecipe.inputItems) {
-			const queuedItemCount = this.queuedItems.filter((item) => item.Name === itemName).size();
-			const bufferedItemCount = this.items.filter((item) => item.Name === itemName).size();
-			const requiredItemCount = this.productionRecipe.inputItems[itemName as ItemName]!;
-			return (
-				this.productionItem === undefined &&
-				queuedItemCount < requiredItemCount &&
-				bufferedItemCount < requiredItemCount
-			);
-		}
-		return false;
+	public override canInputItem(item: Model): boolean {
+		if (
+			this.selectedItemRecipe === undefined ||
+			this.productionStartTime !== undefined ||
+			!(item.Name in this.selectedItemRecipe.inputItems)
+		)
+			return false;
+
+		const count = this.selectedItemRecipe.inputItems[item.Name]!;
+		return (
+			this.queuedItems.filter((queuedItem) => queuedItem.Name === item.Name).size() < count &&
+			this.items.filter((bufferedItem) => bufferedItem.Name === item.Name).size() < count
+		);
 	}
 
 	public override canOutputItem(): boolean {
 		return (
 			this.productionStartTime !== undefined &&
-			this.productionRecipe !== undefined &&
-			time() - this.productionStartTime >= this.productionRecipe.time
+			this.productionItemRecipe !== undefined &&
+			time() - this.productionStartTime >= this.productionItemRecipe.time
 		);
 	}
 
-	private startProduction() {
-		this.productionStartTime = time();
-		this.productionItem = createItem(this.productionRecipe!.outputItem, getStructureItemNodeWorldCF(this.instance));
-		this.items.clear();
+	public override clearItems(): void {
+		super.clearItems();
+		this.productionStartTime = undefined;
+		this.productionItemRecipe = undefined;
 	}
 
-	private canStartProduction(): boolean {
-		if (this.productionRecipe === undefined) return false;
-		for (const [item, requiredItemCount] of Object.entries(this.productionRecipe.inputItems)) {
-			const bufferedItemCount = this.items.filter((bufferedItem) => bufferedItem.Name === item).size();
-			if (bufferedItemCount < requiredItemCount) return false;
+	public override updateState(): void {
+		let state: StructureState | undefined = undefined;
+		if (this.selectedItemRecipe === undefined) {
+			state = "No Connection";
+		} else if (
+			this.productionStartTime !== undefined &&
+			this.productionItemRecipe !== undefined &&
+			time() - this.productionStartTime > this.productionItemRecipe.time
+		) {
+			state = "Standby";
+		} else {
+			state = "Working";
 		}
-		return true;
-	}
 
-	public override getItem(): Model | undefined {
-		return this.productionItem;
-	}
-
-	public getProductionProgress() {
-		if (this.productionRecipe === undefined || this.productionStartTime === undefined) return 0;
-		return math.clamp((time() - this.productionStartTime) / this.productionRecipe.time, 0, 1);
+		if (this.state !== state) {
+			this.state = state;
+			this.onStateChanged.Fire(state);
+		}
 	}
 }

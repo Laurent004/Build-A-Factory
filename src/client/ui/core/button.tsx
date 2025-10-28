@@ -12,17 +12,18 @@ export interface ButtonProps extends FrameProps<TextButton> {
 
 export const Button = forwardRef((props: ButtonProps, ref: React.Ref<TextButton>) => {
 	const lastClickTime = useRef(0);
-	const doubleClickTime = 0.35;
+	const doubleClickTime = 0.32;
 
 	return (
 		<textbutton
 			ref={ref}
+			Active={props.active}
 			AutoButtonColor={false}
 			AnchorPoint={props.anchorPoint}
 			Position={props.position}
 			Size={props.size}
 			Rotation={props.rotation}
-			BackgroundTransparency={1}
+			BackgroundTransparency={props.backgroundTransparency ?? 1}
 			BackgroundColor3={props.backgroundColor}
 			BorderColor3={props.borderColor}
 			BorderMode={props.borderMode}

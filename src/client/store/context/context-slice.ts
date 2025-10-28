@@ -13,16 +13,12 @@ const initialState: ContextState = {
 
 export const contextSlice = createProducer(initialState, {
 	setContext: (s, context: Context | undefined) => {
-		if (context === s.context) {
-			return { ...s, context: undefined, contextOpen: undefined };
-		}
-		return { ...s, context: context, contextOpen: true };
+		return context === s.context
+			? { ...s, context: undefined, contextOpen: undefined }
+			: { ...s, context: context, contextOpen: true };
 	},
 
 	setContextOpen: (s, open: boolean) => {
-		if (s.context !== undefined) {
-			return { ...s, contextOpen: open };
-		}
-		return { ...s, contextOpen: undefined };
+		return { ...s, contextOpen: open };
 	},
 });

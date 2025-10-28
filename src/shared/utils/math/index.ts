@@ -1,2 +1,2 @@
-export * from "./angles";
+export * from "./number";
 export * from "./vectors";

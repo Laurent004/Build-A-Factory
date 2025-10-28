@@ -11,6 +11,8 @@ export interface TextProps extends FrameProps<TextLabel> {
 	textScaled?: boolean | React.Binding<boolean>;
 	textSize?: number | React.Binding<number>;
 	textTransparency?: number | React.Binding<number>;
+	textStrokeColor?: Color3 | React.Binding<Color3>;
+	textStrokeTransparency?: number | React.Binding<number>;
 	textTruncate?: Enum.TextTruncate | React.Binding<Enum.TextTruncate>;
 	textWrapped?: boolean | React.Binding<boolean>;
 	textXAlignment?: Enum.TextXAlignment | React.Binding<Enum.TextXAlignment>;
@@ -29,11 +31,12 @@ export function Text(props: TextProps) {
 			TextScaled={props.textScaled}
 			TextSize={props.textSize}
 			TextTransparency={props.textTransparency}
+			TextStrokeColor3={props.textStrokeColor}
+			TextStrokeTransparency={props.textStrokeTransparency}
 			TextTruncate={props.textTruncate}
 			TextWrapped={props.textWrapped}
 			TextXAlignment={props.textXAlignment}
 			TextYAlignment={props.textYAlignment}
-			//frame
 			AnchorPoint={props.anchorPoint}
 			Position={props.position}
 			Rotation={props.rotation}

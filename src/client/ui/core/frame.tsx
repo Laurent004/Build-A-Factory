@@ -1,6 +1,7 @@
 import React, { forwardRef } from "@rbxts/react";
 
 export interface FrameProps<T extends Instance = Frame> extends React.PropsWithChildren {
+	active?: boolean | React.Binding<boolean>;
 	anchorPoint?: Vector2 | React.Binding<Vector2>;
 	position?: UDim2 | React.Binding<UDim2>;
 	size?: UDim2 | React.Binding<UDim2>;
@@ -22,6 +23,7 @@ export const Frame = forwardRef((props: FrameProps, ref: React.Ref<Frame>) => {
 	return (
 		<frame
 			ref={ref}
+			Active={props.active}
 			AnchorPoint={props.anchorPoint}
 			Position={props.position}
 			Size={props.size}

@@ -1,17 +1,16 @@
-import React, { useEffect, useState } from "@rbxts/react";
-import { useMotion, useStore } from "client/hooks";
+import React from "@rbxts/react";
+import { useStore } from "client/hooks";
 import { IMAGES } from "shared/assets/images";
-import { Tool, TOOLS } from "client/constants/navigation";
 import { Image } from "client/ui/core/image";
 import { Button } from "client/ui/core/button";
 import { Frame } from "client/ui/core/frame";
 import { Text } from "client/ui/core/text";
-import { fonts } from "client/constants/fonts";
+import { fonts, colors } from "client/ui/constants";
 import { useSelector } from "@rbxts/react-reflex";
 import { selectContext } from "client/store/context";
-import { KeyCode, lerpBinding, useKeyPress, useUpdateEffect } from "@rbxts/pretty-react-hooks";
-import { springs } from "client/constants/springs";
-import { colors } from "client/constants/colors";
+import { KeyCode, lerpBinding, useKeyPress, useUpdateEffect, useMotion } from "@rbxts/pretty-react-hooks";
+import { springs } from "client/ui/constants";
+import { Tool, TOOLS } from "client/constants/navigation/tools";
 
 export interface ToolbarButtonProps {
 	tool: Tool;
@@ -19,29 +18,30 @@ export interface ToolbarButtonProps {
 
 export function ToolbarButton(props: ToolbarButtonProps) {
 	const store = useStore();
+	const context = useSelector(selectContext);
 	const isHotkeyPressed = useKeyPress([TOOLS[props.tool].hotkey] as KeyCode[]);
 
-	const currentContext = useSelector(selectContext);
-	const [animation, animationMotion] = useMotion(0);
-	const [size, sizeMotion] = useMotion(0);
+	const [onClickAnimation, onClickAnimationMotion] = useMotion(0);
+	const [onHoverAnimation, onHoverAnimationMotion] = useMotion(0);
+
 	useUpdateEffect(() => {
-		animationMotion.spring(currentContext === props.tool ? 1 : 0, springs.slow);
-	}, [currentContext]);
+		onClickAnimationMotion.spring(context === props.tool ? 1 : 0, springs.slow);
+	}, [context]);
+
 	useUpdateEffect(() => {
-		if (isHotkeyPressed) {
-			store.setContext(props.tool);
-		}
+		if (!isHotkeyPressed) return;
+		store.setContext(props.tool);
 	}, [isHotkeyPressed]);
 
 	return (
 		<Button
 			anchorPoint={new Vector2(0.5, 0.5)}
-			size={new UDim2(0.767, 0, 0.128, 0)}
+			size={new UDim2(0.767, 0, 0.13, 0)}
 			onMouseEnter={() => {
-				sizeMotion.spring(1, springs.responsive);
+				onHoverAnimationMotion.spring(1, springs.responsive);
 			}}
 			onMouseLeave={() => {
-				sizeMotion.spring(0, springs.responsive);
+				onHoverAnimationMotion.spring(0, springs.responsive);
 			}}
 			onClick={() => {
 				store.setContext(props.tool);
@@ -51,7 +51,11 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 			<Frame size={new UDim2(1, 0, 1, 0)} backgroundColor={colors.black}>
 				<uistroke
 					ApplyStrokeMode={Enum.ApplyStrokeMode.Contextual}
-					Color={lerpBinding(animation, colors.white, TOOLS[props.tool].activatedGlowColor)}
+					Color={lerpBinding(
+						onClickAnimation,
+						colors.white,
+						props.tool === "Delete" ? colors.lightred : colors.lightblue,
+					)}
 					LineJoinMode={Enum.LineJoinMode.Round}
 				></uistroke>
 
@@ -59,17 +63,21 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 					anchorPoint={new Vector2(0.5, 0.5)}
 					position={new UDim2(0.5, 0, 0.5, 0)}
 					size={new UDim2(0.58, 0, 0.58, 0)}
-					image={IMAGES.context.toolbar[props.tool]}
-					imageColor={lerpBinding(animation, colors.white, TOOLS[props.tool].activatedImageColor)}
+					image={IMAGES.ui[props.tool]}
+					imageColor={lerpBinding(
+						onClickAnimation,
+						colors.white,
+						props.tool === "Delete" ? colors.lightred : colors.white,
+					)}
 				></Image>
 
 				<Image
 					anchorPoint={new Vector2(0.5, 0.5)}
 					position={new UDim2(0.5, 0, 0.5, 0)}
 					size={new UDim2(1.4, 0, 1.4, 0)}
-					image="rbxassetid://137038247592087"
-					imageColor={TOOLS[props.tool].activatedGlowColor}
-					imageTransparency={lerpBinding(animation, 1, 0.685)}
+					image={IMAGES.ui.Glow}
+					imageColor={props.tool === "Delete" ? colors.lightred : colors.lightblue}
+					imageTransparency={lerpBinding(onClickAnimation, 1, 0.685)}
 				></Image>
 
 				<Frame
@@ -97,7 +105,7 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 
 				<Frame
 					position={new UDim2(1.136, 0, 0, 0)}
-					size={lerpBinding(size, new UDim2(0, 0, 1.015, 0), new UDim2(5.379, 0, 1.015, 0))}
+					size={lerpBinding(onHoverAnimation, new UDim2(0, 0, 1.015, 0), new UDim2(5.379, 0, 1.015, 0))}
 					clipsDescendants={true}
 				>
 					<uigradient
@@ -130,9 +138,13 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 							font={fonts.josefinSans.medium}
 							text={`${props.tool} Tool`}
 							textColor={
-								currentContext === props.tool ? TOOLS[props.tool].activatedGlowColor : colors.white
+								context === props.tool
+									? props.tool === "Delete"
+										? colors.lightred
+										: colors.lightblue
+									: colors.white
 							}
-							textTransparency={lerpBinding(size, 1, 0)}
+							textTransparency={lerpBinding(onHoverAnimation, 1, 0)}
 							textSize={14}
 							textXAlignment={Enum.TextXAlignment.Left}
 							textYAlignment={Enum.TextYAlignment.Center}
@@ -141,9 +153,9 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 							anchorPoint={new Vector2(0.5, 0.5)}
 							position={new UDim2(0.6, 0, 0.5, 0)}
 							size={new UDim2(2, 0, 2, 0)}
-							image="rbxassetid://137038247592087"
-							imageColor={TOOLS[props.tool].activatedGlowColor}
-							imageTransparency={lerpBinding(animation, 1, 0.685)}
+							image={IMAGES.ui.Glow}
+							imageColor={props.tool === "Delete" ? colors.lightred : colors.lightblue}
+							imageTransparency={lerpBinding(onClickAnimation, 1, 0.685)}
 						></Image>
 					</Frame>
 
@@ -154,7 +166,7 @@ export function ToolbarButton(props: ToolbarButtonProps) {
 						font={fonts.josefinSans.regular}
 						text={TOOLS[props.tool].description}
 						textColor={colors.white}
-						textTransparency={lerpBinding(size, 1, 0)}
+						textTransparency={lerpBinding(onHoverAnimation, 1, 0)}
 						textSize={12}
 						textXAlignment={Enum.TextXAlignment.Left}
 						textYAlignment={Enum.TextYAlignment.Center}

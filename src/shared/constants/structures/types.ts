@@ -1,48 +1,33 @@
-import {  StructureAttributes } from "./attributes";
-import { STRUCTURES } from "./structures";
-
 export interface StructureDefinition {
-	tag: string;
-	attributes:Partial<StructureAttributes>
-
-	index:number
-	description:string;
-	image:string;
+	index:number|undefined;
 	category: StructureCategory;
 	subCategory: StructureSubCategory;
-	
+	image:string;
+	description:string;
+	price:number
+	gamepass?:number;
+
 	model: Model;
+	tags: string[];
+	constants:Record<string,AttributeValue>
+	attributes:Record<string,AttributeValue|undefined>
+
 	nodes:{
-		cells:Vector3[];
+		cells:Vector3[]
 		inputs:CFrame[]
-		outputs:CFrame[];
-		item:CFrame;
+		outputs:CFrame[]
 	}
+
+	selectionPriority:number
 }
 
-export type StructureName=keyof typeof STRUCTURES
-export const STRUCTURE_CATEGORIES = ["Transportation", "Production"] as const;
+export const STRUCTURE_CATEGORIES = ["Transportation","Production","Power","Blueprint"] as const;
 export type StructureCategory = typeof STRUCTURE_CATEGORIES[number];
 export const STRUCTURE_SUB_CATEGORIES={
-    "Transportation":["Logistics"],
-    "Production":["Production"],
+    "Transportation":["Conveyor Belts","Logistics","Storage","Miscellaneous"],
+    "Production":["Extractors","Processors","Manufacturers"],
+	"Power":["Power Poles","Generators"],
+	"Blueprint":[],
 } as const satisfies Record<StructureCategory,string[]>
-export type StructureSubCategory = typeof STRUCTURE_SUB_CATEGORIES[keyof typeof STRUCTURE_SUB_CATEGORIES][number]
-
-export interface StructuresPlacementData{
-	structureName:StructureName,
-	targetCF:CFrame,
-	structureAttributes:Record<string,AttributeValue>
-}
-export interface StructureMovementData{
-	structureModel:Model,
-	targetCF:CFrame
-}
-export interface StructureSaveData{
-	name:StructureName,
-	cfComponents:[number, number, number, number, number, number, number, number, number, number, number, number]
-	attributes:Map<string,AttributeValue>
-}
-
-export type StructureState="Working" | "Standby" | "Disconnected" | "No Configured Recipe"
-
+export type StructureSubCategory = typeof STRUCTURE_SUB_CATEGORIES[StructureCategory][number]
+export type StructureState="No Connection" | "No Power" | "Standby" | "Working" 

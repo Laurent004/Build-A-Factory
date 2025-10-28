@@ -1,14 +1,12 @@
 export interface GridData {
-	readonly grid: GridCell[][][];
+	readonly width: number;
+	readonly height: number;
 	readonly cellSize: number;
-	readonly layerHeight: number;
 	readonly startX: number;
 	readonly startZ: number;
 }
 
 export interface GridCell {
-	readonly x: number;
-	readonly y: number;
-	readonly z: number;
+	readonly position: Vector3int16;
 	structureModel: Model | undefined;
 }
