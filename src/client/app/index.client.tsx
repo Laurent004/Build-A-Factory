@@ -6,7 +6,6 @@ import { App } from "./app";
 import { RootProvider } from "client/providers/root-provider";
 
 const root = createRoot(new Instance("Folder"));
-const target = Players.LocalPlayer.WaitForChild("PlayerGui");
 root.render(
 	createPortal(
 		<StrictMode>
@@ -14,6 +13,6 @@ root.render(
 				<App></App>
 			</RootProvider>
 		</StrictMode>,
-		target,
+		Players.LocalPlayer.WaitForChild("PlayerGui"),
 	),
 );

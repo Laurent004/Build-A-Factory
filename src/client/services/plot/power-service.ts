@@ -1,12 +1,11 @@
 import { Components } from "@flamework/components";
 import { Dependency } from "@flamework/core";
 import { Object } from "@rbxts/luau-polyfill";
-import { Workspace } from "@rbxts/services";
+import { Players, Workspace } from "@rbxts/services";
 import Signal from "@rbxts/signal";
 import IndicatorLightComponent from "client/components/indicator-light";
 import PowerGeneratorComponent from "client/components/power/power-generator";
 import StructureComponent from "client/components/structure";
-import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
 import { STRUCTURES } from "shared/constants/structures";
 
@@ -28,13 +27,9 @@ export class PowerService {
 
 	private readonly components = Dependency<Components>();
 	private readonly structures = new Set<StructureComponent>();
-
-	private readonly powerNetworks = new Map<Attachment, number>();
-	private readonly powerOutputs = new Map<Attachment, Set<Attachment>>();
-	private readonly powerAttachmentsHistories = new Map<Attachment, PowerNetworkInfo[]>();
-	public readonly onUpdate = new Signal();
-
-	private currentPowerNetworkId: number = 0;
+	private readonly powerNetworks = new Map<Attachment, Set<Attachment>>();
+	private readonly attachmentsHistories = new Map<Attachment, PowerNetworkInfo[]>();
+	public readonly onUpdate = new Signal<() => void>();
 
 	private constructor() {
 		this.initEvents();
@@ -42,6 +37,23 @@ export class PowerService {
 	}
 
 	private initEvents(): void {
+		Events.OnPlotReset.connect(() => {
+			for (const [attachment] of this.powerNetworks) {
+				if (attachment.Parent !== undefined) continue;
+				this.powerNetworks.delete(attachment);
+				this.attachmentsHistories.delete(attachment);
+			}
+		});
+
+		Events.OnPowerLineCreation.connect((_, powerLine) => {
+			while (powerLine.Attachment0 === undefined || powerLine.Attachment1 === undefined) task.wait();
+			this.connect(powerLine.Attachment0, powerLine.Attachment1);
+		});
+
+		Events.OnPowerLineDestroying.connect((player, startAttachment, endAttachment) => {
+			this.disconnect(player, startAttachment, endAttachment);
+		});
+
 		this.components.onComponentAdded<StructureComponent>((structureComponent, structureModel) => {
 			if (this.components.getComponent<IndicatorLightComponent>(structureModel) !== undefined) {
 				this.structures.add(structureComponent);
@@ -49,48 +61,7 @@ export class PowerService {
 		});
 
 		this.components.onComponentRemoved<StructureComponent>((structureComponent) => {
-			if (this.structures.has(structureComponent)) {
-				this.structures.delete(structureComponent);
-			}
-		});
-
-		EventBus.PlotEvents.OnPlotInitialization.Connect((_, plot) => {
-			for (const powerLine of plot.WaitForChild("PowerLines").GetChildren() as RopeConstraint[]) {
-				while (powerLine.Attachment0 === undefined || powerLine.Attachment1 === undefined) {
-					task.wait();
-				}
-				this.connect(powerLine.Attachment0, powerLine.Attachment1);
-			}
-		});
-
-		EventBus.PlotEvents.OnStructuresPlacement.Connect((player) => {
-			for (const powerLine of Workspace.WaitForChild("Plots")
-				.GetChildren()
-				.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!
-				.WaitForChild("PowerLines")
-				.GetChildren() as RopeConstraint[]) {
-				while (powerLine.Attachment0 === undefined || powerLine.Attachment1 === undefined) {
-					task.wait();
-				}
-
-				if (
-					(!this.powerOutputs.has(powerLine.Attachment0) && !this.powerOutputs.has(powerLine.Attachment1)) ||
-					(this.powerOutputs.has(powerLine.Attachment0) &&
-						!this.powerOutputs.get(powerLine.Attachment0)!.has(powerLine.Attachment1)) ||
-					(this.powerOutputs.has(powerLine.Attachment1) &&
-						!this.powerOutputs.get(powerLine.Attachment1)!.has(powerLine.Attachment0))
-				) {
-					this.connect(powerLine.Attachment0, powerLine.Attachment1);
-				}
-			}
-		});
-
-		Events.OnPowerLineCreation.connect((startPowerAttachment, endPowerAttachment) => {
-			this.connect(startPowerAttachment, endPowerAttachment);
-		});
-
-		Events.OnPowerLineDestroying.connect((startPowerAttachment, endPowerAttachment) => {
-			this.disconnect(startPowerAttachment, endPowerAttachment);
+			this.structures.delete(structureComponent);
 		});
 	}
 
@@ -103,7 +74,7 @@ export class PowerService {
 
 		task.spawn(() => {
 			while (task.wait(1)) {
-				this.updatePowerAttachmentsHistories();
+				this.updateAttachmentsHistories();
 				this.onUpdate.Fire();
 			}
 		});
@@ -125,10 +96,7 @@ export class PowerService {
 			}
 		}
 
-		for (const powerNetworkId of [...new Set(Object.values(this.powerNetworks))]) {
-			const powerNetworkConsumption = this.getPowerNetworkConsumption(powerNetworkId);
-			const powerNetworkProduction = this.getPowerNetworkProduction(powerNetworkId);
-
+		for (const powerNetwork of [...new Set(Object.values(this.powerNetworks))]) {
 			const powerNetworkStructures = [...this.structures].filter(
 				(structure) =>
 					this.powerNetworks.get(
@@ -138,10 +106,13 @@ export class PowerService {
 								(instance): instance is Attachment =>
 									instance.IsA("Attachment") && instance.Name === "PowerAttachment",
 							)!,
-					) === powerNetworkId,
+					) === powerNetwork,
 			);
 
-			if (powerNetworkProduction <= 0 || powerNetworkConsumption > powerNetworkProduction) {
+			if (
+				this.getPowerNetworkProduction(powerNetwork) <= 0 ||
+				this.getPowerNetworkConsumption(powerNetwork) > this.getPowerNetworkProduction(powerNetwork)
+			) {
 				for (const structure of powerNetworkStructures) {
 					structure.setState("No Power");
 				}
@@ -153,249 +124,264 @@ export class PowerService {
 		}
 	}
 
-	private updatePowerAttachmentsHistories(): void {
-		for (const [powerAttachment, powerNetworkId] of this.powerNetworks) {
-			const newPowerAttachmentHistory = [
-				...(this.powerAttachmentsHistories.get(powerAttachment) ?? []),
+	private updateAttachmentsHistories(): void {
+		for (const [attachment, powerNetwork] of this.powerNetworks) {
+			const newAttachmentHistory = [
+				...(this.attachmentsHistories.get(attachment) ?? []),
 				{
-					consumption: this.getPowerNetworkConsumption(powerNetworkId),
-					production: this.getPowerNetworkProduction(powerNetworkId),
-					maxConsumption: this.getPowerNetworkMaxConsumption(powerNetworkId),
-					maxProduction: this.getPowerNetworkMaxProduction(powerNetworkId),
+					consumption: this.getPowerNetworkConsumption(powerNetwork),
+					production: this.getPowerNetworkProduction(powerNetwork),
+					maxConsumption: this.getPowerNetworkMaxConsumption(powerNetwork),
+					maxProduction: this.getPowerNetworkMaxProduction(powerNetwork),
 				},
 			];
-			if (newPowerAttachmentHistory.size() === 30) {
-				newPowerAttachmentHistory.shift();
+			if (newAttachmentHistory.size() === 30) {
+				newAttachmentHistory.shift();
 			}
-			this.powerAttachmentsHistories.set(powerAttachment, newPowerAttachmentHistory);
+			this.attachmentsHistories.set(attachment, newAttachmentHistory);
 		}
 	}
 
-	public attemptConnect(startPowerAttachment: Attachment, endPowerAttachment: Attachment): void {
-		if (!this.canConnect(startPowerAttachment, endPowerAttachment)) return;
+	public attemptConnect(startAttachment: Attachment, endAttachment: Attachment): void {
+		if (!this.canConnect(startAttachment, endAttachment)) return;
+		const startStructureModel = startAttachment.FindFirstAncestorOfClass("Model")!;
+		const endStructureModel = endAttachment.FindFirstAncestorOfClass("Model")!;
+		const startStructureModelPowerLines = (
+			Workspace.WaitForChild("Plots")
+				.GetChildren()
+				.find((plot) => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
+				.WaitForChild("Power Lines")
+				.GetChildren() as RopeConstraint[]
+		).filter(
+			(powerLine) =>
+				(powerLine.Attachment0 === startAttachment &&
+					powerLine.Attachment1?.FindFirstAncestorOfClass("Model") !== startStructureModel) ||
+				(powerLine.Attachment1 === startAttachment &&
+					powerLine.Attachment0?.FindFirstAncestorOfClass("Model") !== startStructureModel),
+		);
+		const endStructureModelPowerLines = (
+			Workspace.WaitForChild("Plots")
+				.GetChildren()
+				.find((plot) => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
+				.WaitForChild("Power Lines")
+				.GetChildren() as RopeConstraint[]
+		).filter(
+			(powerLine) =>
+				(powerLine.Attachment0 === endAttachment &&
+					powerLine.Attachment1?.FindFirstAncestorOfClass("Model") !== endStructureModel) ||
+				(powerLine.Attachment1 === endAttachment &&
+					powerLine.Attachment0?.FindFirstAncestorOfClass("Model") !== endStructureModel),
+		);
+
 		if (
-			this.powerOutputs.get(startPowerAttachment)?.has(endPowerAttachment) &&
-			this.powerOutputs.get(endPowerAttachment)?.has(startPowerAttachment)
+			[...startStructureModelPowerLines, ...endStructureModelPowerLines].find(
+				(powerLine) =>
+					(powerLine.Attachment0 === startAttachment && powerLine.Attachment1 === endAttachment) ||
+					(powerLine.Attachment0 === endAttachment && powerLine.Attachment1 === startAttachment),
+			)
 		) {
-			Events.DestroyPowerLine(startPowerAttachment, endPowerAttachment);
+			Events.DestroyPowerLine(startAttachment, endAttachment);
 			return;
 		}
-		Events.CreatePowerLine(startPowerAttachment, endPowerAttachment);
+
+		if (
+			startStructureModel !== endStructureModel &&
+			startStructureModelPowerLines?.size() ===
+				(startStructureModel.Name === "Power Pole"
+					? (STRUCTURES["Power Pole"].constants["MaxConnections"] as number)
+					: 1)
+		) {
+			Events.DestroyPowerLine(
+				startStructureModelPowerLines[0].Attachment0!,
+				startStructureModelPowerLines[0].Attachment1!,
+			);
+		}
+
+		if (
+			startStructureModel !== endStructureModel &&
+			endStructureModelPowerLines?.size() ===
+				(endStructureModel.Name === "Power Pole"
+					? (STRUCTURES["Power Pole"].constants["MaxConnections"] as number)
+					: 1)
+		) {
+			Events.DestroyPowerLine(
+				endStructureModelPowerLines[0].Attachment0!,
+				endStructureModelPowerLines[0].Attachment1!,
+			);
+		}
+
+		Events.CreatePowerLine(startAttachment, endAttachment);
 	}
 
-	private connect(startPowerAttachment: Attachment, endPowerAttachment: Attachment): void {
-		if (this.powerNetworks.has(startPowerAttachment) || this.powerNetworks.has(endPowerAttachment)) {
-			const startStructureModel = startPowerAttachment.FindFirstAncestorOfClass("Model")!;
-			const endStructureModel = endPowerAttachment.FindFirstAncestorOfClass("Model")!;
+	private connect(startAttachment: Attachment, endAttachment: Attachment): void {
+		if (this.powerNetworks.has(startAttachment) || this.powerNetworks.has(endAttachment)) {
+			const startPowerNetwork = this.powerNetworks.get(startAttachment);
+			const endPowerNetwork = this.powerNetworks.get(endAttachment);
 
-			const startPowerOutputs = this.powerOutputs.get(startPowerAttachment);
-			const endPowerOutputs = this.powerOutputs.get(endPowerAttachment);
-
-			if (
-				startStructureModel !== endStructureModel &&
-				startPowerOutputs?.size() ===
-					(startStructureModel.Name === "Power Pole"
-						? (STRUCTURES["Power Pole"].constants["MaxConnections"] as number)
-						: 1)
-			) {
-				const powerOutputToRemove = [...startPowerOutputs].find(
-					(powerOutput) => powerOutput.FindFirstAncestorOfClass("Model") !== startStructureModel,
-				);
-				if (powerOutputToRemove !== undefined) {
-					Events.DestroyPowerLine.fire(startPowerAttachment, powerOutputToRemove);
-				}
-			}
-
-			if (
-				startStructureModel !== endStructureModel &&
-				endPowerOutputs?.size() ===
-					(endStructureModel.Name === "Power Pole"
-						? (STRUCTURES["Power Pole"].constants["MaxConnections"] as number)
-						: 1)
-			) {
-				const powerOutputToRemove = [...endPowerOutputs].find(
-					(powerOutput) => powerOutput.FindFirstAncestorOfClass("Model") !== endStructureModel,
-				);
-				if (powerOutputToRemove !== undefined) {
-					Events.DestroyPowerLine.fire(endPowerAttachment, powerOutputToRemove);
-				}
-			}
-
-			const startPowerNetworkId = this.powerNetworks.get(startPowerAttachment);
-			const endPowerNetworkId = this.powerNetworks.get(endPowerAttachment);
-			const mergedPowerNetworkId = (startPowerNetworkId ?? endPowerNetworkId)!;
-
-			this.powerNetworks.set(startPowerAttachment, mergedPowerNetworkId);
-			this.powerNetworks.set(endPowerAttachment, mergedPowerNetworkId);
-
-			if (startPowerNetworkId !== undefined && endPowerNetworkId !== undefined) {
-				const powerNetworkIdToRemove =
-					mergedPowerNetworkId === startPowerNetworkId ? endPowerNetworkId : startPowerNetworkId;
-				for (const [powerAttachment, powerNetworkId] of this.powerNetworks) {
-					if (powerNetworkId === powerNetworkIdToRemove) {
-						this.powerNetworks.set(powerAttachment, mergedPowerNetworkId);
-					}
-				}
+			const newPowerNetwork = new Set<Attachment>([
+				startAttachment,
+				endAttachment,
+				...[...(startPowerNetwork ?? new Set<Attachment>())],
+				...[...(endPowerNetwork ?? new Set<Attachment>())],
+			]);
+			this.powerNetworks.set(startAttachment, newPowerNetwork);
+			this.powerNetworks.set(endAttachment, newPowerNetwork);
+			for (const [attachment, powerNetwork] of this.powerNetworks) {
+				if (powerNetwork !== startPowerNetwork && powerNetwork !== endPowerNetwork) continue;
+				this.powerNetworks.set(attachment, newPowerNetwork);
 			}
 		} else {
-			const newPowerNetworkId = this.currentPowerNetworkId++;
-			this.powerNetworks.set(startPowerAttachment, newPowerNetworkId);
-			this.powerNetworks.set(endPowerAttachment, newPowerNetworkId);
+			const newPowerNetwork = new Set<Attachment>([startAttachment, endAttachment]);
+			this.powerNetworks.set(startAttachment, newPowerNetwork);
+			this.powerNetworks.set(endAttachment, newPowerNetwork);
 		}
-
-		this.powerOutputs.set(
-			startPowerAttachment,
-			this.powerOutputs.has(startPowerAttachment)
-				? new Set([...this.powerOutputs.get(startPowerAttachment)!, endPowerAttachment])
-				: new Set([endPowerAttachment]),
-		);
-		this.powerOutputs.set(
-			endPowerAttachment,
-			this.powerOutputs.has(endPowerAttachment)
-				? new Set([...this.powerOutputs.get(endPowerAttachment)!, startPowerAttachment])
-				: new Set([startPowerAttachment]),
-		);
 	}
 
-	private canConnect(startPowerAttachment: Attachment, endPowerAttachment: Attachment): boolean {
-		return (
-			startPowerAttachment.FindFirstAncestorOfClass("Model") !==
-			endPowerAttachment.FindFirstAncestorOfClass("Model")
-		);
+	public canConnect(startAttachment: Attachment, endAttachment: Attachment): boolean {
+		if (startAttachment === endAttachment) return false;
+		const startStructureModel = startAttachment.FindFirstAncestorOfClass("Model")!;
+		const endStructureModel = endAttachment.FindFirstAncestorOfClass("Model")!;
+		if (startStructureModel === endStructureModel) return false;
+		const startStructureDefinition = STRUCTURES[startStructureModel.Name];
+		const endStructureDefinition = STRUCTURES[endStructureModel.Name];
+		if (startStructureModel.Name === "Power Pole" || startStructureModel.Name === "Power Switch") {
+			return (
+				endStructureDefinition.constants["PowerConsumption"] !== undefined ||
+				endStructureDefinition.category === "Power"
+			);
+		}
+		return startStructureDefinition.constants["PowerProduction"] !== undefined
+			? endStructureDefinition.constants["PowerConsumption"] !== undefined ||
+					(endStructureDefinition.category === "Power" &&
+						endStructureDefinition.constants["PowerProduction"] === undefined)
+			: endStructureDefinition.category === "Power";
 	}
 
-	private disconnect(startPowerAttachment: Attachment, endPowerAttachment: Attachment): void {
-		const startPowerOutputs = this.powerOutputs.get(startPowerAttachment);
-		const endPowerOutputs = this.powerOutputs.get(endPowerAttachment);
+	private disconnect(player: Player, startAttachment: Attachment, endAttachment: Attachment): void {
+		const powerLines = (
+			Workspace.WaitForChild("Plots")
+				.GetChildren()
+				.find((plot) => plot.GetAttribute("UserId") === player.UserId)!
+				.WaitForChild("Power Lines")
+				.GetChildren() as RopeConstraint[]
+		).filter(
+			(powerLine) =>
+				!(
+					(powerLine.Attachment0 === startAttachment && powerLine.Attachment1 === endAttachment) ||
+					(powerLine.Attachment0 === endAttachment && powerLine.Attachment1 === startAttachment)
+				),
+		);
 
-		if (startPowerOutputs !== undefined) {
-			const newPowerOutputs = new Set([...startPowerOutputs]);
-			newPowerOutputs.delete(endPowerAttachment);
-
-			if (newPowerOutputs.size() > 0) {
-				const newPowerNetworkId = this.currentPowerNetworkId++;
-				this.powerNetworks.set(startPowerAttachment, newPowerNetworkId);
-
-				let powerNetworkOutputs: Attachment[] = [...newPowerOutputs];
-				while (powerNetworkOutputs.size() > 0) {
-					const newPowerNetworkOutputs: Attachment[] = [];
-					for (const powerNetworkOutput of powerNetworkOutputs) {
-						this.powerNetworks.set(powerNetworkOutput, newPowerNetworkId);
-
-						for (const powerOutput of [...this.powerOutputs.get(powerNetworkOutput)!].filter(
-							(powerOutput) => this.powerNetworks.get(powerOutput) !== newPowerNetworkId,
-						)) {
-							newPowerNetworkOutputs.push(powerOutput);
-						}
-						powerNetworkOutputs = newPowerNetworkOutputs;
-					}
+		const newStartPowerNetwork = new Set<Attachment>([startAttachment]);
+		const newStartPowerNetworkQueue: Attachment[] = [startAttachment];
+		while (newStartPowerNetworkQueue.size() > 0) {
+			const attachment = newStartPowerNetworkQueue.shift()!;
+			for (const powerLine of powerLines.filter(
+				(powerLine) => powerLine.Attachment0 === attachment || powerLine.Attachment1 === attachment,
+			)) {
+				if (!newStartPowerNetwork.has(powerLine.Attachment0!)) {
+					newStartPowerNetwork.add(powerLine.Attachment0!);
+					newStartPowerNetworkQueue.push(powerLine.Attachment0!);
 				}
-
-				this.powerOutputs.set(startPowerAttachment, newPowerOutputs);
-			} else {
-				this.powerNetworks.delete(startPowerAttachment);
-				this.powerOutputs.delete(startPowerAttachment);
-				this.powerAttachmentsHistories.delete(startPowerAttachment);
+				if (!newStartPowerNetwork.has(powerLine.Attachment1!)) {
+					newStartPowerNetwork.add(powerLine.Attachment1!);
+					newStartPowerNetworkQueue.push(powerLine.Attachment1!);
+				}
+			}
+		}
+		if (newStartPowerNetwork.size() === 1) {
+			this.powerNetworks.delete(startAttachment);
+			this.attachmentsHistories.delete(startAttachment);
+		} else {
+			for (const attachment of [startAttachment, ...newStartPowerNetwork]) {
+				this.powerNetworks.set(attachment, newStartPowerNetwork);
 			}
 		}
 
-		if (endPowerOutputs !== undefined) {
-			const newPowerOutputs = new Set([...endPowerOutputs]);
-			newPowerOutputs.delete(startPowerAttachment);
-
-			if (newPowerOutputs.size() > 0) {
-				const newEndPowerNetworkId = this.currentPowerNetworkId++;
-				this.powerNetworks.set(endPowerAttachment, newEndPowerNetworkId);
-
-				let powerNetworkOutputs: Attachment[] = [...newPowerOutputs];
-				while (powerNetworkOutputs.size() > 0) {
-					const newPowerNetworkOutputs: Attachment[] = [];
-					for (const powerNetworkOutput of powerNetworkOutputs) {
-						this.powerNetworks.set(powerNetworkOutput, newEndPowerNetworkId);
-
-						for (const powerOutput of [...this.powerOutputs.get(powerNetworkOutput)!].filter(
-							(powerOutput) => this.powerNetworks.get(powerOutput) !== newEndPowerNetworkId,
-						)) {
-							newPowerNetworkOutputs.push(powerOutput);
-						}
-						powerNetworkOutputs = newPowerNetworkOutputs;
-					}
+		const newEndPowerNetwork = new Set<Attachment>([endAttachment]);
+		const newEndPowerNetworkQueue: Attachment[] = [endAttachment];
+		while (newEndPowerNetworkQueue.size() > 0) {
+			const attachment = newEndPowerNetworkQueue.shift()!;
+			for (const powerLine of powerLines.filter(
+				(powerLine) => powerLine.Attachment0 === attachment || powerLine.Attachment1 === attachment,
+			)) {
+				if (!newEndPowerNetwork.has(powerLine.Attachment0!)) {
+					newEndPowerNetwork.add(powerLine.Attachment0!);
+					newEndPowerNetworkQueue.push(powerLine.Attachment0!);
 				}
-
-				this.powerOutputs.set(endPowerAttachment, newPowerOutputs);
-			} else {
-				this.powerNetworks.delete(endPowerAttachment);
-				this.powerOutputs.delete(endPowerAttachment);
-				this.powerAttachmentsHistories.delete(endPowerAttachment);
+				if (!newEndPowerNetwork.has(powerLine.Attachment1!)) {
+					newEndPowerNetwork.add(powerLine.Attachment1!);
+					newEndPowerNetworkQueue.push(powerLine.Attachment1!);
+				}
+			}
+		}
+		if (newEndPowerNetwork.size() === 1) {
+			this.powerNetworks.delete(endAttachment);
+			this.attachmentsHistories.delete(endAttachment);
+		} else {
+			for (const attachment of [endAttachment, ...newEndPowerNetwork]) {
+				this.powerNetworks.set(attachment, newEndPowerNetwork);
 			}
 		}
 	}
 
-	//#region Helpers
-	private getPowerNetworkConsumption(networkId: number): number {
+	private getPowerNetworkConsumption(powerNetwork: Set<Attachment>): number {
 		let powerNetworkConsumption: number = 0;
-		for (const [powerAttachment, powerNetworkId] of this.powerNetworks) {
-			if (powerNetworkId !== networkId) continue;
-
-			const structureModel = powerAttachment.FindFirstAncestorOfClass("Model")!;
+		for (const attachment of powerNetwork) {
+			const structureModel = attachment.FindFirstAncestorOfClass("Model")!;
 			const powerConsumption = STRUCTURES[structureModel.Name].constants["PowerConsumption"] as
 				| number
 				| undefined;
 			if (powerConsumption === undefined) continue;
-
-			const structureComponent = this.components.getComponents<StructureComponent>(structureModel)[0];
-			if (structureComponent.getState() === "No Power" || structureComponent.getState() === "Working") {
+			if (
+				this.components
+					.getComponents<StructureComponent>(structureModel)
+					.find(
+						(structureComponent) =>
+							structureComponent.getState() === "No Power" || structureComponent.getState() === "Working",
+					)
+			) {
 				powerNetworkConsumption += powerConsumption;
 			}
 		}
 		return powerNetworkConsumption;
 	}
 
-	private getPowerNetworkMaxConsumption(networkId: number): number {
+	private getPowerNetworkMaxConsumption(powerNetwork: Set<Attachment>): number {
 		let powerNetworkMaxConsumption: number = 0;
-		for (const [powerAttachment, powerNetworkId] of this.powerNetworks) {
-			if (powerNetworkId !== networkId) continue;
-
-			const structureModel = powerAttachment.FindFirstAncestorOfClass("Model")!;
+		for (const attachment of powerNetwork) {
 			powerNetworkMaxConsumption +=
-				(STRUCTURES[structureModel.Name].constants["PowerConsumption"] as number | undefined) ?? 0;
+				(STRUCTURES[attachment.FindFirstAncestorOfClass("Model")!.Name].constants["PowerConsumption"] as
+					| number
+					| undefined) ?? 0;
 		}
 		return powerNetworkMaxConsumption;
 	}
 
-	private getPowerNetworkProduction(networkId: number): number {
+	private getPowerNetworkProduction(powerNetwork: Set<Attachment>): number {
 		let powerNetworkProduction: number = 0;
-		for (const [powerAttachment, powerNetworkId] of this.powerNetworks) {
-			if (powerNetworkId !== networkId) continue;
-
-			const structureModel = powerAttachment.FindFirstAncestorOfClass("Model")!;
-			const powerGeneratorComponents = this.components.getComponents<PowerGeneratorComponent>(structureModel);
-			const powerGeneratorComponent =
-				powerGeneratorComponents.size() > 0 ? powerGeneratorComponents[0] : undefined;
-			if (powerGeneratorComponent === undefined) continue;
-			powerNetworkProduction += powerGeneratorComponent.getPowerProduction();
+		for (const attachment of powerNetwork) {
+			for (const powerGeneratorComponent of this.components.getComponents<PowerGeneratorComponent>(
+				attachment.FindFirstAncestorOfClass("Model")!,
+			)) {
+				powerNetworkProduction += powerGeneratorComponent.getPowerProduction();
+			}
 		}
 		return powerNetworkProduction;
 	}
 
-	private getPowerNetworkMaxProduction(networkId: number): number {
+	private getPowerNetworkMaxProduction(powerNetwork: Set<Attachment>): number {
 		let powerNetworkMaxProduction: number = 0;
-		for (const [powerAttachment, powerNetworkId] of this.powerNetworks) {
-			if (powerNetworkId !== networkId) continue;
-
-			const structureModel = powerAttachment.FindFirstAncestorOfClass("Model")!;
+		for (const attachment of powerNetwork) {
 			powerNetworkMaxProduction +=
-				(STRUCTURES[structureModel.Name].constants["MaxPowerProduction"] as number | undefined) ?? 0;
+				(STRUCTURES[attachment.FindFirstAncestorOfClass("Model")!.Name].constants["PowerProduction"] as
+					| number
+					| undefined) ?? 0;
 		}
 		return powerNetworkMaxProduction;
 	}
 
-	public getPowerNetworkId(powerAttachment: Attachment): number | undefined {
-		return this.powerNetworks.get(powerAttachment);
+	public getAttachmentHistory(attachment: Attachment): PowerNetworkInfo[] | undefined {
+		return this.attachmentsHistories.get(attachment);
 	}
-
-	public getPowerNetworkHistory(powerAttachment: Attachment) {
-		return this.powerAttachmentsHistories.get(powerAttachment);
-	}
-	//#endregion
 }

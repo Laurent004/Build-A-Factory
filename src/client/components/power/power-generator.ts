@@ -3,7 +3,13 @@ import StructureComponent from "../structure";
 
 @Component({ tag: "PowerGenerator" })
 export default class PowerGeneratorComponent extends StructureComponent {
+	protected powerProduction: number = 0;
+
 	public getPowerProduction(): number {
-		return 0;
+		return this.active ? this.powerProduction : 0;
+	}
+
+	public setPowerProduction(powerProduction: number): void {
+		this.powerProduction = powerProduction;
 	}
 }

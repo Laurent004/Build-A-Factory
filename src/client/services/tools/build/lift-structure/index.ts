@@ -1,0 +1,208 @@
+import GridService from "client/services/plot/grid-service";
+import { ContextActionService, Players, RunService, Workspace } from "@rbxts/services";
+import { BaseStructurePreviewService } from "../../base/visuals/preview-service";
+import { BaseStructureCFrameService } from "../../base/visuals/cframe-service";
+import BaseBuildingService from "../base";
+import MouseService from "../../base/mouse-service";
+import { LiftStructurePreviewService } from "./preview-service";
+import BaseStructureHighlightService from "../../base/visuals/highlight-service";
+import BaseStructureArrowService from "../../base/visuals/arrow-service";
+import BaseStructureBeamService from "../../base/visuals/beam-service";
+import BaseStructurePlacementService from "../../base/placement-service";
+
+export class LiftStructureBuildingService extends BaseBuildingService {
+	private readonly liftStructurePreviewService: LiftStructurePreviewService;
+	private liftStructureModel!: Model;
+	private liftElevatorStructureModel!: Model;
+	private startCf: CFrame | undefined;
+	private endCf: CFrame | undefined;
+	private connection: RBXScriptConnection | undefined;
+
+	constructor(
+		private readonly gridService: GridService,
+		private readonly mouseService: MouseService,
+		private readonly baseStructurePreviewService: BaseStructurePreviewService,
+		baseStructureHighlightService: BaseStructureHighlightService,
+		baseStructureArrowService: BaseStructureArrowService,
+		baseStructureBeamService: BaseStructureBeamService,
+		private readonly baseStructureCFrameService: BaseStructureCFrameService,
+		private readonly baseStructurePlacementService: BaseStructurePlacementService,
+	) {
+		super();
+		this.liftStructurePreviewService = new LiftStructurePreviewService(
+			baseStructureHighlightService,
+			baseStructureArrowService,
+			baseStructureBeamService,
+		);
+
+		this.mouseService.onMove.Connect(() => {
+			if (!this.active || this.startCf === undefined) return;
+			const camera = Workspace.CurrentCamera!;
+			const rayOrigin = camera.CFrame.Position;
+			const rayDirection = this.mouseService.getMouse().UnitRay.Direction;
+			const horizontalLook = new Vector3(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit;
+			const dot = rayDirection.Dot(horizontalLook);
+			if (math.abs(dot) > 1e-6) {
+				const t = this.startCf.Position.sub(rayOrigin).Dot(horizontalLook) / dot;
+				if (t > 0) {
+					const cell = gridService.getCellAtWorldPosition(
+						Players.LocalPlayer,
+						new Vector3(
+							this.startCf.Position.X,
+							math.clamp(
+								rayOrigin.add(rayDirection.mul(t)).Y,
+								this.startCf.Position.Y - 100,
+								this.startCf.Position.Y + 100,
+							),
+							this.startCf.Position.Z,
+						),
+					);
+					if (cell === undefined) return;
+					const position = gridService.getCellWorldPosition(Players.LocalPlayer, cell);
+					if (position.FuzzyEq(this.startCf.Position) || position.FuzzyEq(this.endCf!.Position)) return;
+					this.endCf = new CFrame(this.startCf.Position.X, position.Y, this.startCf.Position.Z).mul(
+						CFrame.Angles(0, this.endCf!.ToOrientation()[1], 0),
+					);
+					this.rebuildLiftStructure();
+				}
+			}
+		});
+
+		this.mouseService.onClampedCellChanged.Connect((_, newClampedCellPosition) => {
+			if (!this.active) return;
+			this.baseStructureCFrameService.setTargetPosition(
+				new Vector3(
+					newClampedCellPosition.X,
+					newClampedCellPosition.Y + this.liftStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
+					newClampedCellPosition.Z,
+				),
+			);
+		});
+	}
+
+	public enter(liftStructureModel: Model, liftElevatorStructureModel: Model): void {
+		super.enter();
+		this.liftStructureModel = liftStructureModel;
+		this.liftElevatorStructureModel = liftElevatorStructureModel;
+
+		const rayParams = new RaycastParams();
+		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
+		rayParams.AddToFilter([
+			this.baseStructurePreviewService.getStructureModelHolder(),
+			this.liftStructurePreviewService.getLiftStructureModelHolder(),
+		]);
+		this.mouseService.setRaycastParams(rayParams);
+		this.mouseService.startUpdating();
+
+		this.baseStructurePreviewService.initStructurePlacementPreview(
+			this.liftStructureModel
+				.GetChildren()
+				.find(
+					(instance): instance is Model =>
+						instance.IsA("Model") && instance.Name.find("Input")[0] !== undefined,
+				)!,
+		);
+		this.startUpdatingLiftStructureInput();
+	}
+
+	public exit(): void {
+		super.exit();
+		this.stopUpdating();
+		this.baseStructurePreviewService.resetStructurePlacementPreview();
+		this.liftStructurePreviewService.resetLiftStructurePreview();
+		this.mouseService.stopUpdating();
+		ContextActionService.UnbindAction("DisableScroll");
+
+		this.startCf = undefined;
+		this.endCf = undefined;
+	}
+
+	private startUpdatingLiftStructureInput(): void {
+		this.connection = RunService.Heartbeat.Connect((dt: number) => {
+			this.baseStructureCFrameService.updateCurrentCF(dt);
+			this.baseStructurePreviewService.updateStructurePreview(
+				this.baseStructureCFrameService.getCurrentCF(),
+				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()),
+			);
+		});
+	}
+
+	private startUpdatingLiftStructure(): void {
+		this.connection = RunService.Heartbeat.Connect(() => {
+			this.liftStructurePreviewService.updateLiftStructurePreview(
+				this.baseStructurePlacementService.canPlace(
+					this.liftStructurePreviewService.getLiftStructureModelHolder(),
+				),
+			);
+		});
+	}
+
+	private stopUpdating(): void {
+		this.connection?.Disconnect();
+		this.connection = undefined;
+	}
+
+	private rebuildLiftStructure() {
+		this.liftStructurePreviewService.resetLiftStructurePreview();
+		this.liftStructurePreviewService.initLiftStructurePreview(
+			this.liftStructureModel,
+			this.liftElevatorStructureModel,
+			this.startCf!,
+			this.endCf!,
+		);
+	}
+
+	public onPlacementStart(): void {
+		if (this.startCf !== undefined) {
+			this.baseStructurePlacementService.place(
+				this.liftStructurePreviewService.getLiftStructureModelHolder(),
+				this.liftStructurePreviewService.getLiftStructureModelHolder().GetPivot(),
+			);
+			this.exit();
+			this.enter(this.liftStructureModel, this.liftElevatorStructureModel);
+			ContextActionService.UnbindAction("DisableScroll");
+		} else {
+			const cell = this.mouseService.getCell();
+			if (cell === undefined) return;
+			const cells = [
+				this.gridService.getCellInDirection(Players.LocalPlayer, cell, Vector3.yAxis),
+				this.gridService.getCellInDirection(Players.LocalPlayer, cell, Vector3.yAxis.mul(-1)),
+			].filterUndefined();
+			if (cells.size() === 0) return;
+			this.stopUpdating();
+			this.baseStructurePreviewService.resetStructurePlacementPreview();
+
+			this.startCf = new CFrame(this.gridService.getCellWorldPosition(Players.LocalPlayer, cell)).mul(
+				this.baseStructureCFrameService.getTargetCF().Rotation,
+			);
+			this.endCf = new CFrame(this.gridService.getCellWorldPosition(Players.LocalPlayer, cells[0])).mul(
+				this.baseStructureCFrameService.getTargetCF().Rotation,
+			);
+			ContextActionService.BindAction(
+				"DisableScroll",
+				() => {
+					return Enum.ContextActionResult.Sink;
+				},
+				false,
+				Enum.UserInputType.MouseWheel,
+			);
+			this.rebuildLiftStructure();
+			this.startUpdatingLiftStructure();
+		}
+	}
+
+	public onRotate(): void {
+		this.baseStructureCFrameService.setTargetRotation(
+			this.baseStructureCFrameService.getTargetCF().Rotation.mul(CFrame.Angles(0, math.rad(90), 0)),
+		);
+		if (this.startCf === undefined) return;
+		[this.startCf, this.endCf] = [this.endCf!, this.startCf];
+		this.rebuildLiftStructure();
+	}
+
+	public onScroll(position: Vector3): void {
+		if (this.startCf === undefined) return;
+		this.endCf = this.endCf!.mul(CFrame.Angles(0, math.rad(90 * position.Z), 0));
+		this.rebuildLiftStructure();
+	}
+}

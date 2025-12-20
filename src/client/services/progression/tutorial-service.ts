@@ -12,40 +12,42 @@ export default class TutorialService {
 	}
 	//#endregion
 
-	private tutorialStep!: number;
 	private readonly structuresModels: Model[] = [];
 	private readonly highlights: Highlight[] = [];
 	private readonly beams: Beam[] = [];
+	private tutorialStep!: number;
 
 	private constructor() {
 		this.initEvents();
 	}
 
 	private initEvents(): void {
+		Events.OnPlotReset.connect((player) => {
+			if (player !== Players.LocalPlayer) return;
+			this.tutorialStep = 0;
+			this.resetTutorialStep();
+		});
 		Events.OnTutorialStepUpdate.connect((newTutorialStep) => {
 			this.tutorialStep = newTutorialStep;
-			this.resetTutorialStepPreview();
+			this.resetTutorialStep();
 			if (newTutorialStep === TUTORIAL.size()) return;
-			this.initTutorialStepPreview(TUTORIAL[newTutorialStep]);
+			this.initTutorialStep(TUTORIAL[newTutorialStep]);
 		});
 	}
 
-	private initTutorialStepPreview(tutorialStep: TutorialStep): void {
+	private initTutorialStep(tutorialStep: TutorialStep): void {
 		const plot = Workspace.WaitForChild("Plots")
 			.GetChildren()
 			.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!;
-
 		if (tutorialStep.type === "Build") {
 			for (const structureData of tutorialStep.structuresData) {
 				const newStructureModel = STRUCTURES[structureData.name].model.Clone();
 				for (const instance of newStructureModel
 					.GetDescendants()
-					.filter(
-						(instance): instance is BasePart =>
-							instance.IsA("BasePart") && instance !== newStructureModel.PrimaryPart,
-					)) {
-					instance.Transparency = 0.6;
+					.filter((instance): instance is BasePart => instance.IsA("BasePart"))) {
+					instance.Transparency = instance.Transparency !== 1 ? 0.6 : instance.Transparency;
 					instance.CanCollide = false;
+					instance.CanQuery = false;
 				}
 				newStructureModel.PivotTo(plot.GetPivot().mul(structureData.cf));
 				newStructureModel.Parent = Workspace;
@@ -53,37 +55,31 @@ export default class TutorialService {
 			}
 		} else if (tutorialStep.type === "Delete") {
 			for (const structureData of tutorialStep.structuresData) {
-				const newHighlight = new Instance("Highlight");
-				newHighlight.FillTransparency = 0.7;
-				newHighlight.FillColor = Color3.fromRGB(255, 60, 89);
-				newHighlight.OutlineColor = Color3.fromRGB(255, 101, 104);
-				newHighlight.Adornee = plot
+				const newHighlight = ReplicatedStorage.WaitForChild("Tutorial")
+					.WaitForChild("DeleteHighlight")
+					.Clone() as Highlight;
+				newHighlight.Parent = plot
 					.WaitForChild("Structures")
-					.GetChildren()
+					.GetDescendants()
 					.find(
 						(structureModel) =>
+							structureModel.IsA("Model") &&
 							structureModel.Name === structureData.name &&
-							plot
-								.GetPivot()
-								.ToObjectSpace((structureModel as Model).GetPivot())
-								.FuzzyEq(structureData.cf, 0.025),
+							plot.GetPivot().ToObjectSpace(structureModel.GetPivot()).FuzzyEq(structureData.cf, 0.025),
 					);
-				newHighlight.Parent = Workspace;
 				this.highlights.push(newHighlight);
 			}
 		} else if (tutorialStep.type === "SetAttribute") {
-			const newHighlight = new Instance("Highlight");
-			newHighlight.FillTransparency = 0.7;
-			newHighlight.FillColor = Color3.fromRGB(35, 126, 212);
-			newHighlight.OutlineColor = Color3.fromRGB(70, 141, 255);
-			newHighlight.Adornee = plot
+			const newHighlight = ReplicatedStorage.WaitForChild("Tutorial")
+				.WaitForChild("SetAttributeHighlight")
+				.Clone() as Highlight;
+			newHighlight.Parent = plot
 				.WaitForChild("Structures")
-				.GetChildren()
+				.GetDescendants()
 				.find((structureModel) => structureModel.Name === tutorialStep.structureName);
-			newHighlight.Parent = Workspace;
 			this.highlights.push(newHighlight);
 		} else if (tutorialStep.type === "Connect" || tutorialStep.type === "Disconnect") {
-			const startPowerAttachment = plot
+			const startAttachment = plot
 				.GetDescendants()
 				.find(
 					(instance): instance is Attachment =>
@@ -91,7 +87,7 @@ export default class TutorialService {
 						instance.Name === "PowerAttachment" &&
 						instance.FindFirstAncestorOfClass("Model")!.Name === tutorialStep.startStructureName,
 				);
-			const endPowerAttachment = plot
+			const endAttachment = plot
 				.GetDescendants()
 				.find(
 					(instance): instance is Attachment =>
@@ -99,29 +95,22 @@ export default class TutorialService {
 						instance.Name === "PowerAttachment" &&
 						instance.FindFirstAncestorOfClass("Model")!.Name === tutorialStep.endStructureName,
 				);
-			const newBeam = ReplicatedStorage.WaitForChild("TutorialBeam").Clone() as Beam;
-			newBeam.Attachment0 = startPowerAttachment;
-			newBeam.Attachment1 = endPowerAttachment;
-			newBeam.TextureLength =
-				startPowerAttachment!.WorldPosition.sub(endPowerAttachment!.WorldPosition).Magnitude * 0.65;
+			const newBeam = ReplicatedStorage.WaitForChild("Tutorial").WaitForChild("ConnectionBeam").Clone() as Beam;
+			newBeam.Attachment0 = startAttachment;
+			newBeam.Attachment1 = endAttachment;
+			newBeam.TextureLength = startAttachment!.WorldPosition.sub(endAttachment!.WorldPosition).Magnitude * 0.7;
 			newBeam.Parent = Workspace;
 			this.beams.push(newBeam);
 		}
 	}
 
-	private resetTutorialStepPreview(): void {
-		for (const structureModel of this.structuresModels) {
-			structureModel.Destroy();
-		}
-		for (const highlight of this.highlights) {
-			highlight.Destroy();
-		}
-		for (const beam of this.beams) {
-			beam.Destroy();
+	private resetTutorialStep(): void {
+		for (const instance of [...this.structuresModels, ...this.highlights, ...this.beams]) {
+			instance.Destroy();
 		}
 	}
 
-	public canPlace(structureModel: Model): boolean {
+	public canPlace(model: Model): boolean {
 		if (this.tutorialStep === TUTORIAL.size()) return true;
 		const tutorialStep = TUTORIAL[this.tutorialStep];
 		if (tutorialStep.type !== "Build") return false;
@@ -130,7 +119,7 @@ export default class TutorialService {
 			.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!;
 		return tutorialStep.structuresData.every(
 			(structureData) =>
-				structureModel
+				model
 					.GetDescendants()
 					.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES)
 					.find(

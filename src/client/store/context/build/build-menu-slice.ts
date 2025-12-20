@@ -5,6 +5,7 @@ export interface BuildMenuState {
 	structureCategory: StructureCategory;
 	structureInformation: {
 		structureModel: Model;
+		structureImage: string;
 		structureDescription: string;
 	};
 	blueprintEditorOpen: boolean;
@@ -12,17 +13,18 @@ export interface BuildMenuState {
 }
 
 const intialState: BuildMenuState = {
-	structureCategory: "Transportation",
+	structureCategory: "Logistics",
 	structureInformation: {
-		structureModel: STRUCTURES["Straight Conveyor"].model,
-		structureDescription: STRUCTURES["Straight Conveyor"].description,
+		structureModel: STRUCTURES["Conveyor"].model,
+		structureImage: STRUCTURES["Conveyor"].image,
+		structureDescription: STRUCTURES["Conveyor"].description,
 	},
 	blueprintEditorOpen: false,
 	buildingStructureModel: undefined,
 };
 
 export const buildMenuSlice = createProducer(intialState, {
-	setBuildMenuStructureCategory: (s, structureCategory: StructureCategory) => ({
+	setBuildMenuStructureCategory: (s, structureCategory: StructureCategory): BuildMenuState => ({
 		...s,
 		structureCategory: structureCategory,
 	}),
@@ -31,19 +33,20 @@ export const buildMenuSlice = createProducer(intialState, {
 		s,
 		structureInformation: {
 			structureModel: Model;
+			structureImage: string;
 			structureDescription: string;
 		},
-	) => ({
+	): BuildMenuState => ({
 		...s,
 		structureInformation: structureInformation,
 	}),
 
-	setBuildMenuBlueprintEditorOpen: (s, blueprintEditorOpen: boolean) => ({
+	setBuildMenuBlueprintEditorOpen: (s, blueprintEditorOpen: boolean): BuildMenuState => ({
 		...s,
 		blueprintEditorOpen: blueprintEditorOpen,
 	}),
 
-	setBuildMenuBuildingStructureModel: (s, structureModel: Model | undefined) => ({
+	setBuildMenuBuildingStructureModel: (s, structureModel: Model | undefined): BuildMenuState => ({
 		...s,
 		buildingStructureModel: structureModel,
 	}),

@@ -1,11 +1,13 @@
 import Signal from "@rbxts/signal";
 
 export const EventBus = {
-	PlotEvents: {
-		OnStructuresPlacement: new Signal<(player: Player, structuresModels: Model[]) => void>(),
-		OnStructuresMovement: new Signal<(structuresModels: Model[]) => void>(),
+	GameEvents: {
+		OnGameLoad: new Signal<(player: Player) => void>(),
+		OnGameUnload: new Signal<(player: Player) => void>(),
 	},
-	ProgressionEvents: {
-		OnMilestoneUnlock: new Signal<(player: Player, milestone: number) => void>(),
+	PlotEvents: {
+		OnPlotReset: new Signal<(player: Player) => void>(),
+		OnStructuresPlacement: new Signal<(player: Player, structuresModels: Model[]) => void>(),
+		OnStructuresMovement: new Signal<(player: Player, structuresModels: Model[]) => void>(),
 	},
 } as const;

@@ -1,4 +1,5 @@
 import { ReplicatedStorage, Workspace } from "@rbxts/services";
+import { IMAGES } from "shared/assets/images";
 import { STRUCTURES } from "shared/constants/structures";
 
 export default class BaseStructureBeamService {
@@ -15,26 +16,46 @@ export default class BaseStructureBeamService {
 
 	private constructor() {}
 
-	public initStructureBeams(structureModel: Model) {
-		for (const model of [structureModel, ...structureModel.GetChildren()].filter(
+	public initStructureBeams(model: Model) {
+		for (const structureModel of [model, ...model.GetDescendants()].filter(
 			(instance): instance is Model =>
 				instance.IsA("Model") &&
 				instance.Name in STRUCTURES &&
 				instance
-					.GetDescendants()
+					.GetChildren()
 					.filter(
-						(instance): instance is Attachment =>
-							instance.IsA("Attachment") && (instance.Name === "Start" || instance.Name === "End"),
+						(instance) =>
+							instance.IsA("Model") &&
+							instance.Name in STRUCTURES &&
+							(instance.Name.find("Input")[0] !== undefined ||
+								instance.Name.find("Output")[0] !== undefined),
 					)
 					.size() === 2,
 		)) {
-			const beam = this.beamPool.pop() ?? (ReplicatedStorage.WaitForChild("StructureBeam").Clone() as Beam);
-			beam.Attachment0 = model
+			const beam = this.beamPool.pop() ?? (ReplicatedStorage.WaitForChild("Beam").Clone() as Beam);
+			beam.Attachment0 = structureModel
 				.GetDescendants()
-				.find((instance): instance is Attachment => instance.IsA("Attachment") && instance.Name === "Start");
-			beam.Attachment1 = model
+				.find(
+					(instance): instance is Attachment =>
+						instance.IsA("Attachment") &&
+						instance.FindFirstAncestorOfClass("Model")!.Name.find("Input")[0] !== undefined,
+				)!;
+			beam.Attachment1 = structureModel
 				.GetDescendants()
-				.find((instance): instance is Attachment => instance.IsA("Attachment") && instance.Name === "End");
+				.find(
+					(instance): instance is Attachment =>
+						instance.IsA("Attachment") &&
+						instance.FindFirstAncestorOfClass("Model")?.Name.find("Output")[0] !== undefined,
+				)!;
+			beam.Texture =
+				[
+					...STRUCTURES[beam.Attachment0.FindFirstAncestorOfClass("Model")!.Name].nodes.inputs.solids,
+					...STRUCTURES[beam.Attachment0.FindFirstAncestorOfClass("Model")!.Name].nodes.inputs.fluids,
+					...STRUCTURES[beam.Attachment0.FindFirstAncestorOfClass("Model")!.Name].nodes.outputs.solids,
+					...STRUCTURES[beam.Attachment0.FindFirstAncestorOfClass("Model")!.Name].nodes.outputs.fluids,
+				].size() > 0
+					? IMAGES.textures.ArrowLink
+					: IMAGES.textures.Link;
 			beam.TextureLength = beam.Attachment0!.WorldPosition.sub(beam.Attachment1!.WorldPosition).Magnitude * 0.65;
 			beam.Parent = Workspace;
 			this.activeBeams.push(beam);

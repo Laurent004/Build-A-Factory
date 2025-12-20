@@ -2,10 +2,10 @@ export const SECTIONS = {
 	Shop: {
 		index: 0,
 	},
-	Milestones: {
+	Items: {
 		index: 1,
 	},
-	Items: {
+	Settings: {
 		index: 2,
 	},
 } as const;

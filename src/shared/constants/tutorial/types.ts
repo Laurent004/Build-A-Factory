@@ -9,7 +9,6 @@ export type TutorialStep =
 	| SetAttributeTutorialStep
 	| ConnectTutorialStep
 	| DisconnectTutorialStep
-	| MilestoneTutorialStep;
 
 export interface BuildTutorialStep extends BaseTutorialStep {
 	type: "Build";
@@ -42,9 +41,4 @@ export interface DisconnectTutorialStep extends BaseTutorialStep {
 	type: "Disconnect";
 	startStructureName: string;
 	endStructureName: string;
-}
-
-export interface MilestoneTutorialStep extends BaseTutorialStep {
-	type: "Milestone";
-	milestone: number;
 }

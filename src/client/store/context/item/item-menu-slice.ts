@@ -9,7 +9,7 @@ const initialState: ItemMenuState = {
 };
 
 export const itemMenuSlice = createProducer(initialState, {
-	setItemMenuItemName: (s, itemName: string) => ({
+	setItemMenuItemName: (s, itemName: string): ItemMenuState => ({
 		...s,
 		itemName: itemName,
 	}),

@@ -125,45 +125,200 @@ export const ITEMS: Record<string, ItemDefintion> = {
 		value: 120,
 		model: MODELS["Control Unit"],
 	},
+
+	Water: {
+		index: 17,
+		image: IMAGES.ui["Water"],
+		description: "gloo gloo glo.",
+		value: 0,
+		model: undefined,
+	},
+
+	Elixir: {
+		index: 18,
+		image: IMAGES.ui["Elixir"],
+		description: "Gloo gloooo glooo.",
+		value: 0,
+		model: undefined,
+	},
 };
 
-export const ITEM_RECIPES: ItemRecipe[] = [
-	{ inputItems: {}, outputItem: "Iron Ore", structureName: "Miner", time: 0.1 },
-	{ inputItems: {}, outputItem: "Copper Ore", structureName: "Miner", time: 0.1 },
-	{ inputItems: {}, outputItem: "Coal", structureName: "Miner", time: 0.1 },
-	{ inputItems: {}, outputItem: "Silica", structureName: "Miner", time: 2 },
+export const ITEM_RECIPES: Record<string, ItemRecipe> = {
+	"Iron Ore": {
+		index: 0,
+		inputItems: {},
+		outputItems: {
+			"Iron Ore": 1,
+		},
+		structureName: "Miner",
+		time: 0.1,
+	},
+	"Copper Ore": {
+		index: 1,
+		inputItems: {},
+		outputItems: {
+			"Copper Ore": 1,
+		},
+		structureName: "Miner",
+		time: 0.1,
+	},
+	Coal: {
+		index: 2,
+		inputItems: {},
+		outputItems: {
+			Coal: 1,
+		},
+		structureName: "Miner",
+		time: 0.1,
+	},
+	Silica: {
+		index: 3,
+		inputItems: {},
+		outputItems: {
+			Silica: 1,
+		},
+		structureName: "Miner",
+		time: 2,
+	},
 
-	// --- Smelter ---
-	{ inputItems: { "Iron Ore": 1 }, outputItem: "Iron Ingot", structureName: "Smelter", time: 2.5 },
-	{ inputItems: { "Copper Ore": 1 }, outputItem: "Copper Ingot", structureName: "Smelter", time: 2.5 },
-	{ inputItems: { "Iron Ore": 1, Coal: 1 }, outputItem: "Steel Ingot", structureName: "Smelter", time: 3 },
-	{ inputItems: { Silica: 1 }, outputItem: "Silicon", structureName: "Smelter", time: 3.5 },
-
-	// --- Constructor ---
-	{ inputItems: { "Iron Ingot": 1 }, outputItem: "Iron Plate", structureName: "Constructor", time: 2.5 },
-	{ inputItems: { "Iron Ingot": 1 }, outputItem: "Iron Rod", structureName: "Constructor", time: 2.5 },
-	{ inputItems: { "Copper Ingot": 1 }, outputItem: "Copper Wire", structureName: "Constructor", time: 2 },
-	{ inputItems: { "Steel Ingot": 2 }, outputItem: "Steel Frame", structureName: "Constructor", time: 3 },
-	{ inputItems: { Silicon: 1 }, outputItem: "Glass Panel", structureName: "Constructor", time: 3 },
-
-	// --- Assembler ---
-	{
+	"Iron Ingot": {
+		index: 4,
+		inputItems: { "Iron Ore": 1 },
+		outputItems: {
+			"Iron Ingot": 1,
+		},
+		structureName: "Smelter",
+		time: 2.5,
+	},
+	"Copper Ingot": {
+		index: 5,
+		inputItems: { "Copper Ore": 1 },
+		outputItems: {
+			"Copper Ingot": 1,
+		},
+		structureName: "Smelter",
+		time: 2.5,
+	},
+	"Steel Ingot": {
+		index: 6,
+		inputItems: { "Iron Ore": 1, Coal: 1 },
+		outputItems: {
+			"Steel Ingot": 1,
+		},
+		structureName: "Smelter",
+		time: 3,
+	},
+	Silicon: {
+		index: 7,
+		inputItems: { Silica: 1 },
+		outputItems: {
+			Silicon: 1,
+		},
+		structureName: "Smelter",
+		time: 3.5,
+	},
+	"Iron Plate": {
+		index: 8,
+		inputItems: { "Iron Ingot": 1 },
+		outputItems: {
+			"Iron Plate": 1,
+		},
+		structureName: "Constructor",
+		time: 2.5,
+	},
+	"Iron Rod": {
+		index: 9,
+		inputItems: { "Iron Ingot": 1 },
+		outputItems: {
+			"Iron Rod": 1,
+		},
+		structureName: "Constructor",
+		time: 2.5,
+	},
+	"Copper Wire": {
+		index: 10,
+		inputItems: { "Copper Ingot": 1 },
+		outputItems: {
+			"Copper Wire": 1,
+		},
+		structureName: "Constructor",
+		time: 2,
+	},
+	"Steel Frame": {
+		index: 11,
+		inputItems: { "Steel Ingot": 2 },
+		outputItems: {
+			"Steel Frame": 1,
+		},
+		structureName: "Constructor",
+		time: 3,
+	},
+	"Glass Panel": {
+		index: 12,
+		inputItems: { Silicon: 1 },
+		outputItems: {
+			"Glass Panel": 1,
+		},
+		structureName: "Constructor",
+		time: 3,
+	},
+	"Circuit Board": {
+		index: 13,
 		inputItems: { "Copper Wire": 2, Silicon: 1 },
-		outputItem: "Circuit Board",
+		outputItems: {
+			"Circuit Board": 1,
+		},
 		structureName: "Assembler",
 		time: 3.5,
 	},
-	{ inputItems: { "Iron Rod": 2, "Copper Wire": 1 }, outputItem: "Motor", structureName: "Assembler", time: 4 },
-	{
+	Motor: {
+		index: 14,
+		inputItems: { "Iron Rod": 2, "Copper Wire": 1 },
+		outputItems: {
+			Motor: 1,
+		},
+		structureName: "Assembler",
+		time: 4,
+	},
+	Battery: {
+		index: 15,
 		inputItems: { "Copper Wire": 1, Silicon: 1, Coal: 1 },
-		outputItem: "Battery",
+		outputItems: {
+			Battery: 1,
+		},
 		structureName: "Assembler",
 		time: 4.5,
 	},
-	{
+	"Control Unit": {
+		index: 16,
 		inputItems: { "Circuit Board": 1, "Steel Frame": 1 },
-		outputItem: "Control Unit",
+		outputItems: {
+			"Control Unit": 1,
+		},
 		structureName: "Assembler",
 		time: 5,
 	},
-];
+
+	Water: {
+		index: 17,
+		inputItems: {},
+		outputItems: {
+			Water: 2,
+		},
+		structureName: "Water Extractor",
+		time: 1,
+	},
+
+	Elixir: {
+		index: 18,
+		inputItems: {
+			Water: 2,
+		},
+		outputItems: {
+			"Iron Ore": 1,
+			Elixir: 2,
+		},
+		structureName: "Refinery",
+		time: 0.2,
+	},
+};

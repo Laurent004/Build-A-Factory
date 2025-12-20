@@ -1,9 +1,9 @@
 import { Players, ReplicatedStorage, RunService, Workspace } from "@rbxts/services";
 import { STRUCTURES } from "shared/constants/structures";
 import MouseService from "./mouse-service";
-import Signal from "@rbxts/signal";
 import BaseStructureArrowService from "./visuals/arrow-service";
 import BaseStructureBeamService from "./visuals/beam-service";
+import { EventBus } from "client/event-bus";
 
 export default class BaseStructureSelectionService {
 	private readonly hoverSelectionHighlight = new Instance("Highlight", Workspace);
@@ -14,9 +14,6 @@ export default class BaseStructureSelectionService {
 	private startPosition: Vector3 | undefined;
 	private currentPosition: Vector3 | undefined;
 	private connection: RBXScriptConnection | undefined;
-
-	public readonly onSelection = new Signal<(selection: Model | undefined) => void>();
-
 	constructor(
 		private readonly mouseService: MouseService,
 		private readonly baseStructureArrowService: BaseStructureArrowService,
@@ -24,25 +21,20 @@ export default class BaseStructureSelectionService {
 		selectionHighlightFillColor: Color3,
 		selectionHighlightOutlineColor: Color3,
 	) {
-		this.mouseService.onMouseStructureModelChanged.Connect((newMouseStructureModel) => {
+		this.mouseService.onStructureModelChanged.Connect((newStructureModel) => {
 			if (this.startPosition !== undefined || !this.connection?.Connected) return;
-			this.hoverSelectionHighlight.Adornee = newMouseStructureModel;
-			this.hoverSelectionHighlight.Enabled = newMouseStructureModel !== undefined;
-
+			this.hoverSelectionHighlight.Adornee = newStructureModel;
+			this.hoverSelectionHighlight.Enabled = newStructureModel !== undefined;
 			baseStructureArrowService.resetStructureArrows();
 			baseStructureBeamService.resetStructureBeams();
-			if (newMouseStructureModel === undefined) return;
-			baseStructureArrowService.initStructureArrows(newMouseStructureModel);
-			baseStructureBeamService.initStructureBeams(newMouseStructureModel);
+			if (newStructureModel === undefined) return;
+			baseStructureArrowService.initStructureArrows(newStructureModel);
+			baseStructureBeamService.initStructureBeams(newStructureModel);
 		});
 
-		this.mouseService.onMouseClampedCellVertexPositionChanged.Connect((newMouseClampedCellVertexPosition) => {
+		this.mouseService.onClampedCellVertexPositionChanged.Connect((newClampedCellVertexPosition) => {
 			if (this.startPosition === undefined) return;
-			this.currentPosition = new Vector3(
-				newMouseClampedCellVertexPosition.X,
-				0.5,
-				newMouseClampedCellVertexPosition.Z,
-			);
+			this.currentPosition = new Vector3(newClampedCellVertexPosition.X, 0.5, newClampedCellVertexPosition.Z);
 			this.updateSelection();
 		});
 
@@ -63,13 +55,12 @@ export default class BaseStructureSelectionService {
 	}
 
 	public startUpdating() {
-		const mouseStructureModel = this.mouseService.getMouseStructureModel();
-		if (mouseStructureModel !== undefined) {
-			this.hoverSelectionHighlight.Adornee = mouseStructureModel;
+		const structureModel = this.mouseService.getStructureModel();
+		if (structureModel !== undefined) {
+			this.hoverSelectionHighlight.Adornee = structureModel;
 			this.hoverSelectionHighlight.Enabled = true;
-
-			this.baseStructureArrowService.initStructureArrows(mouseStructureModel);
-			this.baseStructureBeamService.initStructureBeams(mouseStructureModel);
+			this.baseStructureArrowService.initStructureArrows(structureModel);
+			this.baseStructureBeamService.initStructureBeams(structureModel);
 		}
 
 		this.connection = RunService.Heartbeat.Connect(() => {
@@ -80,7 +71,6 @@ export default class BaseStructureSelectionService {
 	public stopUpdating() {
 		this.connection?.Disconnect();
 		this.connection = undefined;
-
 		this.hoverSelectionHighlight.Adornee = undefined;
 		this.hoverSelectionHighlight.Enabled = false;
 		this.baseStructureArrowService.resetStructureArrows();
@@ -97,7 +87,7 @@ export default class BaseStructureSelectionService {
 				.WaitForChild("Structures"),
 		]);
 		this.mouseService.setRaycastParams(rayParams);
-		const mouseClampedCellVertexPosition = this.mouseService.getMouseClampedCellVertexPosition();
+		const mouseClampedCellVertexPosition = this.mouseService.getClampedCellVertexPosition();
 		if (mouseClampedCellVertexPosition === undefined) return;
 
 		this.hoverSelectionHighlight.Adornee = undefined;
@@ -150,20 +140,20 @@ export default class BaseStructureSelectionService {
 				.WaitForChild("Structures"),
 		);
 		this.mouseService.setRaycastParams(rayParams);
-		const structureModel = this.mouseService.getMouseStructureModel();
+		const structureModel = this.mouseService.getStructureModel();
 		if (structureModel !== undefined) {
 			structureModel.Parent = this.selectionModel;
 			this.selectionHighlight.Adornee = this.selectionModel;
 			this.selectionHighlight.Enabled = true;
-			this.onSelection.Fire(this.selectionModel);
+			EventBus.ToolEvents.OnSelection.Fire([structureModel]);
 		} else {
-			this.onSelection.Fire(undefined);
+			EventBus.ToolEvents.OnSelection.Fire([]);
 		}
 	}
 
 	private boxSelect() {
 		if (math.floor(this.selectionBox.Size.X) === 0 || math.floor(this.selectionBox.Size.Z) === 0) {
-			this.onSelection.Fire(undefined);
+			EventBus.ToolEvents.OnSelection.Fire([]);
 			return;
 		}
 
@@ -174,15 +164,17 @@ export default class BaseStructureSelectionService {
 		const selectionBoxStructuresModels = new Set<Model>(
 			Workspace.GetPartBoundsInBox(
 				this.selectionBox.GetPivot(),
-				new Vector3(this.selectionBox.Size.X - 0.01, this.selectionBox.Size.Y, this.selectionBox.Size.Z - 0.01),
-			).mapFiltered((part) =>
-				structuresFolder
-					.GetChildren()
-					.find(
-						(instance): instance is Model =>
-							instance.IsA("Model") && instance.Name in STRUCTURES && instance.IsAncestorOf(part),
-					),
-			),
+				new Vector3(this.selectionBox.Size.X - 0.01, 50, this.selectionBox.Size.Z - 0.01),
+			)
+				.filter((part) => part.FindFirstAncestorOfClass("Model") !== undefined)
+				.mapFiltered((part) =>
+					structuresFolder
+						.GetChildren()
+						.find(
+							(instance): instance is Model =>
+								instance.IsA("Model") && instance.Name in STRUCTURES && instance.IsAncestorOf(part),
+						),
+				),
 		);
 
 		if (selectionBoxStructuresModels.size() > 0) {
@@ -191,9 +183,9 @@ export default class BaseStructureSelectionService {
 			}
 			this.selectionHighlight.Adornee = this.selectionModel;
 			this.selectionHighlight.Enabled = true;
-			this.onSelection.Fire(this.selectionModel);
+			EventBus.ToolEvents.OnSelection.Fire([...selectionBoxStructuresModels]);
 		} else {
-			this.onSelection.Fire(undefined);
+			EventBus.ToolEvents.OnSelection.Fire([]);
 		}
 	}
 

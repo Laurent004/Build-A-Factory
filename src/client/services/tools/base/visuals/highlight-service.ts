@@ -20,8 +20,8 @@ export default class BaseStructureHighlightService {
 		this.highlight.Enabled = false;
 	}
 
-	public initStructureHighlight(structureModel: Model) {
-		this.highlight.Adornee = structureModel;
+	public initStructureHighlight(model: Model) {
+		this.highlight.Adornee = model;
 		this.highlight.Enabled = true;
 	}
 

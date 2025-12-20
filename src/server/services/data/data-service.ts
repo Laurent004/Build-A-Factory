@@ -1,12 +1,15 @@
 import { OnInit, Service } from "@flamework/core";
 import ProfileStore from "@rbxts/profile-store";
 import { DATA_TEMPLATE, DataTemplate } from "./data-template";
-import { Players } from "@rbxts/services";
+import { HttpService, Players } from "@rbxts/services";
+import { Events } from "server/network";
+import { EventBus } from "server/event-bus";
 
 @Service()
 export default class DataService implements OnInit {
 	private readonly profileStore = ProfileStore.New("PRE-ALPHA", DATA_TEMPLATE);
 	private readonly profiles = new Map<Player, ProfileStore.Profile<DataTemplate, object>>();
+	private readonly games = new Map<Player, string>();
 
 	onInit(): void | Promise<void> {
 		this.initEvents();
@@ -17,7 +20,130 @@ export default class DataService implements OnInit {
 			this.initProfile(player);
 		});
 		Players.PlayerRemoving.Connect((player) => {
-			this.resetProfile(player);
+			this.set(player, "lastPlaytime", os.time());
+			if (this.games.has(player)) EventBus.GameEvents.OnGameUnload.Fire(player);
+			task.delay(0.25, () => {
+				this.resetProfile(player);
+				this.games.delete(player);
+			});
+		});
+		Events.CreateGame.connect((player) => {
+			if (this.games.has(player)) return;
+			const id = HttpService.GenerateGUID();
+			this.profiles.get(player)!.Data.games.push({
+				id: id,
+				name: `${player.Name}'s Factory`,
+				lastPlaytime: 0,
+				tutorialStep: 13,
+				cash: 100000,
+				structures: [
+					{
+						name: "Conveyor",
+						cf: [74, 2.25, -70, -1, 0, 0, 0, 1, 0, 0, 0, -1],
+						attributes: new Map(),
+						children: [],
+					},
+					{
+						name: "Conveyor",
+						cf: [74, 2.25, -66, -1, 0, 0, 0, 1, 0, 0, 0, -1],
+						attributes: new Map(),
+						children: [],
+					},
+					{
+						name: "Conveyor",
+						cf: [58, 2.25, -46, 0, 0, 1, 0, 1, 0, -1, 0, 0],
+						attributes: new Map(),
+						children: [],
+					},
+
+					{
+						name: "Conveyor",
+						cf: [62, 2.25, -46, 0, 0, 1, 0, 1, 0, -1, 0, 0],
+						attributes: new Map(),
+						children: [],
+					},
+
+					{
+						name: "Delivery Dock",
+						cf: [48, 5.25, -44, -1, 0, 0, 0, 1, 0, 0, 0, -1],
+						attributes: new Map(),
+						children: [],
+					},
+				],
+				powerLines: [],
+			});
+			this.games.set(player, id);
+			Events.OnGamesUpdate.fire(
+				player,
+				this.profiles.get(player)!.Data.games.map((game_) => {
+					return {
+						id: game_.id,
+						name: game_.name,
+						lastPlaytime: game_.lastPlaytime,
+						cash: game_.cash,
+						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
+					};
+				}),
+			);
+			EventBus.GameEvents.OnGameLoad.Fire(player);
+		});
+		Events.LoadGame.connect((player, id) => {
+			if (this.games.has(player)) return;
+			this.games.set(player, id);
+			EventBus.GameEvents.OnGameLoad.Fire(player);
+		});
+		Events.UnloadGame.connect((player) => {
+			if (!this.games.has(player)) return;
+			this.set(player, "lastPlaytime", os.time());
+			Events.OnGamesUpdate.fire(
+				player,
+				this.profiles.get(player)!.Data.games.map((game_) => {
+					return {
+						id: game_.id,
+						name: game_.name,
+						lastPlaytime: game_.lastPlaytime,
+						cash: game_.cash,
+						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
+					};
+				}),
+			);
+			EventBus.GameEvents.OnGameUnload.Fire(player);
+			task.delay(0.25, () => {
+				this.games.delete(player);
+			});
+		});
+		Events.DeleteGame.connect((player) => {
+			if (!this.games.has(player)) return;
+			this.profiles
+				.get(player)!
+				.Data.games.remove(
+					this.profiles.get(player)!.Data.games.findIndex((game_) => game_.id === this.games.get(player)!),
+				);
+			this.games.delete(player);
+			Events.OnGamesUpdate.fire(
+				player,
+				this.profiles.get(player)!.Data.games.map((game_) => {
+					return {
+						id: game_.id,
+						name: game_.name,
+						lastPlaytime: game_.lastPlaytime,
+						cash: game_.cash,
+						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
+					};
+				}),
+			);
+			EventBus.GameEvents.OnGameUnload.Fire(player);
+		});
+		Events.SetSetting.connect((player, settingName, settingValue) => {
+			this.get(player, "settings").then((settings) => {
+				this.set(player, "settings", {
+					...settings,
+					[settingName]: settingValue,
+				});
+			});
+		});
+		Events.SetFactoryName.connect((player, factoryName) => {
+			this.set(player, "name", factoryName);
 		});
 	}
 
@@ -27,76 +153,91 @@ export default class DataService implements OnInit {
 				return player.Parent !== Players;
 			},
 		});
-
 		profile.AddUserId(player.UserId);
 		profile.Reconcile();
 		profile.OnSessionEnd.Connect(() => {
 			player.Kick("Your data has been loaded on another server - please rejoin");
 		});
-
-		if (player.Parent === Players) {
-			this.profiles.set(player, profile);
-		} else {
+		if (player.Parent !== Players) {
 			profile.EndSession();
+			return;
 		}
-	}
-
-	private resetProfile(player: Player) {
-		this.set(player, "structuresData", [
-			{
-				name: "Straight Conveyor",
-				cfsComponents: new Map([["Straight Conveyor", [74, 2, -70, -1, 0, 0, 0, 1, 0, 0, 0, -1]]]),
-				attributes: new Map(),
-			},
-			{
-				name: "Straight Conveyor",
-				cfsComponents: new Map([["Straight Conveyor", [74, 2, -66, -1, 0, 0, 0, 1, 0, 0, 0, -1]]]),
-				attributes: new Map(),
-			},
-			{
-				name: "Straight Conveyor",
-				cfsComponents: new Map([["Straight Conveyor", [58, 2, -46, 0, 0, 1, 0, 1, 0, -1, 0, 0]]]),
-				attributes: new Map(),
-			},
-
-			{
-				name: "Straight Conveyor",
-				cfsComponents: new Map([["Straight Conveyor", [62, 2, -46, 0, 0, 1, 0, 1, 0, -1, 0, 0]]]),
-				attributes: new Map(),
-			},
-
-			{
-				name: "Delivery Dock",
-				cfsComponents: new Map([["Delivery Dock", [46, 2, -46, -1, 0, 0, 0, 1, 0, 0, 0, -1]]]),
-				attributes: new Map(),
-			},
-		]);
-		this.set(player, "powerLinesData", []);
-		this.set(player, "tutorialStep", 0);
-		this.set(player, "milestoneData", { milestone: 0, deliveredItems: {} });
-		this.set(player, "cash", 2500);
-		this.profiles.get(player)?.EndSession();
-		this.profiles.delete(player);
-	}
-
-	public get<K extends keyof DataTemplate>(player: Player, key: K): Promise<DataTemplate[K] | undefined> {
-		return new Promise<DataTemplate[K] | undefined>((resolve) => {
-			task.delay(3, () => {
-				const profile = this.profiles.get(player);
-				if (profile === undefined) {
-					resolve(undefined);
-					return;
-				}
-				resolve(profile.Data[key]);
+		this.profiles.set(player, profile);
+		task.delay(1.25, () => {
+			Events.OnDataInitialization.fire(player, {
+				games: profile.Data.games.map((game_) => {
+					return {
+						id: game_.id,
+						name: game_.name,
+						lastPlaytime: game_.lastPlaytime,
+						cash: game_.cash,
+						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
+					};
+				}),
+				settings: {
+					...profile.Data.settings,
+					simulateFactories: profile.Data.settings.simulateFactories.map((userId) =>
+						userId === 0 ? player.UserId : userId,
+					),
+					renderItems: profile.Data.settings.renderItems.map((userId) =>
+						userId === 0 ? player.UserId : userId,
+					),
+				},
 			});
 		});
 	}
 
-	public set<K extends keyof DataTemplate>(player: Player, key: K, value: DataTemplate[K]) {
-		const profile = this.profiles.get(player);
-		if (profile === undefined) return;
+	private resetProfile(player: Player) {
+		this.profiles.get(player)?.EndSession();
+		this.profiles.delete(player);
+	}
 
-		profile.Data[key] = value;
-		profile.Save();
+	public get<K extends Exclude<keyof DataTemplate, "games">>(player: Player, key: K): Promise<DataTemplate[K]>;
+	public get<K extends keyof DataTemplate["games"][number]>(
+		player: Player,
+		key: K,
+	): Promise<DataTemplate["games"][number][K]>;
+	public get(player: Player, key: string): Promise<unknown> {
+		return new Promise((resolve) => {
+			task.spawn(() => {
+				while (!this.profiles.has(player)) task.wait();
+				if (key in this.profiles.get(player)!.Data) {
+					resolve((this.profiles.get(player)!.Data as unknown as Record<string, unknown>)[key]);
+				} else if (this.games.has(player)) {
+					resolve(
+						(
+							this.profiles
+								.get(player)!
+								.Data.games.find((game_) => game_.id === this.games.get(player))! as Record<
+								string,
+								unknown
+							>
+						)[key],
+					);
+				}
+			});
+			task.delay(12, () => {
+				resolve(undefined);
+			});
+		});
+	}
+
+	public set<K extends Exclude<keyof DataTemplate, "games">>(player: Player, key: K, value: DataTemplate[K]): void;
+	public set<K extends keyof DataTemplate["games"][number]>(
+		player: Player,
+		key: K,
+		value: DataTemplate["games"][number][K],
+	): void;
+	public set(player: Player, key: string, value: unknown): void {
+		if (key in this.profiles.get(player)!.Data) {
+			(this.profiles.get(player)!.Data as unknown as Record<string, unknown>)[key] = value;
+		} else if (this.games.has(player)) {
+			(
+				this.profiles.get(player)!.Data.games.find((game_) => game_.id === this.games.get(player)) as Record<
+					string,
+					unknown
+				>
+			)[key] = value;
+		}
 	}
 }

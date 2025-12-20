@@ -1,53 +1,35 @@
-import { MilestoneData } from "shared/constants/milestones";
 import { BlueprintData, PowerLineData, StructureData } from "shared/constants/structures";
 
 export interface DataTemplate {
-	structuresData: StructureData[];
-	powerLinesData: PowerLineData[];
-	blueprintsData: BlueprintData[];
-	milestoneData: MilestoneData;
-
-	tutorialStep: number;
-	cash: number;
+	games: {
+		id: string;
+		name: string;
+		lastPlaytime: number;
+		tutorialStep: number;
+		cash: number;
+		structures: StructureData[];
+		powerLines: PowerLineData[];
+	}[];
+	blueprints: BlueprintData[];
+	settings: {
+		music: number;
+		ambient: number;
+		soundEffects: number;
+		ui: number;
+		simulateFactories: number[];
+		renderItems: number[];
+	};
 }
 
 export const DATA_TEMPLATE: DataTemplate = {
-	structuresData: [
-		{
-			name: "Straight Conveyor",
-			cfsComponents: new Map([["Straight Conveyor", [74, 2, -70, -1, 0, 0, 0, 1, 0, 0, 0, -1]]]),
-			attributes: new Map(),
-		},
-		{
-			name: "Straight Conveyor",
-			cfsComponents: new Map([["Straight Conveyor", [74, 2, -66, -1, 0, 0, 0, 1, 0, 0, 0, -1]]]),
-			attributes: new Map(),
-		},
-		{
-			name: "Straight Conveyor",
-			cfsComponents: new Map([["Straight Conveyor", [58, 2, -46, 0, 0, 1, 0, 1, 0, -1, 0, 0]]]),
-			attributes: new Map(),
-		},
-
-		{
-			name: "Straight Conveyor",
-			cfsComponents: new Map([["Straight Conveyor", [62, 2, -46, 0, 0, 1, 0, 1, 0, -1, 0, 0]]]),
-			attributes: new Map(),
-		},
-
-		{
-			name: "Delivery Dock",
-			cfsComponents: new Map([["Delivery Dock", [46, 2, -46, -1, 0, 0, 0, 1, 0, 0, 0, -1]]]),
-			attributes: new Map(),
-		},
-	],
-	powerLinesData: [],
-	blueprintsData: [],
-	milestoneData: {
-		milestone: 0,
-		deliveredItems: {},
+	games: [],
+	blueprints: [],
+	settings: {
+		music: 100,
+		ambient: 100,
+		soundEffects: 100,
+		ui: 100,
+		simulateFactories: [0],
+		renderItems: [0],
 	},
-
-	tutorialStep: 0,
-	cash: 500,
 };

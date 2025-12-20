@@ -18,17 +18,6 @@ export const Image = forwardRef((props: ImageProps, ref: React.Ref<ImageLabel>) 
 	return (
 		<imagelabel
 			ref={ref}
-			Image={props.image}
-			ImageColor3={props.imageColor}
-			ImageRectOffset={props.imageRectOffset}
-			ImageRectSize={props.imageRectSize}
-			ImageTransparency={props.imageTransparency}
-			ResampleMode={props.resampleMode}
-			ScaleType={props.scaleType}
-			SliceCenter={props.sliceCenter}
-			SliceScale={props.sliceScale}
-			TileSize={props.tileSize}
-			//frame
 			AnchorPoint={props.anchorPoint}
 			Position={props.position}
 			Size={props.size}
@@ -43,6 +32,16 @@ export const Image = forwardRef((props: ImageProps, ref: React.Ref<ImageLabel>) 
 			ClipsDescendants={props.clipsDescendants}
 			Event={props.event}
 			Change={props.change}
+			Image={props.image}
+			ImageColor3={props.imageColor}
+			ImageRectOffset={props.imageRectOffset}
+			ImageRectSize={props.imageRectSize}
+			ImageTransparency={props.imageTransparency}
+			ResampleMode={props.resampleMode}
+			ScaleType={props.scaleType}
+			SliceCenter={props.sliceCenter}
+			SliceScale={props.sliceScale}
+			TileSize={props.tileSize}
 		>
 			{props.children}
 		</imagelabel>

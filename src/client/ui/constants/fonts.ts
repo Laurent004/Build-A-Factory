@@ -9,5 +9,6 @@ export const fonts = {
 			Enum.FontStyle.Normal,
 		),
 		bold: new Font("rbxasset://fonts/families/JosefinSans.json", Enum.FontWeight.Bold, Enum.FontStyle.Normal),
+		italic: new Font("rbxasset://fonts/families/JosefinSans.json", Enum.FontWeight.Regular, Enum.FontStyle.Italic),
 	},
 };

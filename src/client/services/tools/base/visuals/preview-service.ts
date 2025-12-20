@@ -33,72 +33,61 @@ export class BaseStructurePreviewService {
 		);
 	}
 
-	public initStructurePlacementPreview(structureModel: Model) {
-		const powerAttachments: Attachment[] = [];
-		for (const model of [structureModel, ...structureModel.GetChildren()].filter(
+	public initStructurePlacementPreview(model: Model) {
+		for (const structureModel of [model, ...model.GetChildren()].filter(
 			(instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES,
 		)) {
-			const newStructureModel = model.Clone();
-			for (const highlight of newStructureModel
-				.GetChildren()
-				.filter((instance): instance is Highlight => instance.IsA("Highlight"))) {
-				highlight.Destroy();
-			}
-
-			for (const structureModel of [
-				newStructureModel,
-				...newStructureModel
-					.GetChildren()
-					.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES),
-			]) {
-				for (const tag of structureModel.GetTags()) {
-					structureModel.RemoveTag(tag);
+			const newStructureModel = structureModel.Clone();
+			for (const instance of [newStructureModel, ...newStructureModel.GetDescendants()]) {
+				if (instance.IsA("Model") && instance.Name in STRUCTURES) {
+					for (const tag of instance.GetTags()) {
+						instance.RemoveTag(tag);
+					}
+				} else if (instance.IsA("BasePart")) {
+					instance.CanCollide = false;
+				} else if (instance.IsA("Highlight")) {
+					instance.Destroy();
 				}
 			}
-
 			newStructureModel.Parent = this.structureModelHolder;
 			this.structureModelHolder.PrimaryPart = newStructureModel.PrimaryPart;
-
-			for (const powerAttachment of newStructureModel
-				.GetDescendants()
-				.filter(
-					(instance): instance is Attachment =>
-						instance.IsA("Attachment") && instance.Name === "PowerAttachment",
-				)) {
-				powerAttachments.push(powerAttachment);
-			}
 		}
 
-		const powerLines: RopeConstraint[] = structureModel
+		const attachments = this.structureModelHolder
+			.GetDescendants()
+			.filter(
+				(instance): instance is Attachment => instance.IsA("Attachment") && instance.Name === "PowerAttachment",
+			);
+		const powerLines: RopeConstraint[] = model
 			.GetChildren()
 			.filter((instance): instance is RopeConstraint => instance.IsA("RopeConstraint"));
 		if (powerLines.size() === 0) {
 			for (const powerLine of Workspace.WaitForChild("Plots")
 				.GetChildren()
 				.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
-				.WaitForChild("PowerLines")
+				.WaitForChild("Power Lines")
 				.GetChildren() as RopeConstraint[]) {
-				const startPowerAttachment = powerAttachments.find((powerAttachment) =>
-					powerLine.Attachment0!.WorldCFrame.FuzzyEq(powerAttachment.WorldCFrame),
+				const startAttachment = attachments.find((attachment) =>
+					powerLine.Attachment0!.WorldCFrame.FuzzyEq(attachment.WorldCFrame),
 				);
-				const endPowerAttachment = powerAttachments.find((powerAttachment) =>
-					powerLine.Attachment1!.WorldCFrame.FuzzyEq(powerAttachment.WorldCFrame),
+				const endAttachment = attachments.find((attachment) =>
+					powerLine.Attachment1!.WorldCFrame.FuzzyEq(attachment.WorldCFrame),
 				);
-				if (startPowerAttachment === undefined || endPowerAttachment === undefined) continue;
+				if (startAttachment === undefined || endAttachment === undefined) continue;
 
 				const newPowerLine = powerLine.Clone();
-				newPowerLine.Attachment0 = startPowerAttachment;
-				newPowerLine.Attachment1 = endPowerAttachment;
+				newPowerLine.Attachment0 = startAttachment;
+				newPowerLine.Attachment1 = endAttachment;
 				newPowerLine.Parent = this.structureModelHolder;
 			}
 		} else {
 			for (const powerLine of powerLines) {
 				const newPowerLine = powerLine.Clone();
-				newPowerLine.Attachment0 = powerAttachments.find((powerAttachment) =>
-					powerLine.Attachment0!.WorldCFrame.FuzzyEq(powerAttachment.WorldCFrame),
+				newPowerLine.Attachment0 = attachments.find((attachment) =>
+					powerLine.Attachment0!.WorldCFrame.FuzzyEq(attachment.WorldCFrame),
 				);
-				newPowerLine.Attachment1 = powerAttachments.find((powerAttachment) =>
-					powerLine.Attachment1!.WorldCFrame.FuzzyEq(powerAttachment.WorldCFrame),
+				newPowerLine.Attachment1 = attachments.find((attachment) =>
+					powerLine.Attachment1!.WorldCFrame.FuzzyEq(attachment.WorldCFrame),
 				);
 				newPowerLine.Parent = this.structureModelHolder;
 			}
@@ -109,14 +98,18 @@ export class BaseStructurePreviewService {
 		this.baseStructureBeamService.initStructureBeams(this.structureModelHolder);
 	}
 
-	public initStructureEditPreview(structureModel: Model) {
-		for (const model of structureModel
+	public initStructureEditPreview(model: Model) {
+		for (const structureModel of model
 			.GetChildren()
 			.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES)) {
-			model.Parent = this.structureModelHolder;
-			this.structureModelHolder.PrimaryPart = model.PrimaryPart;
+			structureModel.Parent = this.structureModelHolder;
+			this.structureModelHolder.PrimaryPart = structureModel.PrimaryPart;
 		}
-
+		for (const basePart of this.structureModelHolder
+			.GetDescendants()
+			.filter((instance): instance is BasePart => instance.IsA("BasePart"))) {
+			basePart.CanCollide = false;
+		}
 		this.baseStructureHighlightService.initStructureHighlight(this.structureModelHolder);
 		this.baseStructureArrowService.initStructureArrows(this.structureModelHolder);
 		this.baseStructureBeamService.initStructureBeams(this.structureModelHolder);
@@ -144,6 +137,13 @@ export class BaseStructurePreviewService {
 		this.baseStructureArrowService.resetStructureArrows();
 		this.baseStructureBeamService.resetStructureBeams();
 
+		for (const basePart of this.structureModelHolder
+			.GetDescendants()
+			.filter((instance): instance is BasePart => instance.IsA("BasePart"))) {
+			const model = basePart.FindFirstAncestorOfClass("Model");
+			if (model === undefined || !(model.Name in STRUCTURES) || basePart === model.PrimaryPart) continue;
+			basePart.CanCollide = true;
+		}
 		const structuresFolder = Workspace.WaitForChild("Plots")
 			.GetChildren()
 			.find((plot) => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)

@@ -1,52 +1,59 @@
 import { Flamework } from "@flamework/core";
-import { Players, ReplicatedStorage } from "@rbxts/services";
-import { STRUCTURES } from "shared/constants/structures";
-import { Events } from "./network";
 import { Object } from "@rbxts/luau-polyfill";
-import { EventBus } from "./event-bus";
-import TutorialService from "./services/progression/tutorial-service";
+import { STRUCTURES } from "shared/constants/structures";
 
 Flamework.addPaths("src/client/controllers");
 Flamework.addPaths("src/client/components");
 Flamework.addPaths("src/shared/components");
 Flamework.ignite();
 
-/* task.delay(3, () => {
-	for (const structureModel of ReplicatedStorage.GetDescendants().filter(
-		(instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES,
-	)) {
-		const inputAttachments = structureModel
-			.GetDescendants()
-			.filter((instance): instance is Attachment => instance.Name === "InputAttachment");
-		const outputAttachments = structureModel
-			.GetDescendants()
-			.filter((instance): instance is Attachment => instance.Name === "OutputAttachment");
+/* for (const [structureName, structureDefinition] of Object.entries(STRUCTURES)) {
+	if (structureName.find("Railway")[0] === undefined) continue;
+	const gridCellAttachments = structureDefinition.model
+		.GetDescendants()
+		.filter((instance): instance is Attachment => instance.Name === "GridCellAttachment");
 
-		const gridCellAttachments = structureModel
-			.GetDescendants()
-			.filter((instance): instance is Attachment => instance.Name === "GridCellAttachment");
+	const inputAttachments = structureDefinition.model
+		.GetDescendants()
+		.filter((instance): instance is Attachment => instance.Name === "InputAttachment");
+	const outputAttachments = structureDefinition.model
+		.GetDescendants()
+		.filter((instance): instance is Attachment => instance.Name === "OutputAttachment");
 
-		print("---------------------------");
-		print("NAME :", structureModel.Name);
-		print("INPUTS");
-		for (const InputAttachment of inputAttachments) {
-			print(`new CFrame(${structureModel.GetPivot().ToObjectSpace(InputAttachment.WorldCFrame)}),`);
-		}
-
-		print("OUTPUTS");
-		for (const outputAttachment of outputAttachments) {
-			print(`new CFrame(${structureModel.GetPivot().ToObjectSpace(outputAttachment.WorldCFrame)}),`);
-		}
-
-		print("GRID CELLS");
+	print("-------------------");
+	print(`Name : ${structureName}`);
+	if (gridCellAttachments.size() > 0) {
+		print("Grid Cells : ");
 		for (const gridCellAttachment of gridCellAttachments) {
 			print(
-				`new Vector3(${structureModel
+				`new Vector3(${structureDefinition.model
 					.GetPivot()
-					.PointToObjectSpace(gridCellAttachment.WorldCFrame.Position)}),`,
+					.PointToObjectSpace(gridCellAttachment.WorldPosition)}),`,
 			);
 		}
 	}
-});
- 
+	if (inputAttachments.size() > 0) {
+		print("Inputs : ");
+		for (const inputAttachment of inputAttachments) {
+			print(`new CFrame(${structureDefinition.model.GetPivot().ToObjectSpace(inputAttachment.WorldCFrame)}),`);
+		}
+	}
+	if (outputAttachments.size() > 0) {
+		print("Outputs : ");
+		for (const outputAttachment of outputAttachments) {
+			print(`new CFrame(${structureDefinition.model.GetPivot().ToObjectSpace(outputAttachment.WorldCFrame)}),`);
+		}
+	}
+	print("Railway : ");
+	for (const railwayAttachment of structureDefinition.model
+		.GetDescendants()
+		.filter(
+			(instance): instance is Attachment => instance.IsA("Attachment") && tonumber(instance.Name) !== undefined,
+		)) {
+		print(
+			railwayAttachment.Name,
+			`new Vector3(${structureDefinition.model.GetPivot().PointToObjectSpace(railwayAttachment.WorldPosition)}),`,
+		);
+	}
+}
  */

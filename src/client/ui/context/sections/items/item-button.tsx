@@ -6,60 +6,74 @@ import { Button } from "client/ui/core/button";
 import { Image } from "client/ui/core/image";
 import { Text } from "client/ui/core/text";
 import { fonts, colors } from "client/ui/constants";
-import { ITEMS } from "shared/constants/items";
+import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
 import { IMAGES } from "shared/assets/images";
 import { useSelector } from "@rbxts/react-reflex";
 import { selectContext } from "client/store/context";
 import { selectItemMenuItemName } from "client/store/context/item";
+import { Object } from "@rbxts/luau-polyfill";
 
-export interface ItemButtonProps {
+export interface ItemsMenuItemButtonProps {
 	itemName: string;
 	searchText: string;
 }
 
-export function ItemButton(props: ItemButtonProps) {
+export function ItemsMenuItemButton(props: ItemsMenuItemButtonProps) {
 	const store = useStore();
-
 	const context = useSelector(selectContext);
-	const selectedItemName = useSelector(selectItemMenuItemName);
-
+	const itemName = useSelector(selectItemMenuItemName);
 	const [onMountAnimation, onMountAnimationMotion] = useMotion(0);
 	const [onClickAnimation, onClickAnimationMotion] = useMotion(0);
 
 	useUpdateEffect(() => {
 		if (context !== "Items") return;
 		onMountAnimationMotion.immediate(0);
-		task.delay((ITEMS[props.itemName].index + 1) * 0.035, () => {
+		task.delay((ITEMS[props.itemName].index + 1) * 0.02, () => {
 			onMountAnimationMotion.spring(1, springs.gentle);
 		});
 
-		if (selectedItemName === props.itemName) {
+		if (itemName === props.itemName) {
 			onClickAnimationMotion.immediate(0);
-			task.delay((ITEMS[selectedItemName].index + 1) * 0.035, () => {
+			task.delay((ITEMS[itemName].index + 1) * 0.02, () => {
 				onClickAnimationMotion.spring(1, springs.slow);
 			});
 		}
 	}, [context]);
 
 	useUpdateEffect(() => {
-		onClickAnimationMotion.spring(selectedItemName === props.itemName ? 1 : 0, springs.slow);
-	}, [selectedItemName]);
+		onClickAnimationMotion.spring(itemName === props.itemName ? 1 : 0, springs.slow);
+	}, [itemName]);
 
 	return (
 		<Button
-			onClick={() => {
-				store.setItemMenuItemName(props.itemName);
-			}}
+			anchorPoint={new Vector2(0, 0)}
+			position={new UDim2(0, 0, 0, 0)}
 			size={new UDim2(1, 0, 0.025, 0)}
 			layoutOrder={ITEMS[props.itemName].index}
 			visible={
-				string.find(string.lower(props.itemName), string.lower(props.searchText), 1, true)[0] !== undefined
+				string.find(string.lower(props.itemName), string.lower(props.searchText), 1, true)[0] !== undefined ||
+				Object.entries(ITEM_RECIPES)
+					.filter(([, itemRecipeDefinition]) =>
+						Object.keys(itemRecipeDefinition.outputItems).includes(props.itemName),
+					)
+					.find(
+						([, itemRecipeDefinition]) =>
+							Object.keys(itemRecipeDefinition.outputItems).find(
+								(itemName) =>
+									string.find(string.lower(itemName), string.lower(props.searchText), 1, true)[0] !==
+									undefined,
+							) !== undefined,
+					) !== undefined
 			}
+			onClick={() => {
+				store.setItemMenuItemName(props.itemName);
+			}}
 		>
 			<uistroke
 				ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
 				Color={colors.lightblue}
 				LineJoinMode={Enum.LineJoinMode.Miter}
+				Thickness={1}
 				Transparency={onClickAnimation.map((value) => 1 - value)}
 			></uistroke>
 
@@ -76,10 +90,12 @@ export function ItemButton(props: ItemButtonProps) {
 				position={new UDim2(0.626, 0, 0.5, 0)}
 				size={new UDim2(0.66, 0, 0.757, 0)}
 				font={fonts.josefinSans.regular}
-				textSize={16}
-				textTransparency={onMountAnimation.map((value) => 1 - value)}
-				textColor={lerpBinding(onClickAnimation, colors.white, colors.lightblue)}
 				text={props.itemName}
+				textSize={16}
+				textColor={lerpBinding(onClickAnimation, colors.white, colors.lightblue)}
+				textTransparency={onMountAnimation.map((value) => 1 - value)}
+				textXAlignment={Enum.TextXAlignment.Center}
+				textYAlignment={Enum.TextYAlignment.Center}
 			></Text>
 
 			<Image
