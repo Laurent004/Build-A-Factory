@@ -9,7 +9,7 @@ export interface Data {
 	settings: {
 		music: number;
 		ambient: number;
-		soundEffects: number;
+		sfx: number;
 		ui: number;
 		simulateFactories: number[];
 		renderItems: number[];

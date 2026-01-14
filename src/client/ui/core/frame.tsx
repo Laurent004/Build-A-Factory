@@ -1,45 +1,41 @@
 import React, { forwardRef } from "@rbxts/react";
 
-export interface FrameProps<T extends Instance = Frame> extends React.PropsWithChildren {
-	active?: boolean | React.Binding<boolean>;
-	anchorPoint: Vector2 | React.Binding<Vector2>;
-	automaticSize?: Enum.AutomaticSize | React.Binding<Enum.AutomaticSize>;
-	position: UDim2 | React.Binding<UDim2>;
-	size: UDim2 | React.Binding<UDim2>;
-	rotation?: number | React.Binding<number>;
-	backgroundTransparency?: number | React.Binding<number>;
-	backgroundColor?: Color3 | React.Binding<Color3>;
-	borderColor?: Color3 | React.Binding<Color3>;
-	borderMode?: Enum.BorderMode | React.Binding<Enum.BorderMode>;
-	layoutOrder?: number | React.Binding<number>;
-	visible?: boolean | React.Binding<boolean>;
-	zIndex?: number | React.Binding<number>;
-	clipsDescendants?: boolean | React.Binding<boolean>;
-	event?: React.InstanceEvent<T>;
-	change?: React.InstanceChangeEvent<T>;
-}
+export const Frame = forwardRef<Frame, React.InstanceProps<Frame>>((props, ref) => {
+	const { BorderSizePixel = 0 } = props;
 
-export const Frame = forwardRef((props: FrameProps, ref: React.Ref<Frame>) => {
 	return (
 		<frame
 			ref={ref}
-			Active={props.active}
-			AnchorPoint={props.anchorPoint}
-			AutomaticSize={props.automaticSize}
-			Position={props.position}
-			Size={props.size}
-			Rotation={props.rotation}
-			BackgroundTransparency={props.backgroundTransparency}
-			BackgroundColor3={props.backgroundColor}
-			BorderColor3={props.borderColor}
-			BorderMode={props.borderMode}
-			BorderSizePixel={0}
-			LayoutOrder={props.layoutOrder}
-			Visible={props.visible}
-			ZIndex={props.zIndex}
-			ClipsDescendants={props.clipsDescendants}
-			Event={props.event}
-			Change={props.change}
+			Archivable={props.Archivable}
+			Active={props.Active}
+			AnchorPoint={props.AnchorPoint}
+			AutomaticSize={props.AutomaticSize}
+			BackgroundColor3={props.BackgroundColor3}
+			BackgroundTransparency={props.BackgroundTransparency}
+			BorderColor3={props.BorderColor3}
+			BorderMode={props.BorderMode}
+			BorderSizePixel={BorderSizePixel}
+			Interactable={props.Interactable}
+			LayoutOrder={props.LayoutOrder}
+			Position={props.Position}
+			Rotation={props.Rotation}
+			Size={props.Size}
+			SizeConstraint={props.SizeConstraint}
+			Style={props.Style}
+			Visible={props.Visible}
+			ZIndex={props.ZIndex}
+			ClipsDescendants={props.ClipsDescendants}
+			AutoLocalize={props.AutoLocalize}
+			RootLocalizationTable={props.RootLocalizationTable}
+			NextSelectionDown={props.NextSelectionDown}
+			NextSelectionLeft={props.NextSelectionLeft}
+			NextSelectionRight={props.NextSelectionRight}
+			NextSelectionUp={props.NextSelectionUp}
+			Selectable={props.Selectable}
+			SelectionGroup={props.SelectionGroup}
+			SelectionOrder={props.SelectionOrder}
+			Event={props.Event}
+			Change={props.Change}
 		>
 			{props.children}
 		</frame>

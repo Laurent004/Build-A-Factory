@@ -6,9 +6,9 @@ import { StructureDefinition } from "./types";
 export const STRUCTURES: Record<string, StructureDefinition> = {
 	//#region Logistics
 	Transporter: {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 20,
@@ -36,9 +36,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Conveyor: {
-		index: 0,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Transports items forward at a steady rate, keeping production lines flowing smoothly.",
 		cost: 20,
@@ -66,9 +66,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Left Turn Conveyor": {
-		index: 1,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Redirects items 90° to the left while maintaining consistent movement and flow.",
 		cost: 20,
@@ -97,9 +97,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Right Turn Conveyor": {
-		index: 2,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: 2,
 		image: IMAGES.ui["Conveyor"],
 		description: "Redirects items 90° to the right while maintaining consistent movement and flow.",
 		cost: 20,
@@ -127,9 +127,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Underground Conveyor": {
-		index: 3,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: 3,
 		image: IMAGES.ui["Conveyor"],
 		description: "Transfers items underground to bypass obstacles and crowded production areas.",
 		cost: 0,
@@ -155,9 +155,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Underground Conveyor Input": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 60,
@@ -185,9 +185,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Underground Conveyor Output": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 60,
@@ -215,9 +215,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Conveyor Lift": {
-		index: 4,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: 4,
 		image: IMAGES.ui["Conveyor"],
 		description: "Moves items vertically to connect production lines across different heights.",
 		cost: 0,
@@ -243,9 +243,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Conveyor Lift Input": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 80,
@@ -273,9 +273,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Conveyor Lift Elevator": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 0,
@@ -301,9 +301,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Conveyor Lift Output": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Conveyor Belts",
+		subcategory: "Conveyor Belts",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 80,
@@ -330,10 +330,40 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 0,
 	},
 
-	"Fluid Transporter": {
-		index: undefined,
+	"Conveyor Throughput Counter": {
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Conveyor Belts",
+		index: 5,
+		image: IMAGES.ui["Conveyor"],
+		description: "AAAA",
+		cost: 80,
+
+		model: MODELS["Conveyor Throughput Counter"],
+		tags: ["Transporter", "ThroughputCounter"],
+		constants: {
+			ThroughputRate: 300,
+		},
+		attributes: {},
+		nodes: {
+			cells: [new Vector3()],
+			inputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, -1), false]]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, -4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+			railway: [],
+		},
+		priority: 0,
+	},
+
+	"Fluid Transporter": {
+		category: "Logistics",
+		subcategory: "Pipelines",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 30,
@@ -365,9 +395,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Pipeline: {
-		index: 0,
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Pipelines",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Moves fluids forward at a constant rate, supporting stable industrial flow.",
 		cost: 30,
@@ -399,9 +429,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Pipeline Turn": {
-		index: 1,
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Pipelines",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Redirects fluid flow by 90°, enabling compact and flexible pipe layouts.",
 		cost: 30,
@@ -433,10 +463,10 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Pipeline Junction": {
-		index: 3,
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Pipelines",
 		image: IMAGES.ui["Conveyor"],
+		index: 2,
 		description: "Splits or combines fluid streams to efficiently distribute resources.",
 		cost: 30,
 
@@ -469,9 +499,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Underground Pipeline": {
-		index: 4,
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Pipelines",
+		index: 3,
 		image: IMAGES.ui["Conveyor"],
 		description: "Transfers fluids underground to avoid surface obstacles and congestion.",
 		cost: 0,
@@ -497,9 +527,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Underground Pipeline Input": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Pipelines",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 70,
@@ -531,9 +561,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Underground Pipeline Output": {
-		index: undefined,
 		category: "Logistics",
-		subCategory: "Pipelines",
+		subcategory: "Pipelines",
+		index: undefined,
 		image: "",
 		description: "",
 		cost: 70,
@@ -565,9 +595,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Merger: {
-		index: 0,
 		category: "Logistics",
-		subCategory: "Sorting",
+		subcategory: "Sorting",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Combines multiple item streams into a single, continuous output line.",
 		cost: 100,
@@ -599,9 +629,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Priority Merger": {
-		index: 1,
 		category: "Logistics",
-		subCategory: "Sorting",
+		subcategory: "Sorting",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Merges item streams while prioritizing selected inputs when congested.",
 		cost: 500,
@@ -613,9 +643,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 			ThroughputRate: 300,
 		},
 		attributes: {
-			LeftInput: "Low",
-			BackwardInput: "Low",
-			RightInput: "Low",
+			Left: "Low",
+			Backward: "Low",
+			Right: "Low",
 		},
 		nodes: {
 			cells: [new Vector3()],
@@ -638,9 +668,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Splitter: {
-		index: 2,
 		category: "Logistics",
-		subCategory: "Sorting",
+		subcategory: "Sorting",
+		index: 2,
 		image: IMAGES.ui["Conveyor"],
 		description: "Divides incoming items evenly across multiple output paths.",
 		cost: 150,
@@ -672,9 +702,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Smart Splitter": {
-		index: 3,
 		category: "Logistics",
-		subCategory: "Sorting",
+		subcategory: "Sorting",
+		index: 3,
 		image: IMAGES.ui["Conveyor"],
 		description: "Sorts items using filters to direct them to specific outputs.",
 		cost: 500,
@@ -685,9 +715,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 			ThroughputRate: 300,
 		},
 		attributes: {
-			LeftOutput: "Any",
-			ForwardOutput: "Any",
-			RightOutput: "Any",
+			Left: "Any",
+			Forward: "Any",
+			Right: "Any",
 		},
 		nodes: {
 			cells: [new Vector3()],
@@ -710,9 +740,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Programmable Splitter": {
-		index: 4,
 		category: "Logistics",
-		subCategory: "Sorting",
+		subcategory: "Sorting",
+		index: 4,
 		image: IMAGES.ui["Conveyor"],
 		description: "Sorts items using advanced, customizable filtering logic.",
 		cost: 2250,
@@ -724,9 +754,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 			ThroughputRate: 300,
 		},
 		attributes: {
-			LeftOutput: HttpService.JSONEncode(["Any"]),
-			ForwardOutput: HttpService.JSONEncode(["Any"]),
-			RightOutput: HttpService.JSONEncode(["Any"]),
+			Left: HttpService.JSONEncode(["Any"]),
+			Forward: HttpService.JSONEncode(["Any"]),
+			Right: HttpService.JSONEncode(["Any"]),
 		},
 		nodes: {
 			cells: [new Vector3()],
@@ -749,10 +779,10 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Delivery Dock": {
-		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		category: "Logistics",
-		subCategory: "Miscellaneous",
+		index: 0,
+		subcategory: "Miscellaneous",
 		description: "Accepts delivered items to progress by producing money.",
 		cost: 17500,
 
@@ -814,9 +844,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 
 	//#region Production
 	Miner: {
-		index: 0,
 		category: "Production",
-		subCategory: "Extractors",
+		subcategory: "Extractors",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Automatically extracts solid resources from nearby resource deposits.",
 		cost: 200,
@@ -847,9 +877,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Water Extractor": {
-		index: 1,
 		category: "Production",
-		subCategory: "Extractors",
+		subcategory: "Extractors",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Pumps water from natural sources for industrial and manufacturing use.",
 		cost: 250,
@@ -880,9 +910,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Smelter: {
-		index: 0,
 		category: "Production",
-		subCategory: "Processors",
+		subcategory: "Smelters",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Refines raw ores into usable metal ingots for production chains.",
 		cost: 225,
@@ -912,10 +942,46 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 2,
 	},
 
-	Constructor: {
-		index: 0,
+	"Blast Furnace": {
 		category: "Production",
-		subCategory: "Manufacturers",
+		subcategory: "Smelters",
+		index: 1,
+		image: IMAGES.ui["Conveyor"],
+		description: "Refines raw ores into usable metal ingots for production chains.",
+		cost: 225,
+
+		model: MODELS["Blast Furnace"],
+		tags: ["Manufacturer", "IndicatorLight"],
+		constants: {
+			ThroughputRate: 300,
+			PowerConsumption: 5,
+		},
+		attributes: {
+			Recipe: undefined,
+		},
+		nodes: {
+			cells: [new Vector3(-2, 0, 2), new Vector3(2, 0, 2), new Vector3(2, 0, -2), new Vector3(-2, 0, -2)],
+			inputs: {
+				solids: new Map<CFrame, boolean>([
+					[new CFrame(2, 0, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
+					[new CFrame(-2, 0, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
+				]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(2, 0, -8, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+			railway: [],
+		},
+		priority: 2,
+	},
+
+	Constructor: {
+		category: "Production",
+		subcategory: "Manufacturers",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Converts input materials into crafted components using selected recipes.",
 		cost: 400,
@@ -947,9 +1013,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Assembler: {
-		index: 1,
 		category: "Production",
-		subCategory: "Manufacturers",
+		subcategory: "Manufacturers",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Combines refined materials to produce advanced industrial components.",
 		cost: 700,
@@ -994,9 +1060,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	Refinery: {
-		index: 2,
 		category: "Production",
-		subCategory: "Manufacturers",
+		subcategory: "Manufacturers",
+		index: 2,
 		image: IMAGES.ui["Conveyor"],
 		description: "Processes solid and liquid inputs into refined or composite resources.",
 		cost: 1250,
@@ -1026,13 +1092,71 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		},
 		priority: 2,
 	},
+
+	Blender: {
+		category: "Production",
+		subcategory: "Manufacturers",
+		index: 3,
+		image: IMAGES.ui["Conveyor"],
+		description: "Processes solid and liquid inputs into refined or composite resources.",
+		cost: 1250,
+
+		model: MODELS.Blender,
+		tags: ["Manufacturer", "IndicatorLight"],
+		constants: {
+			ThroughputRate: 300,
+			FlowRate: 600,
+			PowerConsumption: 5,
+		},
+		attributes: {
+			Recipe: undefined,
+		},
+		nodes: {
+			cells: [
+				new Vector3(6, 0, -6),
+				new Vector3(6, 0, 6),
+				new Vector3(6, 0, -2),
+				new Vector3(-6, 0, -2),
+				new Vector3(-2, 0, -6),
+				new Vector3(-2, 0, 2),
+				new Vector3(2, 0, 6),
+				new Vector3(-2, 0, -2),
+				new Vector3(2, 0, -6),
+				new Vector3(2, 0, 2),
+				new Vector3(-2, 0, 6),
+				new Vector3(-6, 0, 2),
+				new Vector3(-6, 0, -6),
+				new Vector3(6, 0, 2),
+				new Vector3(2, 0, -2),
+				new Vector3(-6, 0, 6),
+			],
+			inputs: {
+				solids: new Map<CFrame, boolean>([
+					[new CFrame(2, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
+					[new CFrame(6, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
+				]),
+				fluids: new Map<CFrame, boolean>([
+					[new CFrame(-2, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
+					[new CFrame(-6, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
+				]),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(6, 0, -10, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>([[new CFrame(-6, 0, -10, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+			},
+			connections: new Map<CFrame, boolean>(),
+			railway: [],
+		},
+		priority: 2,
+	},
+
 	//#endregion
 
 	//#region Power
 	"Hand-Crank": {
-		index: 0,
 		category: "Power",
-		subCategory: "Generators",
+		subcategory: "Generators",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Generates small amounts of power through manual rotation.",
 		cost: 50,
@@ -1062,9 +1186,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Solar Panel": {
-		index: 1,
 		category: "Power",
-		subCategory: "Generators",
+		subcategory: "Generators",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Converts sunlight into clean, reliable electrical power.",
 		cost: 125,
@@ -1093,9 +1217,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Wind Turbine": {
-		index: 2,
 		category: "Power",
-		subCategory: "Generators",
+		subcategory: "Generators",
+		index: 2,
 		image: IMAGES.ui["Conveyor"],
 		description: "Generates continuous power by harnessing wind energy.",
 		cost: 400,
@@ -1123,10 +1247,51 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 0,
 	},
 
-	"Power Line": {
-		index: 0,
+	"Coal Generator": {
 		category: "Power",
-		subCategory: "Power Poles",
+		subcategory: "Generators",
+		index: 3,
+		image: IMAGES.ui["Conveyor"],
+		description: "Burns coal to boil water to produce power.",
+		cost: 1250,
+
+		model: MODELS["Coal Generator"],
+		tags: ["PowerGenerator", "CoalGenerator", "IndicatorLight"],
+		constants: {
+			FluidCapacity: 50,
+			PowerProduction: 75,
+		},
+		attributes: {},
+		nodes: {
+			cells: [
+				new Vector3(0, 0, 0),
+				new Vector3(4, 0, 0),
+				new Vector3(-4, 0, 0),
+				new Vector3(0, 0, 4),
+				new Vector3(0, 0, -4),
+				new Vector3(4, 0, 4),
+				new Vector3(-4, 0, 4),
+				new Vector3(4, 0, -4),
+				new Vector3(-4, 0, -4),
+			],
+			inputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(-4, 0, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>([[new CFrame(4, 0, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>(),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+			railway: [],
+		},
+		priority: 0,
+	},
+
+	"Power Line": {
+		category: "Power",
+		subcategory: "Power Poles",
+		index: 0,
 		image: IMAGES.ui["Conveyor"],
 		description: "Transfers electrical power between connected structures.",
 		cost: 0,
@@ -1152,9 +1317,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Power Pole": {
-		index: 1,
 		category: "Power",
-		subCategory: "Power Poles",
+		subcategory: "Power Poles",
+		index: 1,
 		image: IMAGES.ui["Conveyor"],
 		description: "Extends the power network to supply nearby buildings.",
 		cost: 85,
@@ -1182,9 +1347,9 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	},
 
 	"Power Switch": {
-		index: 2,
 		category: "Power",
-		subCategory: "Power Poles",
+		subcategory: "Power Poles",
+		index: 2,
 		image: IMAGES.ui["Conveyor"],
 		description: "Manually controls power flow between connected circuits.",
 		cost: 275,

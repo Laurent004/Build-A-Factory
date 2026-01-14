@@ -4,27 +4,20 @@ import { Players, Workspace } from "@rbxts/services";
 import Signal from "@rbxts/signal";
 import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
-import GridService from "client/services/plot/grid-service";
-import { StructureState } from "shared/constants/structures";
+import GridService from "client/services/plot/grid";
 
 let simulateFactories: number[];
 Events.OnDataInitialization.connect((data) => {
 	simulateFactories = data.settings.simulateFactories;
 });
 EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	if (settingName !== "simulateFactories") return;
-	simulateFactories = settingValue as number[];
+	simulateFactories = settingName === "simulateFactories" ? (settingValue as number[]) : simulateFactories;
 });
 
 const initializedPlayers = new Set<Player>();
-EventBus.PlotEvents.OnPlotInitialization.Connect((player) => {
+EventBus.OnPlotInitialization.Connect((player) => {
 	initializedPlayers.add(player);
-	Players.PlayerRemoving.Connect((removedPlayer) => {
-		if (player !== removedPlayer) return;
-		initializedPlayers.delete(player);
-	});
 });
-
 Events.OnPlotReset.connect((player) => {
 	initializedPlayers.delete(player);
 });
@@ -33,10 +26,10 @@ Events.OnPlotReset.connect((player) => {
 export default class StructureComponent extends BaseComponent<{}, Model> implements OnStart {
 	protected readonly gridService = GridService.getInst();
 	protected player!: Player;
-	protected active: boolean = false;
-	protected state: StructureState = "No Connection";
-	public readonly onActiveChanged = new Signal<(active: boolean) => void>();
-	public readonly onStateChanged = new Signal<(newState: StructureState) => void>();
+	public active: boolean = false;
+	public state: string = "No Connection";
+	public readonly OnActiveChanged = new Signal<() => void>();
+	public readonly OnStateChanged = new Signal<() => void>();
 	protected readonly connections: RBXScriptConnection[] = [];
 
 	constructor(protected readonly components: Components) {
@@ -56,20 +49,22 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 	protected initEvents(): void {
 		if (initializedPlayers.has(this.player)) {
 			this.active = simulateFactories.includes(this.player.UserId);
-			this.onActiveChanged.Fire(this.active);
+			this.OnActiveChanged.Fire();
 		} else {
-			EventBus.PlotEvents.OnPlotInitialization.Connect((player) => {
-				if (player !== this.player) return;
-				this.active = simulateFactories.includes(this.player.UserId);
-				this.onActiveChanged.Fire(this.active);
-			});
+			this.connections.push(
+				EventBus.OnPlotInitialization.Connect((player) => {
+					if (player !== this.player) return;
+					this.active = simulateFactories.includes(this.player.UserId);
+					this.OnActiveChanged.Fire();
+				}),
+			);
 		}
 		this.connections.push(
 			Events.OnPlotReset.connect((player) => {
 				if (player !== this.player) return;
 				this.onStructuresDestroying([this.instance]);
 			}),
-			EventBus.PlotEvents.OnStructuresPlacement.Connect((player, structuresModels) => {
+			EventBus.OnStructuresPlacement.Connect((player, structuresModels) => {
 				if (player !== this.player) return;
 				this.onStructuresPlacement(structuresModels);
 			}),
@@ -77,7 +72,7 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 				if (player !== this.player) return;
 				this.onStructuresMovementStart(structuresModels);
 			}),
-			EventBus.PlotEvents.OnStructuresMovement.Connect((player, structuresModels) => {
+			EventBus.OnStructuresMovement.Connect((player, structuresModels) => {
 				if (player !== this.player) return;
 				this.onStructuresMovement(structuresModels);
 			}),
@@ -86,9 +81,10 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 				this.onStructuresDestroying(structuresModels);
 			}),
 			EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-				if (settingName !== "simulateFactories") return;
-				this.active = (settingValue as number[]).includes(this.player.UserId);
-				this.onActiveChanged.Fire(this.active);
+				if (settingName === "simulateFactories") {
+					this.active = (settingValue as number[]).includes(this.player.UserId);
+					this.OnActiveChanged.Fire();
+				}
 			}),
 		);
 	}
@@ -98,21 +94,21 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 	protected onStructuresMovementStart(structuresModels: Model[]): void {
 		if (structuresModels.includes(this.instance)) {
 			this.active = false;
-			this.onActiveChanged.Fire(this.active);
+			this.OnActiveChanged.Fire();
 		}
 	}
 
 	protected onStructuresMovement(structuresModels: Model[]): void {
 		if (structuresModels.includes(this.instance)) {
 			this.active = simulateFactories.includes(this.player.UserId);
-			this.onActiveChanged.Fire(this.active);
+			this.OnActiveChanged.Fire();
 		}
 	}
 
 	protected onStructuresDestroying(structuresModels: Model[]): void {
 		if (structuresModels.includes(this.instance)) {
 			this.active = false;
-			this.onActiveChanged.Fire(this.active);
+			this.OnActiveChanged.Fire();
 			for (const connection of this.connections) {
 				connection.Disconnect();
 			}
@@ -121,14 +117,10 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 
 	public updateState(): void {}
 
-	public getState(): StructureState {
-		return this.state;
-	}
-
-	public setState(state: StructureState): void {
+	public setState(state: string): void {
 		if (this.state !== state) {
 			this.state = state;
-			this.onStateChanged.Fire(state);
+			this.OnStateChanged.Fire();
 		}
 	}
 }

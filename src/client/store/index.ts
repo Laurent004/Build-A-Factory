@@ -1,7 +1,6 @@
 import { combineProducers, InferState } from "@rbxts/reflex";
-import { contextSlice } from "./context";
-import { buildMenuSlice } from "./context/build";
-import { itemMenuSlice } from "./context/item";
+import { tooltipSlice } from "./overlay";
+import { buildSlice, contextSlice } from "./context";
 
 export type RootStore = typeof store;
 export type RootState = InferState<RootStore>;
@@ -9,8 +8,8 @@ export type RootState = InferState<RootStore>;
 export function createStore() {
 	const store = combineProducers({
 		context: contextSlice,
-		buildMenu: buildMenuSlice,
-		itemMenu: itemMenuSlice,
+		build: buildSlice,
+		tooltip: tooltipSlice,
 	});
 	return store;
 }

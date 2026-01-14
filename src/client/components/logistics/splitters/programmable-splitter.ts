@@ -1,23 +1,22 @@
 import { Component } from "@flamework/components";
 import TransporterComponent from "../transporter";
 import { OnStart } from "@flamework/core";
-import { HttpService } from "@rbxts/services";
-import { SplitterFilter } from "./smart-splitter";
-import { SplitterOutputDirection, splitterOutputDirections } from "./splitter";
+import { splitterOutputDirections } from "./splitter";
 import { Solid } from "shared/constants/items";
+import { HttpService } from "@rbxts/services";
 
 @Component({ tag: "ProgrammableSplitter" })
 export class ProgrammableSplitterComponent extends TransporterComponent implements OnStart {
-	private readonly filters = new Map<SplitterOutputDirection, SplitterFilter[]>();
-	private readonly filtersOutputTransporterIndex = new Map<SplitterFilter, number>();
-	private nextOutputTransporterFilter: SplitterFilter | undefined;
+	private readonly filters = new Map<string, string[]>();
+	private readonly filtersOutputTransporterIndex = new Map<string, number>();
+	private nextOutputTransporterFilter: string | undefined;
 
 	onStart(): void {
 		super.onStart();
-		this.initFilters();
 	}
 
-	private initFilters(): void {
+	protected override initEvents(): void {
+		super.initEvents();
 		for (const outputDirection of splitterOutputDirections) {
 			this.updateFilters(outputDirection);
 			this.connections.push(
@@ -28,46 +27,41 @@ export class ProgrammableSplitterComponent extends TransporterComponent implemen
 		}
 	}
 
-	private updateFilters(outputDirection: SplitterOutputDirection) {
+	private updateFilters(outputDirection: string): void {
 		this.filters.set(
 			outputDirection,
-			HttpService.JSONDecode(this.instance.GetAttribute(outputDirection) as string) as SplitterFilter[],
+			HttpService.JSONDecode(this.instance.GetAttribute(outputDirection) as string) as string[],
 		);
+		this.transportService.attemptTransport(this);
 	}
 
-	private getOutputTransportersOfFilter(filter: SplitterFilter): TransporterComponent[] {
-		const outputTransporters: TransporterComponent[] = [];
-		for (const outputDirection of splitterOutputDirections.filter((outputDirection) =>
-			this.filters.get(outputDirection)?.includes(filter),
-		)) {
+	private getOutputTransportersOfFilter(filter: string): TransporterComponent[] {
+		return splitterOutputDirections.mapFiltered((outputDirection) => {
+			if (!this.filters.get(outputDirection)!.includes(filter)) return undefined;
 			const transporter = this.getTransporterInDirection(
 				this.instance.GetPivot().Position,
-				outputDirection === "LeftOutput"
+				outputDirection === "Left"
 					? this.instance.GetPivot().RightVector.mul(-1)
-					: outputDirection === "ForwardOutput"
+					: outputDirection === "Forward"
 					? this.instance.GetPivot().LookVector
 					: this.instance.GetPivot().RightVector,
 			);
-
-			if (
-				transporter !== undefined &&
+			return transporter !== undefined &&
 				this.outputTransporters.has(transporter) &&
 				transporter.canInputItem(this.solids[0])
-			) {
-				outputTransporters.push(transporter);
-			}
-		}
-		return outputTransporters;
+				? transporter
+				: undefined;
+		});
 	}
 
 	public override getOutputTransporters(): TransporterComponent[] {
+		if (this.solids.size() === 0) return [];
 		const solidOutputTransporters = this.getOutputTransportersOfFilter(this.solids[0].name);
 		const anyUndefinedOutputTransporters = this.getOutputTransportersOfFilter("Any (undefined)");
 		const anyOutputTransporters = this.getOutputTransportersOfFilter("Any");
 		const overflowOutputTransporters = this.getOutputTransportersOfFilter("Overflow");
-
-		const outputTransportersCandidates: [boolean, [TransporterComponent[], SplitterFilter]][] = [
-			[solidOutputTransporters.size() > 0, [solidOutputTransporters, this.solids[0].name as SplitterFilter]],
+		const outputTransporters: [boolean, [TransporterComponent[], string]][] = [
+			[solidOutputTransporters.size() > 0, [solidOutputTransporters, this.solids[0].name as string]],
 			[
 				anyUndefinedOutputTransporters.size() > 0 &&
 					splitterOutputDirections.every(
@@ -78,23 +72,12 @@ export class ProgrammableSplitterComponent extends TransporterComponent implemen
 			[anyOutputTransporters.size() > 0, [anyOutputTransporters, "Any"]],
 			[overflowOutputTransporters.size() > 0, [overflowOutputTransporters, "Overflow"]],
 		];
-
-		const result: [TransporterComponent[], SplitterFilter] | undefined = outputTransportersCandidates.find(
-			([condition]) => condition,
-		)?.[1];
+		const result = outputTransporters.find(([condition]) => condition)?.[1];
 		if (result === undefined) return [];
-
-		const outputTransporters: TransporterComponent[] = result[0];
-		const outputTransportersFilter: SplitterFilter = result[1];
 		if (this.nextOutputTransporterFilter === undefined) {
-			this.nextOutputTransporterFilter = outputTransportersFilter;
+			this.nextOutputTransporterFilter = result[1];
 		}
-
-		return [
-			outputTransporters[
-				(this.filtersOutputTransporterIndex.get(outputTransportersFilter) ?? 0) % outputTransporters.size()
-			],
-		];
+		return [result[0][(this.filtersOutputTransporterIndex.get(result[1]) ?? 0) % result[0].size()]];
 	}
 
 	public override outputItem(solid: Solid): void;

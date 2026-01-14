@@ -1,36 +1,51 @@
 import { Controller, OnInit } from "@flamework/core";
-import { Context } from "client/constants/navigation";
 import { EventBus } from "client/event-bus";
 import ToolController from "./tool";
-import GridService from "client/services/plot/grid-service";
-import { BaseStructurePreviewService } from "client/services/tools/base/visuals/preview-service";
-import { BaseStructureCFrameService } from "client/services/tools/base/visuals/cframe-service";
+import GridService from "client/services/plot/grid";
+import { BaseStructurePreviewService } from "client/services/tools/placement/structure-preview";
+import { BaseStructureCFrameService } from "client/services/tools/placement/structure-cframe";
 import { Players, RunService, Workspace } from "@rbxts/services";
-import MouseService from "client/services/tools/base/mouse-service";
-import BaseStructureSelectionService from "client/services/tools/base/selection-service";
+import MouseService from "client/services/tools/mouse";
+import BaseStructureSelectionService from "client/services/tools/selection/structure-selection";
 import { StandardActionBuilder } from "@rbxts/mechanism";
-import BaseStructureArrowService from "client/services/tools/base/visuals/arrow-service";
-import BaseStructureHighlightService from "client/services/tools/base/visuals/highlight-service";
-import BaseStructureBeamService from "client/services/tools/base/visuals/beam-service";
-import BaseStructurePlacementService from "client/services/tools/base/placement-service";
-import TutorialService from "client/services/progression/tutorial-service";
+import BaseStructureArrowService from "client/services/tools/placement/structure-arrow";
+import BaseStructureHighlightService from "client/services/tools/placement/structure-highlight";
+import BaseStructureBeamService from "client/services/tools/placement/structure-beam";
+import BaseStructurePlacementService from "client/services/tools/placement/structure-placement";
+import TutorialService from "client/services/progression/tutorial";
+import CollisionService from "shared/services/collision";
+import { STRUCTURES } from "shared/constants/structures";
+import SoundService from "client/services/sound";
 
 @Controller({})
 export default class CopyController extends ToolController implements OnInit {
-	protected readonly context: Context = "Copy";
+	protected readonly context = "Copy";
 	protected readonly inputActions = [
 		{
 			action: new StandardActionBuilder("MouseButton1"),
 			activated: () => {
-				if (this.hasCopied) {
+				if (
+					this.baseStructurePreviewService
+						.getStructureModelHolder()
+						.GetChildren()
+						.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES)
+						.size() > 0
+				) {
 					this.place();
 				} else {
 					this.baseStructureSelectionService.startSelection();
 				}
 			},
 			deactivated: () => {
-				if (this.hasCopied) return;
-				this.baseStructureSelectionService.select();
+				if (
+					this.baseStructurePreviewService
+						.getStructureModelHolder()
+						.GetChildren()
+						.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES)
+						.size() === 0
+				) {
+					this.baseStructureSelectionService.select();
+				}
 			},
 		},
 		{
@@ -43,46 +58,82 @@ export default class CopyController extends ToolController implements OnInit {
 		},
 	];
 
-	private readonly gridService: GridService = GridService.getInst();
-	private readonly mouseService: MouseService = new MouseService(this.gridService);
+	private readonly gridService = GridService.getInst();
+	private readonly collisionService = CollisionService.getInst();
 	private readonly tutorialService = TutorialService.getInst();
+	private readonly mouseService = new MouseService(this.gridService);
+	private readonly soundService = SoundService.getInst();
 
-	private readonly baseStructureSelectionService: BaseStructureSelectionService;
-	private readonly baseStructurePreviewService: BaseStructurePreviewService;
-	private readonly baseStructureHighlightService: BaseStructureHighlightService =
-		BaseStructureHighlightService.getInst();
+	private readonly baseStructureHighlightService = BaseStructureHighlightService.getInst();
 	private readonly baseStructureArrowService = BaseStructureArrowService.getInst();
 	private readonly baseStructureBeamService = BaseStructureBeamService.getInst();
+	private readonly baseStructureSelectionService = new BaseStructureSelectionService(
+		this.mouseService,
+		this.baseStructureArrowService,
+		this.baseStructureBeamService,
+		this.soundService,
+		{ FillColor: Color3.fromRGB(35, 126, 212), FillTransparency: 0.7, OutlineColor: Color3.fromRGB(70, 141, 255) },
+	);
 	private readonly baseStructureCFrameService = new BaseStructureCFrameService();
+	private readonly baseStructurePreviewService: BaseStructurePreviewService;
 	private readonly baseStructurePlacementService: BaseStructurePlacementService;
 
-	private hasCopied: boolean = false;
 	private connection: RBXScriptConnection | undefined;
 
 	constructor() {
 		super();
-		this.baseStructureSelectionService = new BaseStructureSelectionService(
-			this.mouseService,
-			this.baseStructureArrowService,
-			this.baseStructureBeamService,
-			Color3.fromRGB(35, 126, 212),
-			Color3.fromRGB(70, 141, 255),
-		);
-
 		BaseStructurePreviewService.init(
+			this.gridService,
 			this.baseStructureHighlightService,
 			this.baseStructureArrowService,
 			this.baseStructureBeamService,
 		);
 		this.baseStructurePreviewService = BaseStructurePreviewService.getInst();
 
-		BaseStructurePlacementService.init(this.gridService, this.tutorialService);
+		BaseStructurePlacementService.init(
+			this.gridService,
+			this.collisionService,
+			this.tutorialService,
+			this.soundService,
+		);
 		this.baseStructurePlacementService = BaseStructurePlacementService.getInst();
 	}
 
 	public override onInit(): void | Promise<void> {
 		super.onInit();
-		EventBus.ToolEvents.OnSelection.Connect((selectedStructuresModels) => {
+		this.mouseService.onClampedCellChanged.Connect((newClampedCell) => {
+			if (
+				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart !== undefined &&
+				(this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.X % 8 !== 0 ||
+					this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Z % 8 !== 0)
+			) {
+				this.baseStructureCFrameService.setTargetPosition(
+					new Vector3(
+						newClampedCell.worldPosition.X,
+						this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position.Y,
+						newClampedCell.worldPosition.Z,
+					),
+				);
+			}
+		});
+
+		this.mouseService.onClampedCellVertexPositionChanged.Connect((newClampedCellVertexPosition) => {
+			if (
+				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart !== undefined &&
+				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.X % 8 === 0 &&
+				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Z % 8 === 0
+			) {
+				this.baseStructureCFrameService.setTargetPosition(
+					new Vector3(
+						newClampedCellVertexPosition.X,
+						this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position.Y,
+						newClampedCellVertexPosition.Z,
+					),
+				);
+			}
+		});
+
+		EventBus.OnSelection.Connect((selectedStructuresModels) => {
 			if (!this.active) return;
 			const rayParams = new RaycastParams();
 			rayParams.FilterType = Enum.RaycastFilterType.Include;
@@ -93,40 +144,9 @@ export default class CopyController extends ToolController implements OnInit {
 					.WaitForChild("Structures"),
 			);
 			this.mouseService.setRaycastParams(rayParams);
-			if (selectedStructuresModels.size() === 0) return;
-			this.copy(selectedStructuresModels);
-		});
-
-		this.mouseService.onClampedCellVertexPositionChanged.Connect((newClampedCellVertexPosition) => {
-			if (
-				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart === undefined ||
-				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.X % 8 !== 0 ||
-				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Z % 8 !== 0
-			)
-				return;
-			this.baseStructureCFrameService.setTargetPosition(
-				new Vector3(
-					newClampedCellVertexPosition.X,
-					this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position.Y,
-					newClampedCellVertexPosition.Z,
-				),
-			);
-		});
-
-		this.mouseService.onClampedCellChanged.Connect((_, newClampedCellPosition) => {
-			if (
-				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart === undefined ||
-				(this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.X % 8 === 0 &&
-					this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Z % 8 === 0)
-			)
-				return;
-			this.baseStructureCFrameService.setTargetPosition(
-				new Vector3(
-					newClampedCellPosition.X,
-					this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position.Y,
-					newClampedCellPosition.Z,
-				),
-			);
+			if (selectedStructuresModels.size() > 0) {
+				this.copy(selectedStructuresModels);
+			}
 		});
 	}
 
@@ -148,15 +168,14 @@ export default class CopyController extends ToolController implements OnInit {
 	protected override exit(): void {
 		super.exit();
 		this.stopUpdating();
-		this.baseStructurePreviewService.resetStructurePlacementPreview();
+		this.mouseService.stopUpdating();
 		this.baseStructureSelectionService.stopUpdating();
 		this.baseStructureSelectionService.stopSelection();
-		this.mouseService.stopUpdating();
-		this.hasCopied = false;
+		this.baseStructurePreviewService.resetStructurePlacementPreview();
 	}
 
 	private copy(selectedStructuresModels: Model[]): void {
-		this.hasCopied = true;
+		this.baseStructureSelectionService.stopUpdating();
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
 		rayParams.AddToFilter([
@@ -167,7 +186,6 @@ export default class CopyController extends ToolController implements OnInit {
 			this.baseStructurePreviewService.getStructureModelHolder(),
 		]);
 		this.mouseService.setRaycastParams(rayParams);
-		this.baseStructureSelectionService.stopUpdating();
 		this.baseStructurePreviewService.initStructurePlacementPreview(selectedStructuresModels[0].Parent as Model);
 		this.baseStructureCFrameService.setPosition(
 			this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position,
@@ -179,7 +197,13 @@ export default class CopyController extends ToolController implements OnInit {
 	}
 
 	private startUpdating(): void {
-		this.connection = RunService.Heartbeat.Connect((dt: number) => {
+		this.connection = RunService.Heartbeat.Connect((dt) => {
+			if (
+				this.baseStructureCFrameService
+					.getTargetCF()
+					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
+			)
+				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),

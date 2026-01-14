@@ -1,14 +1,14 @@
-import GridService from "client/services/plot/grid-service";
+import GridService from "client/services/plot/grid";
 import { Players, RunService, Workspace } from "@rbxts/services";
-import { BaseStructurePreviewService } from "../../base/visuals/preview-service";
-import { BaseStructureCFrameService } from "../../base/visuals/cframe-service";
+import { BaseStructurePreviewService } from "../../placement/structure-preview";
+import { BaseStructureCFrameService } from "../../placement/structure-cframe";
 import BaseBuildingService from "../base";
-import MouseService from "../../base/mouse-service";
-import { UndergroundStructurePreviewService } from "./preview-service";
-import BaseStructureHighlightService from "../../base/visuals/highlight-service";
-import BaseStructureArrowService from "../../base/visuals/arrow-service";
-import BaseStructureBeamService from "../../base/visuals/beam-service";
-import BaseStructurePlacementService from "../../base/placement-service";
+import MouseService from "../../mouse";
+import { UndergroundStructurePreviewService } from "./preview";
+import BaseStructureHighlightService from "../../placement/structure-highlight";
+import BaseStructureArrowService from "../../placement/structure-arrow";
+import BaseStructureBeamService from "../../placement/structure-beam";
+import BaseStructurePlacementService from "../../placement/structure-placement";
 
 export class UndergroundStructureBuildingService extends BaseBuildingService {
 	private readonly undergroundStructurePreviewService: UndergroundStructurePreviewService;
@@ -34,22 +34,22 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 			baseStructureBeamService,
 		);
 
-		this.mouseService.onClampedCellChanged.Connect((_, newClampedCellPosition) => {
+		this.mouseService.onClampedCellChanged.Connect((newClampedCell) => {
 			if (!this.active) return;
 			this.baseStructureCFrameService.setTargetPosition(
 				new Vector3(
-					newClampedCellPosition.X,
+					newClampedCell.worldPosition.X,
 					this.undergroundStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
-					newClampedCellPosition.Z,
+					newClampedCell.worldPosition.Z,
 				),
 			);
-			if (this.startPosition === undefined || newClampedCellPosition.FuzzyEq(this.startPosition)) return;
+			if (this.startPosition === undefined || newClampedCell.worldPosition.FuzzyEq(this.startPosition)) return;
 			const newEndPositon =
-				math.abs(newClampedCellPosition.X - this.startPosition.X) >
-				math.abs(newClampedCellPosition.Z - this.startPosition.Z)
-					? new Vector3(newClampedCellPosition.X, 0, this.startPosition.Z)
-					: new Vector3(this.startPosition.X, 0, newClampedCellPosition.Z);
-			if (newEndPositon.FuzzyEq(this.endPosition!)) return;
+				math.abs(newClampedCell.worldPosition.X - this.startPosition.X) >
+				math.abs(newClampedCell.worldPosition.Z - this.startPosition.Z)
+					? new Vector3(newClampedCell.worldPosition.X, 0, this.startPosition.Z)
+					: new Vector3(this.startPosition.X, 0, newClampedCell.worldPosition.Z);
+			if (this.endPosition!.FuzzyEq(newEndPositon)) return;
 			this.endPosition = newEndPositon;
 			this.rebuildUndergroundStructure();
 		});
@@ -58,7 +58,6 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 	public enter(undergroundStructureModel: Model): void {
 		super.enter();
 		this.undergroundStructureModel = undergroundStructureModel;
-
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
 		rayParams.AddToFilter([
@@ -71,7 +70,6 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 		]);
 		this.mouseService.setRaycastParams(rayParams);
 		this.mouseService.startUpdating();
-
 		this.baseStructurePreviewService.initStructurePlacementPreview(
 			this.undergroundStructureModel
 				.GetChildren()
@@ -86,16 +84,21 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 	public exit(): void {
 		super.exit();
 		this.stopUpdating();
+		this.mouseService.stopUpdating();
 		this.baseStructurePreviewService.resetStructurePlacementPreview();
 		this.undergroundStructurePreviewService.resetUndergroundStructurePreview();
-		this.mouseService.stopUpdating();
-
 		this.startPosition = undefined;
 		this.endPosition = undefined;
 	}
 
 	private startUpdatingUndergroundStructureInput(): void {
-		this.connection = RunService.Heartbeat.Connect((dt: number) => {
+		this.connection = RunService.Heartbeat.Connect((dt) => {
+			if (
+				this.baseStructureCFrameService
+					.getTargetCF()
+					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
+			)
+				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
@@ -128,7 +131,7 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 		);
 	}
 
-	public onPlacementStart(): void {
+	public onStart(): void {
 		if (this.startPosition !== undefined) {
 			this.baseStructurePlacementService.place(
 				this.undergroundStructurePreviewService.getUndergroundStructureModelHolder(),
@@ -141,12 +144,11 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 			if (cell === undefined) return;
 			this.stopUpdating();
 			this.baseStructurePreviewService.resetStructurePlacementPreview();
-
-			this.startPosition = this.gridService.getCellWorldPosition(Players.LocalPlayer, cell);
-			this.endPosition = this.gridService.getCellWorldPosition(
-				Players.LocalPlayer,
-				this.gridService.getNeighborsCells(Players.LocalPlayer, cell)[0],
-			);
+			this.startPosition = cell.worldPosition;
+			this.endPosition = (
+				this.gridService.getNeighborsCells(Players.LocalPlayer, cell).find((cell) => cell.unlocked) ??
+				this.gridService.getNeighborsCells(Players.LocalPlayer, cell)[0]
+			).worldPosition;
 			this.rebuildUndergroundStructure();
 			this.startUpdatingUndergroundStructure();
 		}
@@ -156,8 +158,9 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 		this.baseStructureCFrameService.setTargetRotation(
 			this.baseStructureCFrameService.getTargetCF().Rotation.mul(CFrame.Angles(0, math.rad(90), 0)),
 		);
-		if (this.startPosition === undefined) return;
-		[this.startPosition, this.endPosition] = [this.endPosition, this.startPosition];
-		this.rebuildUndergroundStructure();
+		if (this.startPosition !== undefined) {
+			[this.startPosition, this.endPosition] = [this.endPosition, this.startPosition];
+			this.rebuildUndergroundStructure();
+		}
 	}
 }

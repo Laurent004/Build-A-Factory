@@ -1,22 +1,25 @@
-import React from "@rbxts/react";
+import React, { forwardRef } from "@rbxts/react";
 
-export interface LayerProps extends React.PropsWithChildren {
-	enabled?: boolean | React.Binding<boolean>;
-	displayOrder?: number | React.Binding<number>;
-	ignoreGUIInset?: boolean | React.Binding<boolean>;
-	resetOnSpawn?: boolean | React.Binding<boolean>;
-}
+export const Layer = forwardRef<ScreenGui, React.InstanceProps<ScreenGui>>((props, ref) => {
+	const { IgnoreGuiInset = true, ResetOnSpawn = false, ZIndexBehavior = Enum.ZIndexBehavior.Sibling } = props;
 
-export function Layer(props: LayerProps) {
 	return (
 		<screengui
-			Enabled={props.enabled}
-			DisplayOrder={props.displayOrder}
-			IgnoreGuiInset={props.ignoreGUIInset ?? true}
-			ResetOnSpawn={props.resetOnSpawn ?? false}
-			ZIndexBehavior={Enum.ZIndexBehavior.Sibling}
+			ref={ref}
+			ClipToDeviceSafeArea={props.ClipToDeviceSafeArea}
+			SafeAreaCompatibility={props.SafeAreaCompatibility}
+			ScreenInsets={props.ScreenInsets}
+			Archivable={props.Archivable}
+			DisplayOrder={props.DisplayOrder}
+			Enabled={props.Enabled}
+			IgnoreGuiInset={IgnoreGuiInset}
+			ResetOnSpawn={ResetOnSpawn}
+			ZIndexBehavior={ZIndexBehavior}
+			AutoLocalize={props.AutoLocalize}
+			RootLocalizationTable={props.RootLocalizationTable}
+			SelectionGroup={props.SelectionGroup}
 		>
 			{props.children}
 		</screengui>
 	);
-}
+});

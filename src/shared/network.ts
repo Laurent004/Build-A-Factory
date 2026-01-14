@@ -8,6 +8,7 @@ interface ClientToServerEvents {
 	UnloadGame: () => void;
 	DeleteGame: () => void;
 
+	PurchaseExpansion: (expansion: Part) => void;
 	PlaceStructures: (structuresData: StructureData[], powerLinesData: PowerLineData[]) => void;
 	StartStructuresMovement: (structuresModels: Model[]) => void;
 	MoveStructures: (structuresMovementData: StructureMovementData[]) => void;
@@ -23,27 +24,28 @@ interface ClientToServerEvents {
 	DestroyPowerLine: (startAttachment: Attachment, endAttachment: Attachment) => void;
 	CreateBlueprint: (
 		structuresModels: Model[],
-		blueprintSubcategory: string,
 		blueprintName: string,
-		blueprintImage: string,
 		blueprintDescription: string,
+		blueprintSubcategory: string,
+		blueprintImage: string,
 	) => void;
 	EditBlueprint: (
 		blueprintModel: Model,
 		blueprintName: string,
-		blueprintImage: string,
 		blueprintDescription: string,
+		blueprintImage: string,
 	) => void;
 	DeleteBlueprint: (blueprintModel: Model) => void;
-	SetFactoryName: (name: string) => void;
-	SetSetting: <K extends keyof Data["settings"]>(settingName: K, settingValue: Data["settings"][K]) => void;
+	SetSetting: (settingName: string, settingValue: unknown) => void;
 }
 
 interface ServerToClientEvents {
 	OnGamesUpdate: (games: Data["games"]) => void;
+
 	OnDataInitialization: (data: Data) => void;
 	OnPlotInitialization: (player: Player, plot: Model) => void;
 	OnPlotReset: (player: Player) => void;
+	OnExpansionPurchase: (player: Player, expansion: Part) => void;
 	OnStructuresPlacement: (player: Player, structuresModels: Model[]) => void;
 	OnStructuresMovementStart: (player: Player, structuresModels: Model[]) => void;
 	OnStructuresMovement: (player: Player, structuresModels: Model[]) => void;
@@ -53,13 +55,13 @@ interface ServerToClientEvents {
 	OnPowerLineDestroying: (player: Player, startAttachment: Attachment, endAttachment: Attachment) => void;
 	OnBlueprintCreation: (
 		blueprintModel: Model,
+		blueprintDescription: string,
 		blueprintSubcategory: string,
 		blueprintImage: string,
-		blueprintDescription: string,
 	) => void;
-	OnBlueprintEdit: (blueprintModel: Model, blueprintImage: string, blueprintDescription: string) => void;
+	OnBlueprintEdit: (blueprintModel: Model, blueprintDescription: string, blueprintImage: string) => void;
 	OnTutorialStepUpdate: (tutorialStep: number) => void;
-	OnNotification: (notification: string) => void;
+	OnNotification: (notification: string, sound?: string) => void;
 }
 
 interface ClientToServerFunctions {}

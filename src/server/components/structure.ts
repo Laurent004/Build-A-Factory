@@ -1,15 +1,14 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
 import { OnStart } from "@flamework/core";
 import Signal from "@rbxts/signal";
-import GridService from "server/services/plot/grid-service";
-import { StructureState } from "shared/constants/structures";
+import GridService from "server/services/plot/grid";
 
 @Component({})
 export default class StructureComponent extends BaseComponent<{}, Model> implements OnStart {
 	protected player!: Player;
 	protected active: boolean = false;
-	protected state: StructureState = "No Connection";
-	public readonly onStateChanged = new Signal<(newState: StructureState) => void>();
+	protected state: string = "No Connection";
+	public readonly onStateChanged = new Signal<(state: string) => void>();
 
 	constructor(protected readonly components: Components, protected readonly gridService: GridService) {
 		super();
@@ -31,9 +30,9 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 
 	public updateState(): void {}
 
-	public getState(): StructureState {
+	public getState(): string {
 		return this.state;
 	}
 
-	public setState(state: StructureState): void {}
+	public setState(state: string): void {}
 }

@@ -1,7 +1,7 @@
 export interface StructureDefinition {
+	category: string;
+	subcategory: string;
 	index: number | undefined;
-	category: StructureCategory;
-	subCategory: StructureSubCategory;
 	image: string;
 	description: string;
 	cost: number;
@@ -27,13 +27,10 @@ export interface StructureDefinition {
 	priority: number;
 }
 
-export const STRUCTURE_CATEGORIES = ["Logistics", "Production", "Power", "Blueprints"] as const;
-export type StructureCategory = (typeof STRUCTURE_CATEGORIES)[number];
-export const STRUCTURE_SUB_CATEGORIES = {
+export const STRUCTURE_CATEGORIES: string[] = ["Logistics", "Production", "Power", "Blueprints"];
+export const STRUCTURE_SUB_CATEGORIES: Record<string, string[]> = {
 	Logistics: ["Conveyor Belts", "Pipelines", "Sorting", "Miscellaneous"],
-	Production: ["Extractors", "Processors", "Manufacturers"],
+	Production: ["Extractors", "Smelters", "Manufacturers"],
 	Power: ["Generators", "Power Poles"],
 	Blueprints: [],
-} as const satisfies Record<StructureCategory, string[]>;
-export type StructureSubCategory = (typeof STRUCTURE_SUB_CATEGORIES)[StructureCategory][number];
-export type StructureState = "No Connection" | "No Power" | "Standby" | "Working";
+};

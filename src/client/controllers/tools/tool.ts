@@ -1,11 +1,10 @@
 import { BaseAction, InputManager, StandardActionBuilder } from "@rbxts/mechanism";
-import { Context } from "client/constants/navigation";
 import { store } from "client/store";
 import { selectContext } from "client/store/context";
 
 export default abstract class ToolController {
 	protected active: boolean = false;
-	protected abstract readonly context: Context;
+	protected abstract readonly context: string;
 	private static readonly inputManager = new InputManager();
 	protected abstract readonly inputActions: {
 		action: BaseAction;

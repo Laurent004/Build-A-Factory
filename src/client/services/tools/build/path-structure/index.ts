@@ -1,13 +1,12 @@
-import { Players, RunService } from "@rbxts/services";
-import GridService from "client/services/plot/grid-service";
-import { BaseStructureCFrameService } from "../../base/visuals/cframe-service";
+import { RunService } from "@rbxts/services";
+import { BaseStructureCFrameService } from "../../placement/structure-cframe";
 import BaseBuildingService from "../base";
-import MouseService from "../../base/mouse-service";
-import { PathStructurePreviewService } from "./preview-service";
-import { BaseStructurePreviewService } from "../../base/visuals/preview-service";
-import BaseStructureHighlightService from "../../base/visuals/highlight-service";
-import BaseStructureArrowService from "../../base/visuals/arrow-service";
-import BaseStructurePlacementService from "../../base/placement-service";
+import MouseService from "../../mouse";
+import { PathStructurePreviewService } from "./preview";
+import { BaseStructurePreviewService } from "../../placement/structure-preview";
+import BaseStructureHighlightService from "../../placement/structure-highlight";
+import BaseStructureArrowService from "../../placement/structure-arrow";
+import BaseStructurePlacementService from "../../placement/structure-placement";
 
 export default class PathStructureBuildingService extends BaseBuildingService {
 	private readonly pathStructurePreviewService: PathStructurePreviewService;
@@ -19,7 +18,6 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 	private connection: RBXScriptConnection | undefined;
 
 	constructor(
-		private readonly gridService: GridService,
 		private readonly mouseService: MouseService,
 		private readonly baseStructurePreviewService: BaseStructurePreviewService,
 		baseStructureHighlightService: BaseStructureHighlightService,
@@ -33,68 +31,70 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 			baseStructureArrowService,
 		);
 
-		this.mouseService.onClampedCellVertexPositionChanged.Connect((newClampedCellVertexPosition) => {
+		this.mouseService.onClampedCellChanged.Connect((newClampedCell) => {
 			if (
-				!this.active ||
-				this.straightStructureModel.PrimaryPart!.Size.X % 8 !== 0 ||
-				this.straightStructureModel.PrimaryPart!.Size.Z % 8 !== 0
-			)
-				return;
+				this.active &&
+				(this.straightStructureModel.PrimaryPart!.Size.X % 8 !== 0 ||
+					this.straightStructureModel.PrimaryPart!.Size.Z % 8 !== 0)
+			) {
+				this.baseStructureCFrameService.setTargetPosition(
+					new Vector3(
+						newClampedCell.worldPosition.X,
+						newClampedCell.worldPosition.Y + this.straightStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
+						newClampedCell.worldPosition.Z,
+					),
+				);
 
-			this.baseStructureCFrameService.setTargetPosition(
-				new Vector3(
-					newClampedCellVertexPosition.X,
-					this.straightStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
-					newClampedCellVertexPosition.Z,
-				),
-			);
-
-			if (
-				this.startPosition === undefined ||
-				math.abs(newClampedCellVertexPosition.sub(this.startPosition).X) %
-					this.straightStructureModel.PrimaryPart!.Size.Z !==
-					0 ||
-				math.abs(newClampedCellVertexPosition.sub(this.startPosition).Z) %
-					this.straightStructureModel.PrimaryPart!.Size.Z !==
-					0 ||
-				this.goalPosition?.FuzzyEq(newClampedCellVertexPosition)
-			)
-				return;
-			this.baseStructurePreviewService.resetStructurePlacementPreview();
-			this.goalPosition = new Vector3(newClampedCellVertexPosition.X, 0, newClampedCellVertexPosition.Z);
-			this.rebuidStructurePath();
+				if (
+					this.startPosition === undefined ||
+					math.abs(newClampedCell.worldPosition.sub(this.startPosition).X) %
+						this.straightStructureModel.PrimaryPart!.Size.Z !==
+						0 ||
+					math.abs(newClampedCell.worldPosition.sub(this.startPosition).Z) %
+						this.straightStructureModel.PrimaryPart!.Size.Z !==
+						0 ||
+					this.goalPosition?.FuzzyEq(newClampedCell.worldPosition)
+				)
+					return;
+				this.baseStructurePreviewService.resetStructurePlacementPreview();
+				this.goalPosition = new Vector3(
+					newClampedCell.worldPosition.X,
+					this.startPosition.Y,
+					newClampedCell.worldPosition.Z,
+				);
+				this.rebuidStructurePath();
+			}
 		});
 
-		this.mouseService.onClampedCellChanged.Connect((_, newClampedCellPosition) => {
+		this.mouseService.onClampedCellVertexPositionChanged.Connect((newClampedCellVertexPosition) => {
 			if (
-				!this.active ||
-				(this.straightStructureModel.PrimaryPart!.Size.X % 8 === 0 &&
-					this.straightStructureModel.PrimaryPart!.Size.Z % 8 === 0)
-			)
-				return;
+				this.active &&
+				this.straightStructureModel.PrimaryPart!.Size.X % 8 === 0 &&
+				this.straightStructureModel.PrimaryPart!.Size.Z % 8 === 0
+			) {
+				this.baseStructureCFrameService.setTargetPosition(
+					new Vector3(
+						newClampedCellVertexPosition.X,
+						this.straightStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
+						newClampedCellVertexPosition.Z,
+					),
+				);
 
-			this.baseStructureCFrameService.setTargetPosition(
-				new Vector3(
-					newClampedCellPosition.X,
-					newClampedCellPosition.Y + this.straightStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
-					newClampedCellPosition.Z,
-				),
-			);
-
-			if (
-				this.startPosition === undefined ||
-				math.abs(newClampedCellPosition.sub(this.startPosition).X) %
-					this.straightStructureModel.PrimaryPart!.Size.Z !==
-					0 ||
-				math.abs(newClampedCellPosition.sub(this.startPosition).Z) %
-					this.straightStructureModel.PrimaryPart!.Size.Z !==
-					0 ||
-				this.goalPosition?.FuzzyEq(newClampedCellPosition)
-			)
-				return;
-			this.baseStructurePreviewService.resetStructurePlacementPreview();
-			this.goalPosition = new Vector3(newClampedCellPosition.X, this.startPosition.Y, newClampedCellPosition.Z);
-			this.rebuidStructurePath();
+				if (
+					this.startPosition === undefined ||
+					math.abs(newClampedCellVertexPosition.sub(this.startPosition).X) %
+						this.straightStructureModel.PrimaryPart!.Size.Z !==
+						0 ||
+					math.abs(newClampedCellVertexPosition.sub(this.startPosition).Z) %
+						this.straightStructureModel.PrimaryPart!.Size.Z !==
+						0 ||
+					this.goalPosition?.FuzzyEq(newClampedCellVertexPosition)
+				)
+					return;
+				this.baseStructurePreviewService.resetStructurePlacementPreview();
+				this.goalPosition = new Vector3(newClampedCellVertexPosition.X, 0, newClampedCellVertexPosition.Z);
+				this.rebuidStructurePath();
+			}
 		});
 	}
 
@@ -103,7 +103,6 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 		this.straightStructureModel = straightStructureModel;
 		this.leftTurnStructureModel = leftTurnStructureModel;
 		this.rightTurnStructureModel = rightTurnStructureModel;
-
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
 		rayParams.AddToFilter([
@@ -119,16 +118,21 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 	public exit(): void {
 		super.exit();
 		this.stopUpdating();
+		this.mouseService.stopUpdating();
 		this.baseStructurePreviewService.resetStructurePlacementPreview();
 		this.pathStructurePreviewService.resetPathStructurePreview();
-		this.mouseService.stopUpdating();
-
 		this.startPosition = undefined;
 		this.goalPosition = undefined;
 	}
 
 	private startUpdatingStructure(): void {
-		this.connection = RunService.Heartbeat.Connect((dt: number) => {
+		this.connection = RunService.Heartbeat.Connect((dt) => {
+			if (
+				this.baseStructureCFrameService
+					.getTargetCF()
+					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
+			)
+				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
@@ -164,21 +168,19 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 		);
 	}
 
-	public onPlacementStart(): void {
+	public onStart(): void {
 		const result =
-			this.straightStructureModel.PrimaryPart!.Size.X % 8 === 0 &&
-			this.straightStructureModel.PrimaryPart!.Size.Z % 8 === 0
-				? this.mouseService.getClampedCellVertexPosition()
-				: this.mouseService.getClampedCell();
+			this.straightStructureModel.PrimaryPart!.Size.X % 8 !== 0 ||
+			this.straightStructureModel.PrimaryPart!.Size.Z % 8 !== 0
+				? this.mouseService.getClampedCell()
+				: this.mouseService.getClampedCellVertexPosition();
 		if (result === undefined) return;
-		this.startPosition = typeIs(result, "Vector3")
-			? result
-			: this.gridService.getCellWorldPosition(Players.LocalPlayer, result);
+		this.startPosition = typeIs(result, "Vector3") ? result : result.worldPosition;
 		this.stopUpdating();
 		this.startUpdatingPathStructure();
 	}
 
-	public onPlacementEnd(): void {
+	public onEnd(): void {
 		this.baseStructurePlacementService.place(
 			this.goalPosition === undefined
 				? this.baseStructurePreviewService.getStructureModelHolder()
@@ -187,7 +189,6 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 				? this.baseStructureCFrameService.getTargetCF()
 				: this.pathStructurePreviewService.getPathStructureModelHolder().GetPivot(),
 		);
-
 		this.exit();
 		this.enter(this.straightStructureModel, this.leftTurnStructureModel, this.rightTurnStructureModel);
 	}

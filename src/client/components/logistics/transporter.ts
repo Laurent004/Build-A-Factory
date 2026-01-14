@@ -4,7 +4,7 @@ import { STRUCTURES } from "shared/constants/structures";
 import { Events } from "client/network";
 import Signal from "@rbxts/signal";
 import StructureComponent from "../structure";
-import TransportService from "client/services/plot/transport-service";
+import TransportService from "client/services/plot/transport";
 import { Object } from "@rbxts/luau-polyfill";
 import { Solid } from "shared/constants/items";
 import { EventBus } from "client/event-bus";
@@ -30,7 +30,7 @@ export default class TransporterComponent extends StructureComponent implements 
 			this.initConnectionTransporters();
 		} else {
 			this.connections.push(
-				this.onActiveChanged.Connect(() => {
+				this.OnActiveChanged.Connect(() => {
 					if (!this.active) return;
 					if (
 						this.inputTransporters.size() <
@@ -58,13 +58,15 @@ export default class TransporterComponent extends StructureComponent implements 
 		}
 		this.connections.push(
 			Events.OnStructuresItemsClear.connect((player, structuresModels) => {
-				if (player !== this.player || !structuresModels.includes(this.instance)) return;
-				this.clearItems();
+				if (player === this.player && structuresModels.includes(this.instance)) {
+					this.clearItems();
+				}
 			}),
 			EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-				if (settingName !== "renderItems" || (settingValue as number[]).includes(this.player.UserId)) return;
-				for (const solid of [...this.queuedSolids, ...this.solids]) {
-					solid.model?.Destroy();
+				if (settingName === "renderItems" && !(settingValue as number[]).includes(this.player.UserId)) {
+					for (const solid of [...this.queuedSolids, ...this.solids]) {
+						solid.model?.Destroy();
+					}
 				}
 			}),
 		);
@@ -192,6 +194,7 @@ export default class TransporterComponent extends StructureComponent implements 
 						) !== undefined
 				) {
 					this.inputTransporters.add(transporterComponents[0]);
+					this.transportService.attemptTransport(transporterComponents[0]);
 				}
 			} else {
 				for (const structureModel of this.instance
@@ -212,12 +215,12 @@ export default class TransporterComponent extends StructureComponent implements 
 							) !== undefined
 					) {
 						this.inputTransporters.add(transporterComponents[0]);
+						this.transportService.attemptTransport(transporterComponents[0]);
 						break;
 					}
 				}
 			}
 		}
-
 		for (const [inputNodeWorldCF, visible] of Object.entries(
 			STRUCTURES[this.instance.Name].nodes.inputs.fluids,
 		).map(
@@ -315,6 +318,7 @@ export default class TransporterComponent extends StructureComponent implements 
 						) !== undefined
 				) {
 					this.outputTransporters.set(transporterComponents[0], "Solid");
+					this.transportService.attemptTransport(this);
 				}
 			} else {
 				for (const structureModel of this.instance
@@ -335,6 +339,7 @@ export default class TransporterComponent extends StructureComponent implements 
 							) !== undefined
 					) {
 						this.outputTransporters.set(transporterComponents[0], "Solid");
+						this.transportService.attemptTransport(this);
 						break;
 					}
 				}
@@ -565,17 +570,17 @@ export default class TransporterComponent extends StructureComponent implements 
 		return [...this.inputTransporters];
 	}
 
-	public getOutputTransporters(outputType: "Solid" | "Fluid"): TransporterComponent[] {
+	public getOutputTransporters(outputTransporterType: "Solid" | "Fluid"): TransporterComponent[] {
 		return Object.entries(this.outputTransporters)
-			.filter(([, outputTransporterType]) => outputTransporterType === outputType)
+			.filter(([, outputTransporterType_]) => outputTransporterType_ === outputTransporterType)
 			.map(([outputTransporter]) => outputTransporter);
 	}
 
-	protected getTransporterInDirection(originPosition: Vector3, direction: Vector3): TransporterComponent | undefined {
-		const cell = this.gridService.getCellInDirection(this.player, originPosition, direction);
-		if (cell === undefined || cell.structureModel === undefined) return undefined;
-		const transporterComponents = this.components.getComponents<TransporterComponent>(cell.structureModel);
-		return transporterComponents.size() > 0 ? transporterComponents[0] : undefined;
+	protected getTransporterInDirection(position: Vector3, direction: Vector3): TransporterComponent | undefined {
+		const cell = this.gridService.getCellInDirection(this.player, position, direction);
+		return cell !== undefined && cell.structureModel !== undefined
+			? this.components.getComponents<TransporterComponent>(cell.structureModel)[0]
+			: undefined;
 	}
 
 	public addQueuedSolid(solid: Solid): void {
@@ -586,7 +591,7 @@ export default class TransporterComponent extends StructureComponent implements 
 	public inputItem(fluid: string, volume: number): void;
 	public inputItem(item: Solid | string, volume?: number): void {
 		if (item instanceof Solid) {
-			if (this.queuedSolids.includes(item)) this.queuedSolids.remove(this.queuedSolids.indexOf(item));
+			this.queuedSolids.remove(this.queuedSolids.indexOf(item));
 			this.solids.push(item);
 			this.OnInput.Fire(item, 1);
 		} else {
@@ -611,7 +616,7 @@ export default class TransporterComponent extends StructureComponent implements 
 		if (item instanceof Solid) {
 			this.solids.remove(this.solids.indexOf(item));
 			this.OnOutput.Fire(item, 1);
-		} else {
+		} else if (this.fluids.has(item)) {
 			this.fluids.set(item, this.fluids.get(item)! - volume!);
 			if (this.fluids.get(item)! <= 0) this.fluids.delete(item);
 			this.OnOutput.Fire(item, volume!);

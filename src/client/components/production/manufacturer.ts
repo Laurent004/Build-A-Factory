@@ -4,18 +4,15 @@ import { ItemRecipe, Solid } from "shared/constants/items/types";
 import TransporterComponent from "../logistics/transporter";
 import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
 import { Object } from "@rbxts/luau-polyfill";
-import { StructureState } from "shared/constants/structures";
 import { Events } from "client/network";
 import { EventBus } from "client/event-bus";
-import { RunService } from "@rbxts/services";
 
 let renderItems: number[];
 Events.OnDataInitialization.connect((data) => {
 	renderItems = data.settings.renderItems;
 });
 EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	if (settingName !== "renderItems") return;
-	renderItems = settingValue as number[];
+	renderItems = settingName === "renderItems" ? (settingValue as number[]) : renderItems;
 });
 
 @Component({ tag: "Manufacturer" })
@@ -23,32 +20,25 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 	private recipe: ItemRecipe | undefined;
 	private productionStartTime: number | undefined;
 	private productionRecipe: ItemRecipe | undefined;
-
-	onStart(): void {
-		super.onStart();
-		this.initRecipe();
-	}
+	private productionThread: thread | undefined;
 
 	protected override initEvents(): void {
 		super.initEvents();
+		this.updateRecipe()
 		this.connections.push(
-			this.onActiveChanged.Connect(() => {
+			this.OnActiveChanged.Connect(() => {
 				if (this.canStartProduction()) this.startProduction();
 			}),
-			this.onStateChanged.Connect(() => {
+			this.OnStateChanged.Connect(() => {
 				if (this.canStartProduction()) this.startProduction();
 			}),
+			this.instance.GetAttributeChangedSignal("Recipe").Connect(() => {
+				this.updateRecipe()
+			})
 		);
 	}
 
-	private initRecipe(): void {
-		this.updateRecipe();
-		this.instance.GetAttributeChangedSignal("Recipe").Connect(() => {
-			this.updateRecipe();
-		});
-	}
-
-	private updateRecipe(): void {
+	private updateRecipe():void{
 		const recipe = this.instance.GetAttribute("Recipe") as string | undefined;
 		this.recipe =
 			recipe !== undefined
@@ -56,25 +46,32 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 					? ITEM_RECIPES[recipe]
 					: undefined
 				: undefined;
+		if(recipe!==undefined){
+			for(const inputTransporter of this.inputTransporters){
+				this.transportService.attemptTransport(inputTransporter)
+			}
+		}
 	}
 
 	private startProduction(): void {
-		this.productionStartTime = time();
-		this.productionRecipe = this.recipe;
 		this.solids.clear();
 		this.fluids.clear();
-		for (const [itemName, count] of Object.entries(this.recipe!.outputItems)) {
-			if (ITEMS[itemName].model !== undefined) {
-				for (let i = 0; i < count; i++) {
-					const newSolid = new Solid(itemName, renderItems.includes(this.player.UserId));
-					newSolid.model?.PivotTo(new CFrame(this.instance.GetPivot().Position));
-					this.solids.push(newSolid);
+		this.productionStartTime = time();
+		this.productionRecipe = this.recipe;
+		this.productionThread = task.delay(this.productionRecipe!.time, () => {
+			for (const [itemName, count] of Object.entries(this.recipe!.outputItems)) {
+				if (ITEMS[itemName].model !== undefined) {
+					for (let i = 0; i < count; i++) {
+						const newSolid = new Solid(itemName, renderItems.includes(this.player.UserId));
+						newSolid.model?.PivotTo(new CFrame(this.instance.GetPivot().Position));
+						this.solids.push(newSolid);
+					}
+				} else {
+					this.fluids.set(itemName, count);
 				}
-			} else {
-				this.fluids.set(itemName, count);
 			}
-		}
-		this.transportService.registerToQueue(this);
+			this.transportService.attemptTransport(this);
+		});
 	}
 
 	private canStartProduction(): boolean {
@@ -83,10 +80,10 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 			this.state !== "No Connection" &&
 			this.state !== "No Power" &&
 			this.recipe !== undefined &&
-			this.productionStartTime === undefined &&
+			this.productionThread === undefined &&
 			Object.entries(this.recipe.inputItems).every(
 				([itemName, count]) =>
-					this.solids.filter((bufferedSolid) => bufferedSolid.name === itemName).size() === count ||
+					this.solids.filter((solid) => solid.name === itemName).size() === count ||
 					(this.fluids.get(itemName) ?? 0) >= count,
 			)
 		);
@@ -116,24 +113,28 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 	public override canInputItem(item: Solid | string): boolean {
 		return (
 			this.recipe !== undefined &&
-			this.productionStartTime === undefined &&
+			this.productionThread === undefined &&
 			(item instanceof Solid ? item.name : item) in this.recipe.inputItems &&
 			(item instanceof Solid
 				? this.queuedSolids.filter((solid) => solid.name === item.name).size() +
 						this.solids.filter((solid) => solid.name === item.name).size() <
 				  this.recipe.inputItems[item.name]!
-				: (this.fluids.get(item) ?? 0) < this.recipe.inputItems[item]!)
+				: (this.fluids.get(item) ?? 0) < this.recipe.inputItems[item])
 		);
 	}
 
 	public override outputItem(solid: Solid): void;
 	public override outputItem(fluid: string, volume: number): void;
 	public override outputItem(item: Solid | string, volume?: number): void {
-		if (item instanceof Solid) super.outputItem(item);
-		else super.outputItem(item, volume!);
+		if (item instanceof Solid) {
+			super.outputItem(item);
+		} else {
+			super.outputItem(item, volume!);
+		}
 		if (this.solids.size() === 0 && this.fluids.size() === 0) {
 			this.productionStartTime = undefined;
 			this.productionRecipe = undefined;
+			this.productionThread = undefined;
 		}
 	}
 
@@ -142,7 +143,7 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 			this.active &&
 			this.productionStartTime !== undefined &&
 			this.productionRecipe !== undefined &&
-			time() - this.productionStartTime >= this.productionRecipe.time
+			time() - this.productionStartTime > 0.1
 		);
 	}
 
@@ -150,21 +151,21 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 		super.clearItems();
 		this.productionStartTime = undefined;
 		this.productionRecipe = undefined;
+		if (this.productionThread !== undefined) {
+			task.cancel(this.productionThread);
+			this.productionThread = undefined;
+		}
 	}
 
 	public override updateState(): void {
-		let state: StructureState | undefined;
-		if (this.recipe === undefined) {
-			state = "No Connection";
-		} else if (
-			this.productionStartTime !== undefined &&
-			this.productionRecipe !== undefined &&
-			time() - this.productionStartTime > this.productionRecipe.time
-		) {
-			state = "Standby";
-		} else {
-			state = "Working";
-		}
-		this.setState(state);
+		this.setState(
+			this.recipe === undefined
+				? "No Connection"
+				: this.productionStartTime !== undefined &&
+				  this.productionRecipe !== undefined &&
+				  time() - this.productionStartTime > this.productionRecipe.time
+				? "Standby"
+				: "Working",
+		);
 	}
 }

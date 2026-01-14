@@ -3,18 +3,15 @@ import { OnStart } from "@flamework/core";
 import { ItemRecipe, Solid } from "shared/constants/items/types";
 import { ITEM_RECIPES } from "shared/constants/items";
 import TransporterComponent from "../logistics/transporter";
-import { StructureState } from "shared/constants/structures";
 import { Object } from "@rbxts/luau-polyfill";
 import { Events } from "client/network";
 import { EventBus } from "client/event-bus";
-
 let renderItems: number[];
 Events.OnDataInitialization.connect((data) => {
 	renderItems = data.settings.renderItems;
 });
 EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	if (settingName !== "renderItems") return;
-	renderItems = settingValue as number[];
+	renderItems = settingName === "renderItems" ? (settingValue as number[]) : renderItems;
 });
 
 @Component({ tag: "Miner" })
@@ -22,33 +19,30 @@ export default class MinerComponent extends TransporterComponent implements OnSt
 	private recipe: ItemRecipe | undefined;
 	private miningStartTime: number | undefined;
 	private miningRecipe: ItemRecipe | undefined;
+	private miningThread: thread | undefined;
 
 	onStart(): void {
 		super.onStart();
-		this.initRecipe();
 	}
 
 	protected override initEvents(): void {
 		super.initEvents();
+		this.updateRecipe()
 		if (this.active && this.canStartMining()) this.startMining();
 		this.connections.push(
-			this.onActiveChanged.Connect(() => {
+			this.OnActiveChanged.Connect(() => {
 				if (this.canStartMining()) this.startMining();
 			}),
-			this.onStateChanged.Connect(() => {
+			this.OnStateChanged.Connect(() => {
 				if (this.canStartMining()) this.startMining();
 			}),
+			this.instance.GetAttributeChangedSignal("Recipe").Connect(() => {
+				this.updateRecipe()
+			})
 		);
 	}
 
-	private initRecipe(): void {
-		this.updateRecipe();
-		this.instance.GetAttributeChangedSignal("Recipe").Connect(() => {
-			this.updateRecipe();
-		});
-	}
-
-	private updateRecipe(): void {
+	private updateRecipe():void{
 		const recipe = this.instance.GetAttribute("Recipe") as string | undefined;
 		this.recipe =
 			recipe !== undefined
@@ -59,17 +53,20 @@ export default class MinerComponent extends TransporterComponent implements OnSt
 		if (this.canStartMining()) this.startMining();
 	}
 
+
 	private startMining(): void {
 		this.miningStartTime = time();
 		this.miningRecipe = this.recipe;
-		for (const [itemName, count] of Object.entries(this.recipe!.outputItems)) {
-			for (let i = 0; i < count; i++) {
-				const newSolid = new Solid(itemName, renderItems.includes(this.player.UserId));
-				newSolid.model?.PivotTo(new CFrame(this.instance.GetPivot().Position));
-				this.inputItem(newSolid);
+		this.miningThread = task.delay(this.miningRecipe!.time, () => {
+			for (const [itemName, count] of Object.entries(this.recipe!.outputItems)) {
+				for (let i = 0; i < count; i++) {
+					const newSolid = new Solid(itemName, renderItems.includes(this.player.UserId));
+					newSolid.model?.PivotTo(new CFrame(this.instance.GetPivot().Position));
+					this.solids.push(newSolid);
+				}
 			}
-		}
-		this.transportService.registerToQueue(this);
+			this.transportService.attemptTransport(this);
+		});
 	}
 
 	private canStartMining(): boolean {
@@ -78,7 +75,7 @@ export default class MinerComponent extends TransporterComponent implements OnSt
 			this.state !== "No Connection" &&
 			this.state !== "No Power" &&
 			this.recipe !== undefined &&
-			this.miningStartTime === undefined
+			this.miningThread === undefined
 		);
 	}
 
@@ -95,39 +92,31 @@ export default class MinerComponent extends TransporterComponent implements OnSt
 		if (this.solids.size() === 0) {
 			this.miningStartTime = undefined;
 			this.miningRecipe = undefined;
+			this.miningThread = undefined;
 			if (this.canStartMining()) this.startMining();
 		}
-	}
-
-	public override canOutputItem(): boolean {
-		return (
-			this.active &&
-			this.miningStartTime !== undefined &&
-			this.miningRecipe !== undefined &&
-			time() - this.miningStartTime >= this.miningRecipe.time
-		);
 	}
 
 	protected override clearItems(): void {
 		super.clearItems();
 		this.miningStartTime = undefined;
 		this.miningRecipe = undefined;
+		if (this.miningThread !== undefined) {
+			task.cancel(this.miningThread);
+			this.miningThread = undefined;
+		}
 		if (this.canStartMining()) this.startMining();
 	}
 
 	public override updateState(): void {
-		let state: StructureState | undefined;
-		if (this.recipe === undefined) {
-			state = "No Connection";
-		} else if (
-			this.miningStartTime !== undefined &&
-			this.miningRecipe !== undefined &&
-			time() - this.miningStartTime > this.miningRecipe.time
-		) {
-			state = "Standby";
-		} else {
-			state = "Working";
-		}
-		this.setState(state);
+		this.setState(
+			this.recipe === undefined
+				? "No Connection"
+				: this.miningStartTime !== undefined &&
+				  this.miningRecipe !== undefined &&
+				  time() - this.miningStartTime > this.miningRecipe.time
+				? "Standby"
+				: "Working",
+		);
 	}
 }

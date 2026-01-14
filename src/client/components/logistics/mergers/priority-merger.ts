@@ -3,68 +3,49 @@ import TransporterComponent from "../transporter";
 import { mergerInputDirections } from "./merger";
 import { Solid } from "shared/constants/items";
 
-export const mergerPriorities = ["High", "Medium", "Low"] as const;
-export type MergerPriority = (typeof mergerPriorities)[number];
+export const mergerPriorities: string[] = ["Low", "Medium", "High"];
 
 @Component({ tag: "PriorityMerger" })
 export class PriorityMergerComponent extends TransporterComponent {
-	private readonly prioritiesInputTransporterIndex = new Map<MergerPriority, number>();
-	private nextInputTransporterPriority: MergerPriority | undefined;
+	private readonly prioritiesInputTransporterIndex = new Map<string, number>();
+	private nextInputTransporterPriority: string | undefined;
 
-	private getInputTransportersOfPriority(priority: MergerPriority): TransporterComponent[] {
-		const inputTransporters: TransporterComponent[] = [];
-		for (const inputDirection of mergerInputDirections.filter(
-			(inputDirection) => this.instance.GetAttribute(inputDirection) === priority,
-		)) {
+	private getInputTransportersOfPriority(priority: string): TransporterComponent[] {
+		return mergerInputDirections.mapFiltered((inputDirection) => {
+			if (this.instance.GetAttribute(inputDirection) !== priority) return undefined;
 			const transporter = this.getTransporterInDirection(
 				this.instance.GetPivot().Position,
-				inputDirection === "LeftInput"
+				inputDirection === "Left"
 					? this.instance.GetPivot().RightVector.mul(-1)
-					: inputDirection === "BackwardInput"
+					: inputDirection === "Backward"
 					? this.instance.GetPivot().LookVector.mul(-1)
 					: this.instance.GetPivot().RightVector,
 			);
-
-			if (
-				transporter !== undefined &&
+			return transporter !== undefined &&
 				this.inputTransporters.has(transporter) &&
 				(transporter.getQueuedSolids().size() > 0 || transporter.getSolids().size() > 0) &&
 				transporter.canOutputItem() &&
 				transporter.getOutputTransporters("Solid").includes(this)
-			) {
-				inputTransporters.push(transporter);
-			}
-		}
-		return inputTransporters;
+				? transporter
+				: undefined;
+		});
 	}
 
 	public override getInputTransporters(): TransporterComponent[] {
-		const highPriorityInputTransporters: TransporterComponent[] = this.getInputTransportersOfPriority("High");
-		const mediumPriorityInputTransporters: TransporterComponent[] = this.getInputTransportersOfPriority("Medium");
-		const lowPriorityInputTransporters: TransporterComponent[] = this.getInputTransportersOfPriority("Low");
-
-		const inputTransportersCandidates: [boolean, [TransporterComponent[], MergerPriority]][] = [
+		const highPriorityInputTransporters = this.getInputTransportersOfPriority("High");
+		const mediumPriorityInputTransporters = this.getInputTransportersOfPriority("Medium");
+		const lowPriorityInputTransporters = this.getInputTransportersOfPriority("Low");
+		const inputTransporters: [boolean, [TransporterComponent[], string]][] = [
 			[highPriorityInputTransporters.size() > 0, [highPriorityInputTransporters, "High"]],
 			[mediumPriorityInputTransporters.size() > 0, [mediumPriorityInputTransporters, "Medium"]],
 			[lowPriorityInputTransporters.size() > 0, [lowPriorityInputTransporters, "Low"]],
 		];
-
-		const result: [TransporterComponent[], MergerPriority] | undefined = inputTransportersCandidates.find(
-			([condition]) => condition,
-		)?.[1];
+		const result = inputTransporters.find(([condition]) => condition)?.[1];
 		if (result === undefined) return [];
-
-		const inputTransporters: TransporterComponent[] = result[0];
-		const inputTransportersPriority: MergerPriority = result[1];
 		if (this.nextInputTransporterPriority === undefined) {
-			this.nextInputTransporterPriority = inputTransportersPriority;
+			this.nextInputTransporterPriority = result[1];
 		}
-
-		return [
-			inputTransporters[
-				(this.prioritiesInputTransporterIndex.get(inputTransportersPriority) ?? 0) % inputTransporters.size()
-			],
-		];
+		return [result[0][(this.prioritiesInputTransporterIndex.get(result[1]) ?? 0) % result[0].size()]];
 	}
 
 	public override inputItem(solid: Solid): void;

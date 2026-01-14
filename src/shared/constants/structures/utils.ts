@@ -15,3 +15,18 @@ export function getStructureData(structureModel: Model, cf?: CFrame): StructureD
 			.map((childStructureModel) => getStructureData(childStructureModel, cf)),
 	};
 }
+
+export function getStructuresData(structures: StructureData[]): StructureData[] {
+	const structuresData: StructureData[] = [];
+	for (const structure of structures) {
+		const queue = [structure];
+		while (queue.size() > 0) {
+			const structure = queue.shift()!;
+			structuresData.push(structure);
+			for (const childStructure of structure.children as StructureData[]) {
+				queue.push(childStructure);
+			}
+		}
+	}
+	return structuresData;
+}

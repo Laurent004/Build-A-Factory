@@ -3,15 +3,16 @@ import { StrictMode } from "@rbxts/react";
 import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
 import { App } from "./app";
-import { RootProvider } from "client/providers/root-provider";
+import { store } from "client/store";
+import { ReflexProvider } from "@rbxts/react-reflex";
 
 const root = createRoot(new Instance("Folder"));
 root.render(
 	createPortal(
 		<StrictMode>
-			<RootProvider>
+			<ReflexProvider producer={store}>
 				<App></App>
-			</RootProvider>
+			</ReflexProvider>
 		</StrictMode>,
 		Players.LocalPlayer.WaitForChild("PlayerGui"),
 	),

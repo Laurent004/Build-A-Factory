@@ -2,35 +2,30 @@ import { Component } from "@flamework/components";
 import TransporterComponent from "../transporter";
 import { Solid } from "shared/constants/items";
 
-export const mergerInputDirections = ["LeftInput", "BackwardInput", "RightInput"] as const;
-export type MergerInputDirection = (typeof mergerInputDirections)[number];
+export const mergerInputDirections: string[] = ["Left", "Backward", "Right"];
 
 @Component({ tag: "Merger" })
 export default class MergerComponent extends TransporterComponent {
 	private inputTransporterIndex: number = 0;
 
 	public override getInputTransporters(): TransporterComponent[] {
-		const inputTransporters: TransporterComponent[] = [];
-		for (const inputDirection of mergerInputDirections) {
+		const inputTransporters = mergerInputDirections.mapFiltered((inputDirection) => {
 			const transporter = this.getTransporterInDirection(
 				this.instance.GetPivot().Position,
-				inputDirection === "LeftInput"
+				inputDirection === "Left"
 					? this.instance.GetPivot().RightVector.mul(-1)
-					: inputDirection === "BackwardInput"
+					: inputDirection === "Backward"
 					? this.instance.GetPivot().LookVector.mul(-1)
 					: this.instance.GetPivot().RightVector,
 			);
-
-			if (
-				transporter !== undefined &&
+			return transporter !== undefined &&
 				this.inputTransporters.has(transporter) &&
 				(transporter.getQueuedSolids().size() > 0 || transporter.getSolids().size() > 0) &&
 				transporter.canOutputItem() &&
 				transporter.getOutputTransporters("Solid").includes(this)
-			) {
-				inputTransporters.push(transporter);
-			}
-		}
+				? transporter
+				: undefined;
+		});
 		return [inputTransporters[this.inputTransporterIndex % inputTransporters.size()]];
 	}
 

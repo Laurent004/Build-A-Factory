@@ -6,8 +6,8 @@ export default abstract class BaseBuildingService {
 	public exit(): void {
 		this.active = false;
 	}
-	abstract onPlacementStart(): void;
-	public onPlacementEnd(): void {}
+	abstract onStart(): void;
+	public onEnd(): void {}
 	public onRotate(): void {}
 	public onScroll(position: Vector3): void {}
 }

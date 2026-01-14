@@ -1,55 +1,60 @@
 import React, { forwardRef } from "@rbxts/react";
-import { FrameProps } from "./frame";
+import { colors, fonts } from "../constants";
 
-export interface TextProps extends FrameProps<TextLabel> {
-	font: Font;
-	lineHeight?: number | React.Binding<number>;
-	text?: string | React.Binding<string>;
-	textColor: Color3 | React.Binding<Color3>;
-	richText?: boolean | React.Binding<boolean>;
-	maxVisibleGraphemes?: number | React.Binding<number>;
-	textScaled?: boolean | React.Binding<boolean>;
-	textSize: number | React.Binding<number>;
-	textTransparency?: number | React.Binding<number>;
-	textStrokeColor?: Color3 | React.Binding<Color3>;
-	textStrokeTransparency?: number | React.Binding<number>;
-	textTruncate?: Enum.TextTruncate | React.Binding<Enum.TextTruncate>;
-	textWrapped?: boolean | React.Binding<boolean>;
-	textXAlignment: Enum.TextXAlignment | React.Binding<Enum.TextXAlignment>;
-	textYAlignment: Enum.TextYAlignment | React.Binding<Enum.TextYAlignment>;
-}
+export const Text = forwardRef<TextLabel, React.InstanceProps<TextLabel>>((props, ref) => {
+	const { BorderSizePixel = 0, FontFace = fonts.josefinSans.regular, TextColor3 = colors.white } = props;
 
-export const Text = forwardRef((props: TextProps, ref: React.Ref<TextLabel>) => (
-	<textlabel
-		ref={ref}
-		AnchorPoint={props.anchorPoint}
-		Position={props.position}
-		Rotation={props.rotation}
-		Size={props.size}
-		BackgroundTransparency={props.backgroundTransparency ?? 1}
-		BackgroundColor3={props.backgroundColor}
-		LayoutOrder={props.layoutOrder}
-		Visible={props.visible}
-		ZIndex={props.zIndex}
-		ClipsDescendants={props.clipsDescendants}
-		Event={props.event}
-		Change={props.change}
-		FontFace={props.font}
-		LineHeight={props.lineHeight}
-		Text={props.text}
-		TextColor3={props.textColor}
-		RichText={props.richText}
-		MaxVisibleGraphemes={props.maxVisibleGraphemes}
-		TextScaled={props.textScaled}
-		TextSize={props.textSize}
-		TextTransparency={props.textTransparency}
-		TextStrokeColor3={props.textStrokeColor}
-		TextStrokeTransparency={props.textStrokeTransparency}
-		TextTruncate={props.textTruncate}
-		TextWrapped={props.textWrapped}
-		TextXAlignment={props.textXAlignment}
-		TextYAlignment={props.textYAlignment}
-	>
-		{props.children}
-	</textlabel>
-));
+	return (
+		<textlabel
+			ref={ref}
+			Archivable={props.Archivable}
+			Active={props.Active}
+			AnchorPoint={props.AnchorPoint}
+			AutomaticSize={props.AutomaticSize}
+			BackgroundColor3={props.BackgroundColor3}
+			BackgroundTransparency={1}
+			BorderColor3={props.BorderColor3}
+			BorderMode={props.BorderMode}
+			BorderSizePixel={BorderSizePixel}
+			Interactable={props.Interactable}
+			LayoutOrder={props.LayoutOrder}
+			Position={props.Position}
+			Rotation={props.Rotation}
+			Size={props.Size}
+			SizeConstraint={props.SizeConstraint}
+			Visible={props.Visible}
+			ZIndex={props.ZIndex}
+			ClipsDescendants={props.ClipsDescendants}
+			AutoLocalize={props.AutoLocalize}
+			RootLocalizationTable={props.RootLocalizationTable}
+			NextSelectionDown={props.NextSelectionDown}
+			NextSelectionLeft={props.NextSelectionLeft}
+			NextSelectionRight={props.NextSelectionRight}
+			NextSelectionUp={props.NextSelectionUp}
+			Selectable={props.Selectable}
+			SelectionGroup={props.SelectionGroup}
+			SelectionOrder={props.SelectionOrder}
+			Event={props.Event}
+			Change={props.Change}
+			FontFace={FontFace}
+			LineHeight={props.LineHeight}
+			MaxVisibleGraphemes={props.MaxVisibleGraphemes}
+			OpenTypeFeatures={props.OpenTypeFeatures}
+			RichText={props.RichText}
+			Text={props.Text}
+			TextColor3={TextColor3}
+			TextDirection={props.TextDirection}
+			TextScaled={props.TextScaled}
+			TextSize={props.TextSize}
+			TextStrokeColor3={props.TextStrokeColor3}
+			TextStrokeTransparency={props.TextStrokeTransparency}
+			TextTransparency={props.TextTransparency}
+			TextTruncate={props.TextTruncate}
+			TextWrapped={props.TextWrapped}
+			TextXAlignment={props.TextXAlignment}
+			TextYAlignment={props.TextYAlignment}
+		>
+			{props.children}
+		</textlabel>
+	);
+});

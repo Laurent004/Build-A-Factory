@@ -9,7 +9,11 @@ export default class PowerGeneratorComponent extends StructureComponent {
 		return this.active ? this.powerProduction : 0;
 	}
 
-	public setPowerProduction(powerProduction: number): void {
-		this.powerProduction = powerProduction;
+	public setPowerProduction(value: number): void {
+		this.powerProduction = value;
+	}
+
+	public override updateState(): void {
+		this.setState(!this.active || this.powerProduction <= 0 ? "No Power" : "Working");
 	}
 }

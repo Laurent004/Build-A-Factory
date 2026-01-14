@@ -17,7 +17,7 @@ export interface PowerLineData {
 
 export interface BlueprintData {
 	id: string;
-	subCategory: string;
+	subcategory: string;
 	name: string;
 	image: string;
 	description: string;

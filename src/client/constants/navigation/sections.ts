@@ -8,5 +8,4 @@ export const SECTIONS = {
 	Settings: {
 		index: 2,
 	},
-} as const;
-export type Section = keyof typeof SECTIONS;
+} as Record<string, { index: number }>;

@@ -1,14 +1,14 @@
-import GridService from "client/services/plot/grid-service";
+import GridService from "client/services/plot/grid";
 import { ContextActionService, Players, RunService, Workspace } from "@rbxts/services";
-import { BaseStructurePreviewService } from "../../base/visuals/preview-service";
-import { BaseStructureCFrameService } from "../../base/visuals/cframe-service";
+import { BaseStructurePreviewService } from "../../placement/structure-preview";
+import { BaseStructureCFrameService } from "../../placement/structure-cframe";
 import BaseBuildingService from "../base";
-import MouseService from "../../base/mouse-service";
-import { LiftStructurePreviewService } from "./preview-service";
-import BaseStructureHighlightService from "../../base/visuals/highlight-service";
-import BaseStructureArrowService from "../../base/visuals/arrow-service";
-import BaseStructureBeamService from "../../base/visuals/beam-service";
-import BaseStructurePlacementService from "../../base/placement-service";
+import MouseService from "../../mouse";
+import { LiftStructurePreviewService } from "./preview";
+import BaseStructureHighlightService from "../../placement/structure-highlight";
+import BaseStructureArrowService from "../../placement/structure-arrow";
+import BaseStructureBeamService from "../../placement/structure-beam";
+import BaseStructurePlacementService from "../../placement/structure-placement";
 
 export class LiftStructureBuildingService extends BaseBuildingService {
 	private readonly liftStructurePreviewService: LiftStructurePreviewService;
@@ -35,46 +35,52 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 			baseStructureBeamService,
 		);
 
-		this.mouseService.onMove.Connect(() => {
-			if (!this.active || this.startCf === undefined) return;
-			const camera = Workspace.CurrentCamera!;
-			const rayOrigin = camera.CFrame.Position;
-			const rayDirection = this.mouseService.getMouse().UnitRay.Direction;
-			const horizontalLook = new Vector3(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit;
-			const dot = rayDirection.Dot(horizontalLook);
-			if (math.abs(dot) > 1e-6) {
-				const t = this.startCf.Position.sub(rayOrigin).Dot(horizontalLook) / dot;
-				if (t > 0) {
-					const cell = gridService.getCellAtWorldPosition(
-						Players.LocalPlayer,
-						new Vector3(
-							this.startCf.Position.X,
-							math.clamp(
-								rayOrigin.add(rayDirection.mul(t)).Y,
-								this.startCf.Position.Y - 100,
-								this.startCf.Position.Y + 100,
+		this.mouseService.getMouse().Move.Connect(() => {
+			if (this.active && this.startCf !== undefined) {
+				const camera = Workspace.CurrentCamera!;
+				const rayOrigin = camera.CFrame.Position;
+				const rayDirection = this.mouseService.getMouse().UnitRay.Direction;
+				const horizontalLook = new Vector3(camera.CFrame.LookVector.X, 0, camera.CFrame.LookVector.Z).Unit;
+				const dot = rayDirection.Dot(horizontalLook);
+				if (math.abs(dot) > 1e-6) {
+					const t = this.startCf.Position.sub(rayOrigin).Dot(horizontalLook) / dot;
+					if (t > 0) {
+						const cell = gridService.getCellAtWorldPosition(
+							Players.LocalPlayer,
+							new Vector3(
+								this.startCf.Position.X,
+								math.clamp(
+									rayOrigin.add(rayDirection.mul(t)).Y,
+									this.startCf.Position.Y - 100,
+									this.startCf.Position.Y + 100,
+								),
+								this.startCf.Position.Z,
 							),
+						);
+						if (
+							cell === undefined ||
+							cell.worldPosition.FuzzyEq(this.startCf.Position) ||
+							cell.worldPosition.FuzzyEq(this.endCf!.Position)
+						)
+							return;
+						this.endCf = new CFrame(
+							this.startCf.Position.X,
+							cell.worldPosition.Y,
 							this.startCf.Position.Z,
-						),
-					);
-					if (cell === undefined) return;
-					const position = gridService.getCellWorldPosition(Players.LocalPlayer, cell);
-					if (position.FuzzyEq(this.startCf.Position) || position.FuzzyEq(this.endCf!.Position)) return;
-					this.endCf = new CFrame(this.startCf.Position.X, position.Y, this.startCf.Position.Z).mul(
-						CFrame.Angles(0, this.endCf!.ToOrientation()[1], 0),
-					);
-					this.rebuildLiftStructure();
+						).mul(CFrame.Angles(0, this.endCf!.ToOrientation()[1], 0));
+						this.rebuildLiftStructure();
+					}
 				}
 			}
 		});
 
-		this.mouseService.onClampedCellChanged.Connect((_, newClampedCellPosition) => {
+		this.mouseService.onClampedCellChanged.Connect((newClampedCell) => {
 			if (!this.active) return;
 			this.baseStructureCFrameService.setTargetPosition(
 				new Vector3(
-					newClampedCellPosition.X,
-					newClampedCellPosition.Y + this.liftStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
-					newClampedCellPosition.Z,
+					newClampedCell.worldPosition.X,
+					newClampedCell.worldPosition.Y + this.liftStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
+					newClampedCell.worldPosition.Z,
 				),
 			);
 		});
@@ -84,7 +90,6 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 		super.enter();
 		this.liftStructureModel = liftStructureModel;
 		this.liftElevatorStructureModel = liftElevatorStructureModel;
-
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
 		rayParams.AddToFilter([
@@ -93,7 +98,6 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 		]);
 		this.mouseService.setRaycastParams(rayParams);
 		this.mouseService.startUpdating();
-
 		this.baseStructurePreviewService.initStructurePlacementPreview(
 			this.liftStructureModel
 				.GetChildren()
@@ -111,14 +115,18 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 		this.baseStructurePreviewService.resetStructurePlacementPreview();
 		this.liftStructurePreviewService.resetLiftStructurePreview();
 		this.mouseService.stopUpdating();
-		ContextActionService.UnbindAction("DisableScroll");
-
 		this.startCf = undefined;
 		this.endCf = undefined;
 	}
 
 	private startUpdatingLiftStructureInput(): void {
-		this.connection = RunService.Heartbeat.Connect((dt: number) => {
+		this.connection = RunService.Heartbeat.Connect((dt) => {
+			if (
+				this.baseStructureCFrameService
+					.getTargetCF()
+					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
+			)
+				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
@@ -142,7 +150,7 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 		this.connection = undefined;
 	}
 
-	private rebuildLiftStructure() {
+	private rebuildLiftStructure(): void {
 		this.liftStructurePreviewService.resetLiftStructurePreview();
 		this.liftStructurePreviewService.initLiftStructurePreview(
 			this.liftStructureModel,
@@ -152,7 +160,7 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 		);
 	}
 
-	public onPlacementStart(): void {
+	public onStart(): void {
 		if (this.startCf !== undefined) {
 			this.baseStructurePlacementService.place(
 				this.liftStructurePreviewService.getLiftStructureModelHolder(),
@@ -172,12 +180,6 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 			this.stopUpdating();
 			this.baseStructurePreviewService.resetStructurePlacementPreview();
 
-			this.startCf = new CFrame(this.gridService.getCellWorldPosition(Players.LocalPlayer, cell)).mul(
-				this.baseStructureCFrameService.getTargetCF().Rotation,
-			);
-			this.endCf = new CFrame(this.gridService.getCellWorldPosition(Players.LocalPlayer, cells[0])).mul(
-				this.baseStructureCFrameService.getTargetCF().Rotation,
-			);
 			ContextActionService.BindAction(
 				"DisableScroll",
 				() => {
@@ -186,6 +188,8 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 				false,
 				Enum.UserInputType.MouseWheel,
 			);
+			this.startCf = new CFrame(cell.worldPosition).mul(this.baseStructureCFrameService.getTargetCF().Rotation);
+			this.endCf = new CFrame(cells[0].worldPosition).mul(this.baseStructureCFrameService.getTargetCF().Rotation);
 			this.rebuildLiftStructure();
 			this.startUpdatingLiftStructure();
 		}

@@ -1,16 +1,16 @@
-export interface BaseTutorialStep {
+export type TutorialStepDefinition =
+	| BuildTutorialStepDefinition
+	| DeleteTutorialStepDefinition
+	| SetAttributeTutorialStepDefinition
+	| ConnectTutorialStepDefinition
+	| DisconnectTutorialStepDefinition;
+
+export interface BaseTutorialStepDefinition {
 	type: "Build" | "Delete" | "SetAttribute" | "Connect" | "Disconnect" | "Milestone";
 	description: string;
 }
 
-export type TutorialStep =
-	| BuildTutorialStep
-	| DeleteTutorialStep
-	| SetAttributeTutorialStep
-	| ConnectTutorialStep
-	| DisconnectTutorialStep
-
-export interface BuildTutorialStep extends BaseTutorialStep {
+export interface BuildTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "Build";
 	structuresData: {
 		name: string;
@@ -18,26 +18,26 @@ export interface BuildTutorialStep extends BaseTutorialStep {
 	}[];
 }
 
-export interface DeleteTutorialStep extends BaseTutorialStep {
+export interface DeleteTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "Delete";
 	structuresData: {
 		name: string;
 		cf: CFrame;
 	}[];
 }
-export interface SetAttributeTutorialStep extends BaseTutorialStep {
+export interface SetAttributeTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "SetAttribute";
 	structureName: string;
 	attributeName: string;
 }
 
-export interface ConnectTutorialStep extends BaseTutorialStep {
+export interface ConnectTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "Connect";
 	startStructureName: string;
 	endStructureName: string;
 }
 
-export interface DisconnectTutorialStep extends BaseTutorialStep {
+export interface DisconnectTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "Disconnect";
 	startStructureName: string;
 	endStructureName: string;

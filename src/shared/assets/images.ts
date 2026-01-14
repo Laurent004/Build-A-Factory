@@ -24,17 +24,11 @@ export const IMAGES = {
 		Blueprints: "rbxassetid://137642288020227",
 
 		Glow: "rbxassetid://137038247592087",
-		Magnifier: "rbxassetid://136023776711700",
 		Close: "rbxassetid://85748466046800",
 
 		None: "rbxassetid://133585488391616",
 		Any: "rbxassetid://133585488391616",
 		Overflow: "rbxassetid://133585488391616",
 		"Any (undefined)": "rbxassetid://133585488391616",
-	} as Record<string, string>,
-
-	textures: {
-		ArrowLink: "rbxassetid://73632224375330",
-		Link: "rbxassetid://96577915830628",
 	} as Record<string, string>,
 };

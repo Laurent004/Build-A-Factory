@@ -1,164 +1,122 @@
-import React, { useRef, useState } from "@rbxts/react";
+import React, { useBinding, useState } from "@rbxts/react";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { useSelector } from "@rbxts/react-reflex";
 import { selectContext, selectContextStructureModels } from "client/store/context";
-import { Button } from "client/ui/core/button";
 import { colors, fonts, springs } from "client/ui/constants";
-import { Frame } from "client/ui/core/frame";
-import { Image } from "client/ui/core/image";
-import { Text } from "client/ui/core/text";
 import { IMAGES } from "shared/assets/images";
 import { Events } from "client/network";
-import { useRem } from "client/hooks/use-rem";
 import { MarketplaceService } from "@rbxts/services";
 import { Object } from "@rbxts/luau-polyfill";
+import { Button, CanvasGroup, Frame, Image, ScrollingFrame, Text, TextBox } from "client/ui/core";
 import { STRUCTURES } from "shared/constants/structures";
 
 export function BlueprintDesigner() {
-	const rem = useRem();
 	const context = useSelector(selectContext);
 	const structuresModels = useSelector(selectContextStructureModels);
-	const [designerOpen, setDesignerOpen] = useState<boolean>(false);
-	const [presetsOpen, setPresetsOpen] = useState<boolean>(false);
-	const blueprintNameTextBoxRef = useRef<TextBox>();
-	const blueprintDescriptionTextBoxRef = useRef<TextBox>();
-	const blueprintSubcategoryTextBoxRef = useRef<TextBox>();
-	const blueprintImageRef = useRef<ImageLabel>();
-	const [onMountAnimation, onMountAnimationMotion] = useMotion(0);
-	const [onClickAnimation, onClickAnimationMotion] = useMotion(0);
+	const isActive = context === "Copy" && structuresModels.size() > 0;
+
+	const [isOpen, setIsOpen] = useState<boolean>(false);
+	const [name, setName] = useBinding<string>("");
+	const [description, setDescription] = useBinding<string>("");
+	const [subcategory, setSubcategory] = useBinding<string>("");
+	const [image, setImage] = useBinding<string>(STRUCTURES["Conveyor"].image);
+	const [areImagesOpen, setAreImagesOpen] = useState<boolean>(false);
+
+	const [mountAnimation, mountAnimationMotion] = useMotion(0);
+	const [clickAnimation, clickAnimationMotion] = useMotion(0);
 
 	useUpdateEffect(() => {
-		if (context !== "Copy") {
-			setDesignerOpen(false);
+		if (!isActive) {
+			setIsOpen(false);
 		}
-		onMountAnimationMotion.spring(context === "Copy" && structuresModels.size() > 0 ? 1 : 0, springs.gentle);
-		onClickAnimationMotion.spring(
-			context === "Copy" && structuresModels.size() > 0 && designerOpen ? 1 : 0,
-			springs.gentle,
-		);
-	}, [context, structuresModels, designerOpen]);
+		mountAnimationMotion.spring(isActive ? 1 : 0, springs.gentle);
+		clickAnimationMotion.spring(isActive && isOpen ? 1 : 0, springs.gentle);
+	}, [isActive, isOpen]);
 
 	return (
 		<>
 			<Button
-				anchorPoint={new Vector2(0.5, 0.5)}
-				position={lerpBinding(onMountAnimation, new UDim2(1.05, 0, 0.5, 0), new UDim2(0, rem(1862), 0.5, 0))}
-				size={new UDim2(0, rem(65), 0, rem(65))}
-				backgroundColor={colors.black}
-				backgroundTransparency={onMountAnimation.map((value) => 1 - value)}
-				onClick={() => {
-					setDesignerOpen(!designerOpen);
+				AnchorPoint={new Vector2(0.5, 0.5)}
+				Position={lerpBinding(mountAnimation, UDim2.fromScale(1.2, 0.5), UDim2.fromScale(0.986, 0.5))}
+				Size={UDim2.fromScale(0.034, 0.06)}
+				Event={{
+					MouseButton1Click: () => {
+						setIsOpen(!isOpen);
+					},
 				}}
 			>
-				<Frame
-					anchorPoint={new Vector2(0.5, 0.5)}
-					position={new UDim2(0.5, 0, 0.5, 0)}
-					size={new UDim2(0.8, 0, 0.8, 0)}
-					backgroundTransparency={1}
-				>
-					<uistroke
-						ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
-						Color={colors.white}
-						LineJoinMode={Enum.LineJoinMode.Miter}
-						Thickness={1}
-					></uistroke>
+				<Frame Size={UDim2.fromScale(1, 1)} BackgroundColor3={colors.black}>
+					<Frame
+						AnchorPoint={new Vector2(0.5, 0.5)}
+						Position={UDim2.fromScale(0.5, 0.5)}
+						Size={UDim2.fromScale(0.8, 0.8)}
+						BackgroundTransparency={1}
+					>
+						<uistroke
+							ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
+							Color={colors.white}
+							LineJoinMode={Enum.LineJoinMode.Miter}
+						></uistroke>
 
-					<Image
-						anchorPoint={new Vector2(0.5, 0.5)}
-						position={new UDim2(0.5, 0, 0.5, 0)}
-						size={new UDim2(0.65, 0, 0.65, 0)}
-						image={IMAGES.ui.Blueprints}
-						imageTransparency={onMountAnimation.map((value) => 1 - value)}
-					></Image>
+						<Image
+							AnchorPoint={new Vector2(0.5, 0.5)}
+							Position={UDim2.fromScale(0.5, 0.5)}
+							Size={UDim2.fromScale(0.65, 0.65)}
+							Image={IMAGES.ui.Blueprints}
+						></Image>
+					</Frame>
 				</Frame>
 			</Button>
 
-			<canvasgroup
-				GroupTransparency={onClickAnimation.map((value) => 1 - value)}
-				Active={context === "Copy" && structuresModels.size() > 0 && designerOpen}
+			<CanvasGroup
+				GroupTransparency={clickAnimation.map((value) => 1 - value)}
+				Active={isActive && isOpen}
 				AnchorPoint={new Vector2(0.5, 0.5)}
-				Position={lerpBinding(onClickAnimation, new UDim2(0.5, 0, 0, rem(720)), new UDim2(0.5, 0, 0.5, 0))}
-				Size={lerpBinding(onClickAnimation, new UDim2(0, 0, 0, 0), new UDim2(0, rem(787), 0, rem(512)))}
+				Position={UDim2.fromScale(0.5, 0.5)}
+				Size={lerpBinding(clickAnimation, UDim2.fromOffset(0, 0), UDim2.fromScale(0.364, 0.422))}
 				BackgroundColor3={colors.black}
-				BorderSizePixel={0}
-				Interactable={context === "Copy" && structuresModels.size() > 0 && designerOpen}
+				Interactable={isActive && isOpen}
 				ZIndex={2}
 			>
-				<Frame
-					anchorPoint={new Vector2(0.5, 0)}
-					position={new UDim2(0.5, 0, 0, 0)}
-					size={new UDim2(1, 0, 0.082, 0)}
-					backgroundTransparency={1}
-				>
-					<Image
-						anchorPoint={new Vector2(0.5, 0.5)}
-						position={lerpBinding(
-							onClickAnimation,
-							new UDim2(0.037, 0, 1.5, 0),
-							new UDim2(0.037, 0, 0.465, 0),
-						)}
-						size={new UDim2(0.032, 0, 0.61, 0)}
-						image={IMAGES.ui.Blueprints}
-						imageTransparency={onClickAnimation.map((value) => 1 - value)}
-					></Image>
-
-					<Text
-						anchorPoint={new Vector2(0.5, 0.5)}
-						position={lerpBinding(
-							onClickAnimation,
-							new UDim2(-0.5, 0, 0.5, 0),
-							new UDim2(0.172, 0, 0.5, 0),
-						)}
-						size={new UDim2(0.21, 0, 0.54, 0)}
-						font={fonts.josefinSans.medium}
-						text={"Blueprint Designer"}
-						textSize={18}
-						textColor={colors.white}
-						textTransparency={onClickAnimation.map((value) => 1 - value)}
-						textXAlignment={Enum.TextXAlignment.Left}
-						textYAlignment={Enum.TextYAlignment.Center}
-					></Text>
-
+				<Frame Size={UDim2.fromScale(1, 0.082)} BackgroundTransparency={1}>
 					<uistroke
 						ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
 						Color={colors.grey}
 						LineJoinMode={Enum.LineJoinMode.Miter}
-						Thickness={1}
 					></uistroke>
+
+					<Image
+						AnchorPoint={new Vector2(0.5, 0.5)}
+						Position={UDim2.fromScale(0.037, 0.465)}
+						Size={UDim2.fromScale(0.032, 0.61)}
+						Image={IMAGES.ui.Blueprints}
+					></Image>
+
+					<Text
+						AnchorPoint={new Vector2(0.5, 0.5)}
+						Position={UDim2.fromScale(0.172, 0.5)}
+						Size={UDim2.fromScale(0.21, 0.54)}
+						FontFace={fonts.josefinSans.bold}
+						Text={"Blueprint Designer"}
+						TextSize={18}
+						TextXAlignment={Enum.TextXAlignment.Left}
+					></Text>
 				</Frame>
 
 				<Image
-					ref={blueprintImageRef}
-					anchorPoint={new Vector2(0.5, 0.5)}
-					position={lerpBinding(onClickAnimation, new UDim2(0.146, 0, 0.9, 0), new UDim2(0.146, 0, 0.3, 0))}
-					size={new UDim2(0.217, 0, 0.333, 0)}
-					zIndex={0}
-					image={STRUCTURES["Conveyor"].image}
-					imageTransparency={onClickAnimation.map((value) => 1 - value)}
+					AnchorPoint={new Vector2(0.5, 0.5)}
+					Position={UDim2.fromScale(0.15, 0.3)}
+					Size={UDim2.fromScale(0.217, 0.333)}
+					Image={image}
 				></Image>
 
-				<scrollingframe
-					AnchorPoint={new Vector2(0, 0)}
-					Position={new UDim2(0.046, 0, 0.465, 0)}
-					Size={new UDim2(0.591, 0, 0.453, 0)}
+				<ScrollingFrame
+					Position={UDim2.fromScale(0.039, 0.465)}
+					Size={UDim2.fromScale(0.591, 0.453)}
 					BackgroundColor3={colors.black}
-					BorderSizePixel={0}
-					Visible={presetsOpen}
-					CanvasSize={new UDim2(0, 0, 2, 0)}
-					ScrollingDirection={Enum.ScrollingDirection.Y}
-					ScrollBarImageTransparency={1}
-					ScrollBarThickness={0}
+					BackgroundTransparency={0}
+					Visible={areImagesOpen}
 				>
-					<uigridlayout
-						CellPadding={new UDim2(0, 5, 0, 5)}
-						CellSize={new UDim2(0, 70, 0, 70)}
-						FillDirection={Enum.FillDirection.Horizontal}
-						SortOrder={Enum.SortOrder.LayoutOrder}
-						StartCorner={Enum.StartCorner.TopLeft}
-						HorizontalAlignment={Enum.HorizontalAlignment.Left}
-						VerticalAlignment={Enum.VerticalAlignment.Top}
-					></uigridlayout>
-
 					<uipadding
 						PaddingTop={new UDim(0, 8)}
 						PaddingLeft={new UDim(0, 8)}
@@ -166,417 +124,251 @@ export function BlueprintDesigner() {
 						PaddingBottom={new UDim(0, 8)}
 					></uipadding>
 
-					{Object.values(IMAGES.ui).map((image, index) => {
-						const [onMountAnimation, onMountAnimationMotion] = useMotion(0);
-						useUpdateEffect(() => {
-							if (!designerOpen || !presetsOpen) return;
-							onMountAnimationMotion.immediate(0);
-							task.delay((index + 1) * 0.01, () => {
-								onMountAnimationMotion.spring(1, springs.gentle);
-							});
-						}, [designerOpen, presetsOpen]);
+					<uigridlayout
+						CellPadding={UDim2.fromOffset(5, 5)}
+						CellSize={UDim2.fromOffset(75, 75)}
+						SortOrder={Enum.SortOrder.LayoutOrder}
+					></uigridlayout>
 
-						return (
-							<Button
-								anchorPoint={new Vector2(0, 0)}
-								position={new UDim2(0, 0, 0, 0)}
-								size={new UDim2(0, 0, 0, 0)}
-								onClick={() => {
-									blueprintImageRef.current!.Image = image;
-									setPresetsOpen(false);
-								}}
-							>
-								<Image
-									anchorPoint={new Vector2(0, 0)}
-									position={new UDim2(0, 0, 0, 0)}
-									size={new UDim2(1, 0, 1, 0)}
-									image={image}
-									imageTransparency={onMountAnimation.map((value) => 1 - value)}
-								></Image>
-							</Button>
-						);
-					})}
-				</scrollingframe>
+					{Object.values(IMAGES.ui).map((image, index) => (
+						<Button
+							LayoutOrder={index}
+							Event={{
+								MouseButton1Click: () => {
+									setImage(image);
+									setAreImagesOpen(false);
+								},
+							}}
+						>
+							<Image Size={UDim2.fromScale(1, 1)} Image={image}></Image>
+						</Button>
+					))}
+				</ScrollingFrame>
 
 				<Frame
-					anchorPoint={new Vector2(0.5, 0.5)}
-					position={new UDim2(0.636, 0, 0.487, 0)}
-					size={new UDim2(0.655, 0, 0.706, 0)}
-					backgroundTransparency={1}
-					zIndex={0}
+					AnchorPoint={new Vector2(0.5, 0.5)}
+					Position={UDim2.fromScale(0.636, 0.487)}
+					Size={UDim2.fromScale(0.655, 0.706)}
+					BackgroundTransparency={1}
+					ZIndex={0}
 				>
-					<uilistlayout
-						Padding={new UDim(0, 11)}
-						FillDirection={Enum.FillDirection.Vertical}
-						SortOrder={Enum.SortOrder.LayoutOrder}
-						HorizontalAlignment={Enum.HorizontalAlignment.Left}
-						VerticalAlignment={Enum.VerticalAlignment.Top}
-					></uilistlayout>
+					<uilistlayout Padding={new UDim(0, 11)} SortOrder={Enum.SortOrder.LayoutOrder}></uilistlayout>
 
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.072, 0)}
-						backgroundTransparency={1}
-						layoutOrder={0}
-					>
+					<Frame Size={UDim2.fromScale(1, 0.097)} BackgroundTransparency={1} LayoutOrder={0}>
 						<Text
-							anchorPoint={new Vector2(0, 0.5)}
-							position={lerpBinding(
-								onClickAnimation,
-								new UDim2(-0.5, 0, 0.5, 0),
-								new UDim2(0, 0, 0.5, 0),
-							)}
-							size={new UDim2(1, 0, 1, 0)}
-							font={fonts.josefinSans.regular}
-							text={"Blueprint Name :"}
-							textSize={18}
-							textColor={colors.white}
-							textTransparency={onClickAnimation.map((value) => 1 - value)}
-							textXAlignment={Enum.TextXAlignment.Left}
-							textYAlignment={Enum.TextYAlignment.Center}
+							Size={UDim2.fromScale(1, 1)}
+							Text={"Blueprint Name :"}
+							TextSize={18}
+							TextXAlignment={Enum.TextXAlignment.Left}
 						></Text>
 					</Frame>
 
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.093, 0)}
-						backgroundTransparency={1}
-						layoutOrder={1}
-					>
-						<Frame
-							anchorPoint={new Vector2(0, 0)}
-							position={lerpBinding(onClickAnimation, new UDim2(0.5, 0, 0, 0), new UDim2(0, 0, 0, 0))}
-							size={new UDim2(1, 0, 1, 0)}
-							backgroundColor={colors.mediumgrey}
-							backgroundTransparency={onClickAnimation.map((value) => 1 - value)}
-						>
-							<textbox
-								ref={blueprintNameTextBoxRef}
-								AnchorPoint={new Vector2(0.5, 0.5)}
-								Position={new UDim2(0.5, 0, 0.5, 0)}
-								Size={new UDim2(0.95, 0, 0.55, 0)}
-								BackgroundTransparency={1}
-								ClearTextOnFocus={false}
-								FontFace={fonts.josefinSans.regular}
-								PlaceholderText={"New Blueprint"}
-								PlaceholderColor3={colors.grey}
-								Text=""
-								TextSize={16}
-								TextColor3={colors.white}
-								TextTruncate={Enum.TextTruncate.SplitWord}
-								TextXAlignment={Enum.TextXAlignment.Left}
-								TextYAlignment={Enum.TextYAlignment.Center}
-							></textbox>
-						</Frame>
-					</Frame>
-
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.072, 0)}
-						backgroundTransparency={1}
-						layoutOrder={2}
-					>
-						<Text
-							anchorPoint={new Vector2(0, 0.5)}
-							position={lerpBinding(
-								onClickAnimation,
-								new UDim2(-0.5, 0, 0.5, 0),
-								new UDim2(0, 0, 0.5, 0),
-							)}
-							size={new UDim2(1, 0, 1, 0)}
-							font={fonts.josefinSans.regular}
-							text={"Blueprint Description :"}
-							textSize={18}
-							textColor={colors.white}
-							textTransparency={onClickAnimation.map((value) => 1 - value)}
-							textXAlignment={Enum.TextXAlignment.Left}
-							textYAlignment={Enum.TextYAlignment.Center}
-						></Text>
-					</Frame>
-
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.204, 0)}
-						backgroundTransparency={1}
-						layoutOrder={3}
-					>
-						<Frame
-							anchorPoint={new Vector2(0, 0)}
-							position={lerpBinding(onClickAnimation, new UDim2(0.5, 0, 0, 0), new UDim2(0, 0, 0, 0))}
-							size={new UDim2(1, 0, 1, 0)}
-							backgroundColor={colors.mediumgrey}
-							backgroundTransparency={onClickAnimation.map((value) => 1 - value)}
-						>
-							<textbox
-								ref={blueprintDescriptionTextBoxRef}
-								AnchorPoint={new Vector2(0.5, 0.5)}
-								Position={new UDim2(0.5, 0, 0.5, 0)}
-								Size={new UDim2(0.96, 0, 0.78, 0)}
-								BackgroundTransparency={1}
-								ClearTextOnFocus={false}
-								FontFace={fonts.josefinSans.regular}
-								PlaceholderText={"Description..."}
-								PlaceholderColor3={colors.grey}
-								Text=""
-								TextSize={16}
-								TextColor3={colors.white}
+					<Frame Size={UDim2.fromScale(1, 0.093)} BackgroundColor3={colors.mediumgrey} LayoutOrder={1}>
+						<TextBox
+							Size={UDim2.fromScale(1, 1)}
+							ClearTextOnFocus={false}
+							PlaceholderText={"New Blueprint"}
+							PlaceholderColor3={colors.grey}
+							Text={name}
+							TextSize={16}
 							TextTruncate={Enum.TextTruncate.SplitWord}
-								TextXAlignment={Enum.TextXAlignment.Left}
-								TextYAlignment={Enum.TextYAlignment.Top}
-							></textbox>
-						</Frame>
+							TextXAlignment={Enum.TextXAlignment.Left}
+							Change={{
+								Text: (textBox) => {
+									setName(textBox.Text);
+								},
+							}}
+						>
+							<uipadding PaddingLeft={new UDim(0, 12)}></uipadding>
+						</TextBox>
 					</Frame>
 
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.072, 0)}
-						backgroundTransparency={1}
-						layoutOrder={4}
-					>
+					<Frame Size={UDim2.fromScale(1, 0.072)} BackgroundTransparency={1} LayoutOrder={2}>
 						<Text
-							anchorPoint={new Vector2(0, 0.5)}
-							position={lerpBinding(
-								onClickAnimation,
-								new UDim2(-0.5, 0, 0.5, 0),
-								new UDim2(0, 0, 0.5, 0),
-							)}
-							size={new UDim2(1, 0, 1, 0)}
-							font={fonts.josefinSans.regular}
-							text={"Blueprint Subcategory :"}
-							textSize={18}
-							textColor={colors.white}
-							textTransparency={onClickAnimation.map((value) => 1 - value)}
-							textXAlignment={Enum.TextXAlignment.Left}
-							textYAlignment={Enum.TextYAlignment.Center}
+							Size={UDim2.fromScale(1, 1)}
+							Text={"Blueprint Description :"}
+							TextSize={18}
+							TextXAlignment={Enum.TextXAlignment.Left}
 						></Text>
 					</Frame>
 
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.093, 0)}
-						backgroundTransparency={1}
-						layoutOrder={5}
-					>
-						<Frame
-							anchorPoint={new Vector2(0, 0)}
-							position={lerpBinding(onClickAnimation, new UDim2(0.5, 0, 0, 0), new UDim2(0, 0, 0, 0))}
-							size={new UDim2(1, 0, 1, 0)}
-							backgroundColor={colors.mediumgrey}
-							backgroundTransparency={onClickAnimation.map((value) => 1 - value)}
-						>
-							<textbox
-								ref={blueprintSubcategoryTextBoxRef}
-								AnchorPoint={new Vector2(0.5, 0.5)}
-								Position={new UDim2(0.5, 0, 0.5, 0)}
-								Size={new UDim2(0.95, 0, 0.55, 0)}
-								BackgroundTransparency={1}
-								ClearTextOnFocus={false}
-								FontFace={fonts.josefinSans.regular}
-								PlaceholderText={"New Subcategory"}
-								PlaceholderColor3={colors.grey}
-								Text=""
-								TextSize={16}
-								TextColor3={colors.white}
+					<Frame Size={UDim2.fromScale(1, 0.204)} BackgroundColor3={colors.mediumgrey} LayoutOrder={3}>
+						<TextBox
+							Size={UDim2.fromScale(1, 1)}
+							ClearTextOnFocus={false}
+							PlaceholderText={"Description..."}
+							PlaceholderColor3={colors.grey}
+							Text={description}
+							TextSize={16}
 							TextTruncate={Enum.TextTruncate.SplitWord}
-								TextXAlignment={Enum.TextXAlignment.Left}
-								TextYAlignment={Enum.TextYAlignment.Center}
-							></textbox>
-						</Frame>
+							TextWrapped={true}
+							TextXAlignment={Enum.TextXAlignment.Left}
+							TextYAlignment={Enum.TextYAlignment.Top}
+							Change={{
+								Text: (textBox) => {
+									setDescription(textBox.Text);
+								},
+							}}
+						>
+							<uipadding PaddingTop={new UDim(0, 12)} PaddingLeft={new UDim(0, 12)}></uipadding>
+						</TextBox>
 					</Frame>
 
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.072, 0)}
-						backgroundTransparency={1}
-						layoutOrder={6}
-					>
+					<Frame Size={UDim2.fromScale(1, 0.072)} BackgroundTransparency={1} LayoutOrder={4}>
 						<Text
-							anchorPoint={new Vector2(0, 0.5)}
-							position={lerpBinding(
-								onClickAnimation,
-								new UDim2(-0.5, 0, 0.5, 0),
-								new UDim2(0, 0, 0.5, 0),
-							)}
-							size={new UDim2(1, 0, 1, 0)}
-							font={fonts.josefinSans.regular}
-							text={"Blueprint Icon :"}
-							textSize={18}
-							textColor={colors.white}
-							textTransparency={onClickAnimation.map((value) => 1 - value)}
-							textXAlignment={Enum.TextXAlignment.Left}
-							textYAlignment={Enum.TextYAlignment.Center}
+							Size={UDim2.fromScale(1, 1)}
+							Text={"Blueprint Subcategory :"}
+							TextSize={18}
+							TextXAlignment={Enum.TextXAlignment.Left}
 						></Text>
 					</Frame>
 
-					<Frame
-						anchorPoint={new Vector2(0, 0)}
-						position={new UDim2(0, 0, 0, 0)}
-						size={new UDim2(1, 0, 0.093, 0)}
-						backgroundTransparency={1}
-						layoutOrder={7}
-					>
-						<Frame
-							anchorPoint={new Vector2(0, 0)}
-							position={lerpBinding(onClickAnimation, new UDim2(-0.5, 0, 0, 0), new UDim2(0, 0, 0, 0))}
-							size={new UDim2(0.725, 0, 1, 0)}
-							backgroundColor={colors.mediumgrey}
-							backgroundTransparency={onClickAnimation.map((value) => 1 - value)}
+					<Frame Size={UDim2.fromScale(1, 0.093)} BackgroundColor3={colors.mediumgrey} LayoutOrder={5}>
+						<TextBox
+							Size={UDim2.fromScale(1, 1)}
+							ClearTextOnFocus={false}
+							PlaceholderText={"New Subcategory"}
+							PlaceholderColor3={colors.grey}
+							Text={subcategory}
+							TextSize={16}
+							TextTruncate={Enum.TextTruncate.SplitWord}
+							TextXAlignment={Enum.TextXAlignment.Left}
+							Change={{
+								Text: (textBox) => {
+									setSubcategory(textBox.Text);
+								},
+							}}
 						>
-							<textbox
-								AnchorPoint={new Vector2(0.5, 0.5)}
-								Position={new UDim2(0.5, 0, 0.5, 0)}
-								Size={new UDim2(0.95, 0, 0.55, 0)}
-								BackgroundTransparency={1}
+							<uipadding PaddingLeft={new UDim(0, 12)}></uipadding>
+						</TextBox>
+					</Frame>
+
+					<Frame Size={UDim2.fromScale(1, 0.072)} BackgroundTransparency={1} LayoutOrder={6}>
+						<Text
+							Size={UDim2.fromScale(1, 1)}
+							Text={"Blueprint Icon :"}
+							TextSize={18}
+							TextXAlignment={Enum.TextXAlignment.Left}
+						></Text>
+					</Frame>
+
+					<Frame Size={UDim2.fromScale(1, 0.093)} BackgroundTransparency={1} LayoutOrder={7}>
+						<Frame Size={UDim2.fromScale(0.725, 1)} BackgroundColor3={colors.mediumgrey}>
+							<TextBox
+								Size={UDim2.fromScale(1, 1)}
 								ClearTextOnFocus={false}
-								FontFace={fonts.josefinSans.regular}
 								PlaceholderText={"Image ID"}
 								PlaceholderColor3={colors.grey}
-								Text=""
 								TextSize={16}
-								TextColor3={colors.white}
-							TextTruncate={Enum.TextTruncate.SplitWord}
+								TextTruncate={Enum.TextTruncate.SplitWord}
 								TextXAlignment={Enum.TextXAlignment.Left}
-								TextYAlignment={Enum.TextYAlignment.Center}
-								Change={{
-									Text: (textbox) => {
-										const id = textbox.Text.match("%d+");
-										if (id[0] === undefined) return;
-										const [success, productInfo] = pcall((): AssetTypeId => {
-											return MarketplaceService.GetProductInfo(tonumber(id[0])!).AssetTypeId;
+								Event={{
+									FocusLost: (textBox) => {
+										const match = textBox.Text.match("%d+");
+										if (match[0] === undefined) return;
+										const id = tonumber(match[0]);
+										if (id === undefined) return;
+										task.spawn(() => {
+											const [success, productInfo] = pcall(() =>
+												MarketplaceService.GetProductInfo(id, Enum.InfoType.Asset),
+											);
+											if (
+												!success ||
+												(productInfo.AssetTypeId !== Enum.AssetType.Image.Value &&
+													productInfo.AssetTypeId !== Enum.AssetType.Decal.Value)
+											)
+												return;
+											setImage(`rbxassetid://${id}`);
 										});
-										if (
-											!success ||
-											(productInfo !== Enum.AssetType.Image.Value &&
-												productInfo !== Enum.AssetType.Decal.Value)
-										)
-											return;
-										blueprintImageRef.current!.Image = `rbxassetid://${id[0]}`;
 									},
 								}}
-							></textbox>
+							>
+								<uipadding PaddingLeft={new UDim(0, 12)}></uipadding>
+							</TextBox>
 						</Frame>
 
 						<Button
-							anchorPoint={new Vector2(1, 0)}
-							position={lerpBinding(onClickAnimation, new UDim2(1.5, 0, 0, 0), new UDim2(1, 0, 0, 0))}
-							size={new UDim2(0.248, 0, 1, 0)}
-							onClick={() => {
-								setPresetsOpen(!presetsOpen);
+							AnchorPoint={new Vector2(1, 0)}
+							Position={UDim2.fromScale(1, 0)}
+							Size={UDim2.fromScale(0.248, 1)}
+							Event={{
+								MouseButton1Click: () => {
+									setAreImagesOpen(!areImagesOpen);
+								},
 							}}
 						>
-							<Frame
-								anchorPoint={new Vector2(0, 0)}
-								position={new UDim2(0, 0, 0, 0)}
-								size={new UDim2(1, 0, 1, 0)}
-								backgroundColor={colors.mediumgrey}
-							>
-								<Text
-									anchorPoint={new Vector2(0, 0)}
-									position={new UDim2(0, 0, 0, 0)}
-									size={new UDim2(1, 0, 1, 0)}
-									font={fonts.josefinSans.regular}
-									text={"Presets"}
-									textSize={18}
-									textColor={colors.white}
-									textTransparency={onClickAnimation.map((value) => 1 - value)}
-									textXAlignment={Enum.TextXAlignment.Center}
-									textYAlignment={Enum.TextYAlignment.Center}
-								></Text>
+							<Frame Size={UDim2.fromScale(1, 1)} BackgroundColor3={colors.mediumgrey}>
+								<Text Size={UDim2.fromScale(1, 1)} Text={"Images"} TextSize={18}></Text>
 							</Frame>
 						</Button>
 					</Frame>
 				</Frame>
 
 				<Frame
-					anchorPoint={new Vector2(0.5, 1)}
-					position={new UDim2(0.5, 0, 1, 0)}
-					size={new UDim2(1, 0, 0.082, 0)}
-					backgroundTransparency={1}
+					AnchorPoint={new Vector2(0, 1)}
+					Position={UDim2.fromScale(0, 1)}
+					Size={UDim2.fromScale(1, 0.082)}
+					BackgroundTransparency={1}
 				>
+					<uistroke
+						ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
+						Color={colors.grey}
+						LineJoinMode={Enum.LineJoinMode.Miter}
+					></uistroke>
+
 					<Button
-						anchorPoint={new Vector2(0, 0.5)}
-						position={lerpBinding(onClickAnimation, new UDim2(0, 0, 1, 0), new UDim2(0, 0, 0.5, 0))}
-						size={new UDim2(0.5, 0, 1, 0)}
-						backgroundTransparency={1}
-						onClick={() => {
-							setDesignerOpen(false);
+						Size={UDim2.fromScale(0.5, 1)}
+						BackgroundTransparency={1}
+						Event={{
+							MouseButton1Click: () => {
+								setIsOpen(false);
+							},
 						}}
 					>
-						<Text
-							anchorPoint={new Vector2(0.5, 0.5)}
-							position={new UDim2(0.5, 0, 0.5, 0)}
-							size={new UDim2(1, 0, 1, 0)}
-							font={fonts.josefinSans.regular}
-							text={"Cancel Blueprint"}
-							textSize={16}
-							textColor={colors.white}
-							textTransparency={onClickAnimation.map((value) => 1 - value)}
-							textXAlignment={Enum.TextXAlignment.Center}
-							textYAlignment={Enum.TextYAlignment.Center}
-						></Text>
-
 						<uistroke
 							ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
 							Color={colors.grey}
 							LineJoinMode={Enum.LineJoinMode.Miter}
-							Thickness={1}
 						></uistroke>
+
+						<Text Size={UDim2.fromScale(1, 1)} Text={"Cancel Blueprint"} TextSize={16}></Text>
 					</Button>
 
 					<Button
-						anchorPoint={new Vector2(1, 0.5)}
-						position={lerpBinding(onClickAnimation, new UDim2(1, 0, 1, 0), new UDim2(1, 0, 0.5, 0))}
-						size={new UDim2(0.5, 0, 1, 0)}
-						backgroundTransparency={1}
-						onClick={() => {
-							Events.CreateBlueprint(
-								structuresModels,
-								blueprintSubcategoryTextBoxRef.current!.Text,
-								blueprintNameTextBoxRef.current!.Text,
-								blueprintImageRef.current!.Image,
-								blueprintDescriptionTextBoxRef.current!.Text,
-							);
-							setDesignerOpen(false);
+						Position={UDim2.fromScale(0.5, 0)}
+						Size={UDim2.fromScale(0.5, 1)}
+						BackgroundTransparency={1}
+						Event={{
+							MouseButton1Click: () => {
+								Events.CreateBlueprint(
+									structuresModels,
+									name.getValue(),
+									description.getValue(),
+									subcategory.getValue(),
+									image.getValue(),
+								);
+								setIsOpen(false);
+							},
 						}}
 					>
 						<Text
-							anchorPoint={new Vector2(0.5, 0.5)}
-							position={new UDim2(0.5, 0, 0.5, 0)}
-							size={new UDim2(1, 0, 1, 0)}
-							font={fonts.josefinSans.regular}
-							text={"Save Blueprint"}
-							textSize={16}
-							textColor={colors.lightblue}
-							textTransparency={onClickAnimation.map((value) => 1 - value)}
-							textXAlignment={Enum.TextXAlignment.Center}
-							textYAlignment={Enum.TextYAlignment.Center}
+							Size={UDim2.fromScale(1, 1)}
+							Text={"Save Blueprint"}
+							TextSize={16}
+							TextColor3={colors.lightblue}
 						></Text>
 
 						<Image
-							anchorPoint={new Vector2(0.5, 0.5)}
-							position={new UDim2(0.5, 0, 0.5, 0)}
-							size={new UDim2(0.8, 0, 1, 0)}
-							image={IMAGES.ui.Glow}
-							imageColor={colors.lightblue}
-							imageTransparency={lerpBinding(onClickAnimation, 1, 0.9)}
+							AnchorPoint={new Vector2(0.5, 0.5)}
+							Position={UDim2.fromScale(0.5, 0.5)}
+							Size={UDim2.fromScale(0.6, 1.5)}
+							Image={IMAGES.ui.Glow}
+							ImageColor3={colors.lightblue}
+							ImageTransparency={0.9}
 						></Image>
-
-						<uistroke
-							ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
-							Color={colors.grey}
-							LineJoinMode={Enum.LineJoinMode.Miter}
-							Thickness={1}
-						></uistroke>
 					</Button>
 				</Frame>
-			</canvasgroup>
+			</CanvasGroup>
 		</>
 	);
 }

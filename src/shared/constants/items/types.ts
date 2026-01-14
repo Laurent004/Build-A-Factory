@@ -5,6 +5,7 @@ export interface ItemDefintion {
 	index: number;
 	image: string;
 	description: string;
+	energy: number;
 	value: number;
 	model: Model | undefined;
 }
