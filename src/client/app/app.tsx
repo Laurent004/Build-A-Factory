@@ -27,6 +27,7 @@ import {
 	CopyInputPanel,
 	DeleteInputPanel,
 	EditInputPanel,
+	InfoEfficiencyPanel,
 	InfoInputPanel,
 	LiftStructureBuildInputPanel,
 	PathStructureBuildInputPanel,
@@ -38,6 +39,7 @@ import { BlueprintDesigner } from "client/ui/context/tools/copy";
 import { ExpansionModal } from "client/ui/overlay/expansion-modal";
 import { Tooltip } from "client/ui/overlay/tooltip";
 import { DeleteModal } from "client/ui/overlay/delete-modal";
+import { TechTreeMenu } from "client/ui/context/sections/tech-tree";
 
 export function App() {
 	return (
@@ -48,11 +50,13 @@ export function App() {
 			<Notifications></Notifications>
 
 			<SectionBar></SectionBar>
+			<TechTreeMenu></TechTreeMenu>
 			<ItemsMenu></ItemsMenu>
 			<SettingsMenu></SettingsMenu>
 
 			<ToolBar></ToolBar>
 			<InfoInputPanel></InfoInputPanel>
+			<InfoEfficiencyPanel></InfoEfficiencyPanel>
 			<BaseStructureInfoPanel></BaseStructureInfoPanel>
 			<PipelineInfoPanel></PipelineInfoPanel>
 			<PriortyMergerInfoPanel></PriortyMergerInfoPanel>

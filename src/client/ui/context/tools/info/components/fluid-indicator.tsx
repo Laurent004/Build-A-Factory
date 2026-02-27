@@ -1,19 +1,18 @@
 import React from "@rbxts/react";
-import { useSelector } from "@rbxts/react-reflex";
-import TransporterComponent from "client/components/logistics/transporter";
-import { selectContextStructureComponents } from "client/store/context";
+import { useSelectorCreator } from "@rbxts/react-reflex";
+import { selectContextStructureComponents } from "client/hooks/store/context";
 import { colors, fonts } from "client/ui/constants";
 import { CanvasGroup, Frame, Image, Text } from "client/ui/core";
 import { IMAGES } from "shared/assets/images";
-import { STRUCTURES } from "shared/constants/structures";
-import { round } from "shared/utils/math";
+import TransporterComponent from "shared/components/logistics/transporter";
+import { round } from "shared/utils";
 
 interface InfoPanelFluidIndicatorProps {
 	fluid: React.Binding<[string, number] | undefined>;
 }
 
 export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps) {
-	const transporterComponents = useSelector(selectContextStructureComponents(TransporterComponent));
+	const transporterComponents = useSelectorCreator(selectContextStructureComponents, TransporterComponent);
 
 	return (
 		<Frame
@@ -45,7 +44,7 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 				Active={false}
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={UDim2.fromScale(0.5, 0.5)}
-				Size={UDim2.fromScale(0.84, 0.84)}
+				Size={UDim2.fromScale(0.95, 0.95)}
 				BackgroundColor3={colors.black}
 				Interactable={false}
 			>
@@ -60,11 +59,7 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 							1,
 							(value?.[1] ?? 0) /
 								transporterComponents.reduce(
-									(capacity, transporter) =>
-										(capacity +=
-											(STRUCTURES[transporter.instance.Name].constants["FluidCapacity"] as
-												| number
-												| undefined) ?? 0),
+									(capacity, transporter) => (capacity += transporter.fluidCapacity),
 									0,
 								),
 						),
@@ -84,6 +79,7 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 						AnchorPoint={new Vector2(0, 1)}
 						Position={UDim2.fromScale(0, 0.01)}
 						Size={new UDim2(1, 0, 0, 35)}
+						Visible={fluid.map((value) => (value?.[1] ?? 0) > 0)}
 						Image="rbxassetid://137618825457886"
 						ImageRectSize={new Vector2(128, 128)}
 						ImageColor3={Color3.fromRGB(212, 227, 255)}
@@ -94,7 +90,7 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.5, 0.79)}
 					Size={UDim2.fromScale(0.9, 0.9)}
-					ZIndex={3}
+					ZIndex={2}
 					Image={IMAGES.Glow}
 					ImageTransparency={0.8}
 				></Image>
@@ -102,8 +98,8 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 				<Text
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.5, 0.36)}
-					Size={UDim2.fromScale(0.8, 0.23)}
-					ZIndex={3}
+					Size={UDim2.fromScale(0.72, 0.23)}
+					ZIndex={2}
 					FontFace={fonts.josefinSans.bold}
 					Text={fluid.map((value) => value?.[0] ?? "")}
 					TextScaled={true}
@@ -114,11 +110,11 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 				<Text
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.5, 0.63)}
-					Size={UDim2.fromScale(0.8, 0.13)}
-					ZIndex={3}
+					Size={UDim2.fromScale(0.7, 0.2)}
+					ZIndex={2}
 					FontFace={fonts.josefinSans.bold}
 					Text={fluid.map((value) => `${round(value?.[1] ?? 0, 2)}m³`)}
-					TextSize={18}
+					TextScaled={true}
 					TextStrokeTransparency={0.5}
 				></Text>
 			</CanvasGroup>

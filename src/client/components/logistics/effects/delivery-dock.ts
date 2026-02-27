@@ -1,32 +1,40 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
 import { ReplicatedStorage, TweenService, Workspace } from "@rbxts/services";
-import { ITEMS, Solid } from "shared/constants/items";
+import { ITEMS } from "shared/constants/items";
 import SoundService from "client/services/sound";
-import TransporterComponent from "../transporter";
 import { OnStart } from "@flamework/core";
+import { Janitor } from "@rbxts/janitor";
+import TransporterComponent from "shared/components/logistics/transporter";
 
 @Component({ tag: "DeliveryDock" })
 export default class DeliveryDockEffectsComponent extends BaseComponent<{}, Model> implements OnStart {
 	protected readonly soundService = SoundService.getInst();
 	private transporterComponent!: TransporterComponent;
-	private readonly connections: RBXScriptConnection[] = [];
+	private readonly janitor = new Janitor();
 
 	constructor(private readonly components: Components) {
 		super();
 	}
 
 	onStart(): void {
-		this.transporterComponent = this.components.getComponents<TransporterComponent>(this.instance)[0];
+		let transporterComponent: TransporterComponent | undefined;
+		while (transporterComponent === undefined) {
+			transporterComponent = this.components.getComponents<TransporterComponent>(this.instance)[0];
+			task.wait();
+		}
+		this.transporterComponent = transporterComponent;
+		this.janitor.LinkToInstance(this.instance, false);
 		this.initEvents();
 	}
 
 	private initEvents(): void {
-		this.connections.push(
+		this.janitor.Add(
 			this.transporterComponent.OnInput.Connect((item) => {
+				if (!typeIs(item, "table")) return;
 				const cashEffect = ReplicatedStorage.WaitForChild("CashEffect").Clone() as Part;
 				cashEffect.PivotTo(new CFrame(this.instance.PrimaryPart!.Position.add(new Vector3(0, 4, 0))));
 				cashEffect.FindFirstChildOfClass("BillboardGui")!.FindFirstChildOfClass("TextLabel")!.Text = `+$${
-					ITEMS[(item as Solid).name].value
+					ITEMS[item.name].value!.cash
 				}`;
 				cashEffect.Parent = Workspace;
 				TweenService.Create(cashEffect, new TweenInfo(0.7, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
@@ -53,12 +61,6 @@ export default class DeliveryDockEffectsComponent extends BaseComponent<{}, Mode
 					cashEffect?.Destroy();
 				});
 				this.soundService.playSound("sfx/cash", this.instance.GetPivot().Position);
-			}),
-			this.instance.Destroying.Once(() => {
-				for (const connection of this.connections) {
-					connection.Disconnect();
-				}
-				this.connections.clear();
 			}),
 		);
 	}

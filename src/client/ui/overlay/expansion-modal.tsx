@@ -1,61 +1,46 @@
-import { lerpBinding, useEventListener, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
+import { lerpBinding, useMotion, useMountEffect, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import React, { useState } from "@rbxts/react";
-import { useSelector } from "@rbxts/react-reflex";
 import { Players, Workspace } from "@rbxts/services";
-import { TOOLS } from "client/constants/context/tools/definitions";
 import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
-import { selectContext } from "client/store/context";
 import { colors, fonts, springs } from "client/ui/constants";
 import { IMAGES } from "shared/assets/images";
 import { Button, CanvasGroup, Frame, Image, Text } from "../core";
 
 export function ExpansionModal() {
-	const context = useSelector(selectContext);
 	const [expansion, setExpansion] = useState<Part>();
 	const [mountAnimation, mountAnimationMotion] = useMotion(0);
 
-	useEventListener(Events.OnPlotInitialization, (player, plot) => {
-		if (player !== Players.LocalPlayer) return;
-		for (const expansion of plot.WaitForChild("Expansions").GetChildren() as Part[]) {
-			expansion.FindFirstChildOfClass("ClickDetector")!.MouseClick.Connect((player) => {
-				if (player !== Players.LocalPlayer) return;
-				setExpansion(expansion);
-			});
+	useMountEffect(() => {
+		for (const plot of Workspace.WaitForChild("Plots").GetChildren()) {
+			for (const expansion of plot.WaitForChild("Expansions").GetChildren() as Part[]) {
+				expansion.FindFirstChildOfClass("ClickDetector")?.MouseClick.Connect(() => {
+					if (plot.GetAttribute("UserId") !== Players.LocalPlayer.UserId) return;
+					setExpansion(expansion);
+				});
+				expansion.GetAttributeChangedSignal("IsOwned").Connect(() => {
+					expansion.Transparency = expansion.GetAttribute("IsOwned") === true ? 1 : 0;
+					expansion.CanCollide = expansion.GetAttribute("IsOwned") === false;
+					expansion.CanQuery = expansion.GetAttribute("IsOwned") === false;
+				});
+			}
 		}
 	});
 
 	useUpdateEffect(() => {
-		if (context === undefined) {
-			setExpansion(undefined);
-		}
-		for (const expansion of Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
-			.WaitForChild("Expansions")
-			.GetChildren()
-			.filter((expansion): expansion is Part => expansion.GetAttribute("Owned") === false)) {
-			expansion.Transparency = context !== undefined && context in TOOLS ? 0 : 1;
-		}
-	}, [context]);
-
-	useUpdateEffect(() => {
-		mountAnimationMotion.spring(
-			context !== undefined && context in TOOLS && expansion !== undefined ? 1 : 0,
-			springs.gentle,
-		);
+		mountAnimationMotion.spring(expansion !== undefined ? 1 : 0, springs.gentle);
 	}, [expansion]);
 
 	return (
 		<CanvasGroup
 			GroupTransparency={mountAnimation.map((value) => 1 - value)}
-			Active={context !== undefined && context in TOOLS && expansion !== undefined}
+			Active={expansion !== undefined}
 			AnchorPoint={new Vector2(0.5, 0.5)}
 			Position={UDim2.fromScale(0.5, 0.5)}
 			Size={lerpBinding(mountAnimation, UDim2.fromScale(0, 0), UDim2.fromScale(0.264, 0.157))}
 			BackgroundColor3={colors.black}
-			Interactable={context !== undefined && context in TOOLS && expansion !== undefined}
-			ZIndex={4}
+			Interactable={expansion !== undefined}
+			ZIndex={3}
 		>
 			<Text
 				AnchorPoint={new Vector2(0.5, 0.5)}
@@ -74,7 +59,7 @@ export function ExpansionModal() {
 				Size={UDim2.fromScale(0.91, 0.253)}
 				LineHeight={1.5}
 				Text={`You can unlock this expansion for $${expansion?.GetAttribute(
-					"Price",
+					"Cost",
 				)}. Are you sure you want to unlock this expansion ?`}
 				TextSize={16}
 				TextWrapped={true}
@@ -113,13 +98,13 @@ export function ExpansionModal() {
 						MouseButton1Click: () => {
 							if (
 								(Players.LocalPlayer.WaitForChild("leaderstats").WaitForChild("Cash") as NumberValue)
-									.Value >= (expansion!.GetAttribute("Price") as number)
+									.Value >= (expansion!.GetAttribute("Cost") as number)
 							) {
 								Events.PurchaseExpansion(expansion!);
 							} else {
 								EventBus.OnNotification.Fire(
 									`<FontFace color="rgb(255, 98, 98)">You need $${
-										(expansion!.GetAttribute("Price") as number) -
+										(expansion!.GetAttribute("Cost") as number) -
 										(
 											Players.LocalPlayer.WaitForChild("leaderstats").WaitForChild(
 												"Cash",

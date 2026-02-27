@@ -1,38 +1,41 @@
-import { Controller, OnInit } from "@flamework/core";
+import { Controller } from "@flamework/core";
 import ToolController from "./tool";
-import GridService from "client/services/plot/grid";
-import { store } from "client/store";
 import { BaseStructureBuildingService } from "client/services/tools/build/base-structure";
 import PathStructureBuildingService from "client/services/tools/build/path-structure";
-import { selectBuildingStructureModel } from "client/store/context/tools/build";
 import { StandardActionBuilder } from "@rbxts/mechanism";
 import MouseService from "client/services/tools/mouse";
-import { PowerService } from "client/services/plot/power";
 import { UndergroundStructureBuildingService } from "client/services/tools/build/underground-structure";
 import BaseStructureHighlightService from "client/services/tools/placement/structure-highlight";
 import BaseStructureArrowService from "client/services/tools/placement/structure-arrow";
 import BaseStructureBeamService from "client/services/tools/placement/structure-beam";
 import BaseStructurePlacementService from "client/services/tools/placement/structure-placement";
-import TutorialService from "client/services/progression/tutorial";
-import { STRUCTURES } from "shared/constants/structures";
+import { getStructureModel } from "shared/constants/structures";
 import BaseBuildingService from "client/services/tools/build/base";
 import { BaseStructurePreviewService } from "client/services/tools/placement/structure-preview";
 import { BaseStructureCFrameService } from "client/services/tools/placement/structure-cframe";
 import { PowerLineBuildingService } from "client/services/tools/build/power-line";
 import { LiftStructureBuildingService } from "client/services/tools/build/lift-structure";
-import { Object } from "@rbxts/luau-polyfill";
-import CollisionService from "shared/services/collision";
 import { UserInputService } from "@rbxts/services";
 import SoundService from "client/services/sound";
+import { GridService, PowerService } from "shared/services/plot";
+import ValidationService from "shared/services/validation";
+import { store } from "client/hooks/store";
+import { selectBuildingStructureModel } from "client/hooks/store/context/tools";
 
-@Controller({})
-export default class BuildController extends ToolController implements OnInit {
+@Controller()
+export default class BuildController extends ToolController {
 	protected readonly context = "Build";
 	protected readonly inputActions = [
 		{
 			action: new StandardActionBuilder("R"),
 			activated: () => {
 				this.currentBuildingService?.onRotate();
+			},
+		},
+		{
+			action: new StandardActionBuilder("T"),
+			activated: () => {
+				this.currentBuildingService?.onMirror();
 			},
 		},
 		{
@@ -47,10 +50,9 @@ export default class BuildController extends ToolController implements OnInit {
 	];
 
 	private readonly gridService = GridService.getInst();
-	private readonly collisionService = CollisionService.getInst();
 	private readonly powerService = PowerService.getInst();
-	private readonly tutorialService = TutorialService.getInst();
 	private readonly mouseService = new MouseService(this.gridService);
+	private readonly validationService = ValidationService.getInst();
 	private readonly soundService = SoundService.getInst();
 
 	private readonly baseStructureHighlightService = BaseStructureHighlightService.getInst();
@@ -76,12 +78,7 @@ export default class BuildController extends ToolController implements OnInit {
 		);
 		this.baseStructurePreviewService = BaseStructurePreviewService.getInst();
 
-		BaseStructurePlacementService.init(
-			this.gridService,
-			this.collisionService,
-			this.tutorialService,
-			this.soundService,
-		);
+		BaseStructurePlacementService.init(this.validationService, this.soundService);
 		this.baseStructurePlacementService = BaseStructurePlacementService.getInst();
 
 		this.baseStructureBuildingService = new BaseStructureBuildingService(
@@ -130,8 +127,8 @@ export default class BuildController extends ToolController implements OnInit {
 		});
 	}
 
-	public override onInit(): void | Promise<void> {
-		super.onInit();
+	protected override initEvents(): void {
+		super.initEvents();
 		store.subscribe(selectBuildingStructureModel, (structureModel) => {
 			if (structureModel === undefined) return;
 			if (structureModel.GetAttribute("Id") !== undefined) {
@@ -140,42 +137,30 @@ export default class BuildController extends ToolController implements OnInit {
 			} else {
 				if (structureModel.Name === "Conveyor" || structureModel.Name === "Pipeline") {
 					this.currentBuildingService = this.pathStructureBuildingService;
-					this.currentBuildingService.enter(
-						structureModel,
-						Object.entries(STRUCTURES).find(
-							([structureName]) =>
-								structureName.find(structureModel.Name)[0] !== undefined &&
-								structureName.find("Left")[0] !== undefined,
-						)?.[1].model ??
-							Object.entries(STRUCTURES).find(
-								([structureName]) =>
-									structureName.find(structureModel.Name)[0] !== undefined &&
-									structureName.find("Turn")[0] !== undefined,
-							)![1].model,
-						Object.entries(STRUCTURES).find(
-							([structureName]) =>
-								structureName.find(structureModel.Name)[0] !== undefined &&
-								structureName.find("Right")[0] !== undefined,
-						)?.[1].model ??
-							Object.entries(STRUCTURES).find(
-								([structureName]) =>
-									structureName.find(structureModel.Name)[0] !== undefined &&
-									structureName.find("Turn")[0] !== undefined,
-							)![1].model,
-					);
+					if (structureModel.Name === "Conveyor") {
+						this.currentBuildingService.enter(
+							structureModel,
+							getStructureModel("Left Turn Conveyor")!,
+							getStructureModel("Right Turn Conveyor")!,
+						);
+					} else {
+						this.currentBuildingService.enter(
+							structureModel,
+							getStructureModel("Pipeline Turn")!,
+							getStructureModel("Pipeline Turn")!,
+						);
+					}
 				} else if (structureModel.Name.find("Underground")[0] !== undefined) {
 					this.currentBuildingService = this.undergroundStructureBuildingService;
-					this.currentBuildingService.enter(structureModel);
-				} else if (structureModel.Name.find("Lift")[0] !== undefined) {
-					this.currentBuildingService = this.liftStructureBuildingService;
 					this.currentBuildingService.enter(
 						structureModel,
-						Object.entries(STRUCTURES).find(
-							([structureName]) =>
-								structureName.find(structureModel.Name)[0] !== undefined &&
-								structureName.find("Elevator")[0] !== undefined,
-						)![1].model,
+						(structureModel.Name === "Underground Conveyor"
+							? getStructureModel("Transporter")
+							: getStructureModel("Fluid Transporter"))!,
 					);
+				} else if (structureModel.Name.find("Lift")[0] !== undefined) {
+					this.currentBuildingService = this.liftStructureBuildingService;
+					this.currentBuildingService.enter(structureModel);
 				} else if (structureModel.Name === "Power Line") {
 					this.currentBuildingService = this.powerLineBuildingService;
 					this.currentBuildingService.enter();

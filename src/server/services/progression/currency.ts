@@ -1,90 +1,77 @@
 import { OnInit, Service } from "@flamework/core";
-import DataService from "../data/data";
-import { EventBus } from "server/event-bus";
 import { Players } from "@rbxts/services";
-import { STRUCTURE_CATEGORIES } from "shared/constants/structures";
+import { SaveData, SaveService } from "../data/save";
 
-@Service({})
+@Service()
 export default class CurrencyService implements OnInit {
-	constructor(private readonly dataService: DataService) {}
+	private readonly currencies = new Map<Player, Map<string, NumberValue>>();
+
+	constructor(private readonly saveService: SaveService) {
+		this.saveService.register("cash", (player) => this.currencies.get(player)!.get("Cash")!.Value);
+		this.saveService.register(
+			"logisticsData",
+			(player) => this.currencies.get(player)!.get("Logistics Data")!.Value,
+		);
+		this.saveService.register(
+			"productionData",
+			(player) => this.currencies.get(player)!.get("Production Data")!.Value,
+		);
+		this.saveService.register("powerData", (player) => this.currencies.get(player)!.get("Power Data")!.Value);
+	}
 
 	onInit(): void | Promise<void> {
 		this.initEvents();
 	}
 
-	private initEvents() {
+	private initEvents(): void {
 		Players.PlayerAdded.Connect((player) => {
 			const leaderstats = new Instance("Folder");
 			leaderstats.Name = "leaderstats";
-			for (const currency of [
-				"Cash",
-				...STRUCTURE_CATEGORIES.map((structureCategory) => `${structureCategory} Data`),
-			]) {
-				const numberValue = new Instance("NumberValue");
-				numberValue.Name = currency;
-				numberValue.Parent = leaderstats;
-			}
 			leaderstats.Parent = player;
-		});
-		EventBus.OnGameLoad.Connect((player) => {
-			this.initCurrencies(player);
-			this.startAutoSaving(player);
-		});
-		EventBus.OnGameUnload.Connect((player) => {
-			this.resetCash(player);
-			(player.WaitForChild("leaderstats").WaitForChild("Cash") as NumberValue).Value = 0;
-		});
-	}
+			const currencies = new Map<string, NumberValue>();
 
-	private initCurrencies(player: Player): void {
-		const leaderstats = player.WaitForChild("leaderstats");
-		this.dataService.get(player, "cash").then((cash) => {
-			(leaderstats.WaitForChild("Cash") as NumberValue).Value = cash;
+			const cashNumberValue = new Instance("NumberValue");
+			cashNumberValue.Name = "Cash";
+			cashNumberValue.Parent = leaderstats;
+			currencies.set("Cash", cashNumberValue);
+			for (const dataCurrency of ["Logistics Data", "Production Data", "Power Data"]) {
+				const dataNumberValue = new Instance("NumberValue");
+				dataNumberValue.Name = dataCurrency;
+				dataNumberValue.Parent = player;
+				currencies.set(dataCurrency, dataNumberValue);
+			}
+			this.currencies.set(player, currencies);
 		});
-		this.dataService.get(player, "logisticsData").then((logisticsData) => {
-			(leaderstats.WaitForChild("Logistics Data") as NumberValue).Value = logisticsData;
-		});
-		this.dataService.get(player, "cash").then((productionData) => {
-			(leaderstats.WaitForChild("Logistics Data") as NumberValue).Value = productionData;
-		});
-		this.dataService.get(player, "cash").then((powerData) => {
-			(leaderstats.WaitForChild("Logistics Data") as NumberValue).Value = powerData;
-		});
-	}
 
-	private resetCash(player: Player): void {
-		this.save(player);
-	}
+		this.saveService.OnSaveLoad.Connect((player, saveData) => {
+			this.initCurrencies(player, saveData);
+		});
 
-	private startAutoSaving(player: Player): void {
-		task.spawn(() => {
-			while (task.wait(120)) {
-				this.save(player);
+		this.saveService.OnSaveUnload.Connect((player) => {
+			this.resetCurrencies(player);
+			if (player.Parent === undefined) {
+				this.currencies.delete(player);
 			}
 		});
 	}
 
-	private save(player: Player): void {
-		const leaderstats = player.WaitForChild("leaderstats");
-		this.dataService.set(player, "cash", (leaderstats.WaitForChild("Cash") as NumberValue).Value);
-		this.dataService.set(
-			player,
-			"logisticsData",
-			(leaderstats.WaitForChild("Logistics Data") as NumberValue).Value,
-		);
-		this.dataService.set(
-			player,
-			"productionData",
-			(leaderstats.WaitForChild("Production Data") as NumberValue).Value,
-		);
-		this.dataService.set(player, "powerData", (leaderstats.WaitForChild("Power Data") as NumberValue).Value);
+	private initCurrencies(player: Player, saveData: SaveData): void {
+		const currencies = this.currencies.get(player)!;
+		currencies.get("Cash")!.Value = saveData.cash;
+		currencies.get("Logistics Data")!.Value = saveData.logisticsData;
+		currencies.get("Production Data")!.Value = saveData.productionData;
+		currencies.get("Power Data")!.Value = saveData.powerData;
+	}
+
+	private resetCurrencies(player: Player): void {
+		for (const numberValue of player
+			.GetDescendants()
+			.filter((instance): instance is NumberValue => instance.IsA("NumberValue"))) {
+			numberValue.Value = 0;
+		}
 	}
 
 	public addCurrency(player: Player, currency: string, amount: number): void {
-		(player.WaitForChild("leaderstats").WaitForChild(currency) as NumberValue).Value += amount;
-	}
-
-	public getCurrency(player: Player, currency: string): number {
-		return (player.WaitForChild("leaderstats").WaitForChild(currency) as NumberValue).Value;
+		this.currencies.get(player)!.get(currency)!.Value += amount;
 	}
 }

@@ -1,26 +1,35 @@
 import { Object } from "@rbxts/luau-polyfill";
-import { lerpBinding, useEventListener, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
+import { lerpBinding, useEventListener, useMotion, useMountEffect, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
 import { useStore } from "client/hooks";
 import { Events } from "client/network";
-import { selectContext } from "client/store/context";
 import { colors, fonts, springs } from "client/ui/constants";
 import { Button, CanvasGroup, Frame, Image, ScrollingFrame, Text } from "client/ui/core";
 import { IMAGES } from "shared/assets/images";
 import { SETTING_CATEGORIES, SETTINGS } from "shared/constants/settings";
 import { SettingsMenuSettingSoundSlider } from "./setting-sound-slider";
 import { SettingsMenuSettingPerformanceDropdown } from "./setting-performance-dropdown";
-import { selectSettings } from "client/store/context/sections";
+import DataService from "client/services/data/data";
+import { selectContext } from "client/hooks/store/context";
+import { selectSettings } from "client/hooks/store/context/sections";
 
 export function SettingsMenu() {
 	const store = useStore();
 	const context = useSelector(selectContext);
-	const settings = useSelector(selectSettings)
+	const settings = useSelector(selectSettings);
+	const dataService = DataService.getInst();
 
 	const [mountAnimation, mountAnimationMotion] = useMotion(0);
 
-	useEventListener(Events.OnDataInitialization, (data) => {
+	useMountEffect(() => {
+		const data = dataService.getData();
+		if (data !== undefined) {
+			store.setSettings(data.settings);
+		}
+	});
+
+	useEventListener(dataService.OnDataInitialization, (data) => {
 		store.setSettings(data.settings);
 	});
 
@@ -34,7 +43,7 @@ export function SettingsMenu() {
 			Active={context === "Settings"}
 			AnchorPoint={new Vector2(0.5, 0.5)}
 			Position={UDim2.fromScale(0.5, 0.5)}
-			Size={lerpBinding(mountAnimation, UDim2.fromScale(0, 0), UDim2.fromScale(.313,.594))}
+			Size={lerpBinding(mountAnimation, UDim2.fromScale(0, 0), UDim2.fromScale(0.313, 0.594))}
 			BackgroundColor3={colors.black}
 			Interactable={context === "Settings"}
 			ZIndex={2}
@@ -85,75 +94,76 @@ export function SettingsMenu() {
 
 				<Frame Size={UDim2.fromScale(1, 0.03)} BackgroundTransparency={1} LayoutOrder={0}></Frame>
 
-				{SETTING_CATEGORIES.map((settingCategory, index, settingCategories) => 
-					 (
-						<>
-							<Text
-								Size={UDim2.fromScale(0.91, 0.07)}
-								BackgroundTransparency={1}
-								LayoutOrder={settingCategories
-									.filter((_, index_) => index_ >= 0 && index_ < index)
-									.reduce(
-										(index, settingCategory) =>
-											(index += Object.entries(SETTINGS)
-												.filter(
-													([, settingDefinition]) =>
-														settingDefinition.category === settingCategory,
-												)
-												.size()),
-										1 + index,
-									)}
-								FontFace={fonts.josefinSans.semiBold}
-								Text={`${settingCategory} :`}
-								TextSize={22}
-								TextXAlignment={Enum.TextXAlignment.Left}
-							></Text>
+				{SETTING_CATEGORIES.map((settingCategory, index, settingCategories) => (
+					<>
+						<Text
+							Size={UDim2.fromScale(0.91, 0.07)}
+							BackgroundTransparency={1}
+							LayoutOrder={settingCategories
+								.filter((_, index_) => index_ >= 0 && index_ < index)
+								.reduce(
+									(index, settingCategory) =>
+										(index += Object.entries(SETTINGS)
+											.filter(
+												([, settingDefinition]) =>
+													settingDefinition.category === settingCategory,
+											)
+											.size()),
+									1 + index,
+								)}
+							FontFace={fonts.josefinSans.semiBold}
+							Text={`${settingCategory} :`}
+							TextSize={22}
+							TextXAlignment={Enum.TextXAlignment.Left}
+						></Text>
 
-							{Object.entries(SETTINGS)
-								.filter(([, settingDefinition]) => settingDefinition.category === settingCategory)
-								.map(([settingName, settingDefinition],_,settings_) =>
-									(
-									<Frame
-										Size={UDim2.fromScale(0.91, 0.14)}
-										BackgroundTransparency={1}
-										LayoutOrder={settingCategories
-											.filter((_, index_) => index_ >= 0 && index_ < index)
-											.reduce(
-												(index, settingCategory) =>
-													(index += Object.entries(SETTINGS)
-														.filter(
-															([, settingDefinition]) =>
-																settingDefinition.category === settingCategory,
-														)
-														.size()),
-												2+index+settingDefinition.index,
-											)}
-										ZIndex={settingDefinition.type==="PerformanceDropdown"?settings_.size()-settingDefinition.index:1}
-									>
-										<Text
-											Size={UDim2.fromScale(1, 1)}
-											Text={`${settingDefinition.text} :`}
-											TextSize={18}
-											TextXAlignment={Enum.TextXAlignment.Left}
-										></Text>
-
-										{settingDefinition.type === "SoundSlider" ? (
-											<SettingsMenuSettingSoundSlider
-												settingName={settingName}
-												volume={settings[settingName] as number}
-											></SettingsMenuSettingSoundSlider>
-										) : (
-											<SettingsMenuSettingPerformanceDropdown
-												settingName={settingName}
-												performanceDropdownSettingDefinition={settingDefinition}
-												userIds={settings[settingName] as number[]}
-											></SettingsMenuSettingPerformanceDropdown>
+						{Object.entries(SETTINGS)
+							.filter(([, settingDefinition]) => settingDefinition.category === settingCategory)
+							.map(([settingName, settingDefinition], _, settings_) => (
+								<Frame
+									Size={UDim2.fromScale(0.91, 0.14)}
+									BackgroundTransparency={1}
+									LayoutOrder={settingCategories
+										.filter((_, index_) => index_ >= 0 && index_ < index)
+										.reduce(
+											(index, settingCategory) =>
+												(index += Object.entries(SETTINGS)
+													.filter(
+														([, settingDefinition]) =>
+															settingDefinition.category === settingCategory,
+													)
+													.size()),
+											2 + index + settingDefinition.index,
 										)}
-									</Frame>
-								))}
-						</>
-					)
-				)}
+									ZIndex={
+										settingDefinition.type === "PerformanceDropdown"
+											? settings_.size() - settingDefinition.index
+											: 1
+									}
+								>
+									<Text
+										Size={UDim2.fromScale(1, 1)}
+										Text={`${settingDefinition.text} :`}
+										TextSize={18}
+										TextXAlignment={Enum.TextXAlignment.Left}
+									></Text>
+
+									{settingDefinition.type === "SoundSlider" ? (
+										<SettingsMenuSettingSoundSlider
+											settingName={settingName}
+											volume={settings[settingName] as number}
+										></SettingsMenuSettingSoundSlider>
+									) : (
+										<SettingsMenuSettingPerformanceDropdown
+											settingName={settingName}
+											performanceDropdownSettingDefinition={settingDefinition}
+											userIds={settings[settingName] as number[]}
+										></SettingsMenuSettingPerformanceDropdown>
+									)}
+								</Frame>
+							))}
+					</>
+				))}
 
 				<Frame Size={UDim2.fromScale(1, 0.32)} BackgroundTransparency={1} LayoutOrder={100}></Frame>
 			</ScrollingFrame>
@@ -174,7 +184,7 @@ export function SettingsMenu() {
 					Size={UDim2.fromScale(0.5, 1)}
 					Event={{
 						MouseButton1Click: () => {
-							Events.UnloadGame.fire();
+							Events.UnloadSave.fire();
 						},
 					}}
 				>
@@ -193,7 +203,7 @@ export function SettingsMenu() {
 					Size={UDim2.fromScale(0.5, 1)}
 					Event={{
 						MouseButton1Click: () => {
-							Events.DeleteGame.fire();
+							Events.DeleteSave.fire();
 						},
 					}}
 				>

@@ -3,22 +3,23 @@ import { Frame, Image, Text } from "client/ui/core";
 import { colors, fonts } from "client/ui/constants";
 import { BaseInfoPanel } from "../base";
 import { InfoPanelFluidIndicator } from "../components";
-import { useSelector } from "@rbxts/react-reflex";
-import { selectContextStructureComponents } from "client/store/context";
-import TransporterComponent from "client/components/logistics/transporter";
+import { useSelectorCreator } from "@rbxts/react-reflex";
 import { Object } from "@rbxts/luau-polyfill";
-import { round } from "shared/utils/math";
+import { round } from "shared/utils";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { RunService } from "@rbxts/services";
 import { STRUCTURES } from "shared/constants/structures";
 import { ITEMS } from "shared/constants/items";
+import { selectContextStructureComponents } from "client/hooks/store/context";
+import TransporterComponent from "shared/components/logistics/transporter";
 
 export function PipelineInfoPanel() {
-	const transporterComponents = useSelector(selectContextStructureComponents(TransporterComponent));
+	const transporterComponents = useSelectorCreator(selectContextStructureComponents, TransporterComponent);
 	const [fluid, setFluid] = useBinding<[string, number] | undefined>(undefined);
 	const connectionRef = useRef<RBXScriptConnection>();
 
 	useUpdateEffect(() => {
+		setFluid(undefined);
 		connectionRef.current?.Disconnect();
 		connectionRef.current = undefined;
 		if (

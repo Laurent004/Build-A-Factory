@@ -1,6 +1,5 @@
 import { HttpService } from "@rbxts/services";
 import { IMAGES } from "shared/assets/images";
-import { MODELS } from "shared/assets/models";
 import { StructureDefinition } from "./types";
 
 export const STRUCTURES: Record<string, StructureDefinition> = {
@@ -8,17 +7,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	Transporter: {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 20,
+		cost: 1,
 
-		model: MODELS["Transporter"],
 		tags: ["Transporter"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [],
 			inputs: {
@@ -40,14 +36,12 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Transports items forward at a steady rate, keeping production lines flowing smoothly.",
-		cost: 20,
+		cost: 1,
 
-		model: MODELS["Conveyor"],
 		tags: ["Transporter"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -67,16 +61,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
 		index: 1,
-		image: IMAGES["Conveyor"],
+		image: IMAGES.Conveyor,
 		description: "Redirects items 90° to the left while maintaining consistent movement and flow.",
-		cost: 20,
+		cost: 1,
 
-		model: MODELS["Left Turn Conveyor"],
 		tags: ["Transporter"],
 		constants: {
 			ThroughputRate: 300,
 		},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 
@@ -97,16 +91,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
 		index: 2,
-		image: IMAGES["Conveyor"],
+		image: IMAGES.Conveyor,
 		description: "Redirects items 90° to the right while maintaining consistent movement and flow.",
-		cost: 20,
+		cost: 1,
 
-		model: MODELS["Right Turn Conveyor"],
 		tags: ["Transporter"],
 		constants: {
 			ThroughputRate: 300,
 		},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -130,10 +124,10 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		description: "Transfers items underground to bypass obstacles and crowded production areas.",
 		cost: 0,
 
-		model: MODELS["Underground Conveyor"],
 		tags: [],
 		constants: {},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [],
 			inputs: {
@@ -152,17 +146,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Underground Conveyor Input": {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 60,
+		cost: 1,
 
-		model: MODELS["Underground Conveyor Input"],
-		tags: ["LinkedTransporterInput"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		tags: ["Transporter", "UndergroundConveyorInput"],
+		constants: {},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -181,17 +172,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Underground Conveyor Output": {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 60,
+		cost: 1,
 
-		model: MODELS["Underground Conveyor Output"],
-		tags: ["LinkedTransporterOutput"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		tags: ["Transporter", "UndergroundConveyorOutput"],
+		constants: {},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -215,10 +203,10 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		description: "Moves items vertically to connect production lines across different heights.",
 		cost: 0,
 
-		model: MODELS["Conveyor Lift"],
 		tags: [],
 		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [],
 			inputs: {
@@ -237,17 +225,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Conveyor Lift Input": {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 80,
+		cost: 1,
 
-		model: MODELS["Conveyor Lift Input"],
-		tags: ["LinkedTransporterInput"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		tags: ["Transporter", "ConveyorLiftInput"],
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -266,15 +251,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Conveyor Lift Elevator": {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
-		index: undefined,
 		image: "",
 		description: "",
 		cost: 0,
 
-		model: MODELS["Conveyor Lift Elevator"],
 		tags: [],
 		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -293,17 +277,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Conveyor Lift Output": {
 		category: "Logistics",
 		subcategory: "Conveyor Belts",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 80,
+		cost: 1,
 
-		model: MODELS["Conveyor Lift Output"],
-		tags: ["LinkedTransporterOutput"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		tags: ["Transporter", "ConveyorLiftOutput"],
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -325,18 +306,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 5,
 		image: IMAGES["Conveyor"],
 		description: "AAAA",
-		cost: 80,
+		cost: 1,
 
-		model: MODELS["Conveyor Throughput Counter"],
-		tags: ["Transporter", "ThroughputCounter"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		tags: ["TrackedTransporter", "ThroughputCounter"],
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
-				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, -1), false]]),
+				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			outputs: {
@@ -351,18 +330,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Fluid Transporter": {
 		category: "Logistics",
 		subcategory: "Pipelines",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 30,
+		cost: 1,
 
-		model: MODELS["Fluid Transporter"],
 		tags: ["Transporter"],
 		constants: {
-			FlowRate: 300,
 			FluidCapacity: 6,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [],
 			inputs: {
@@ -387,15 +364,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Moves fluids forward at a constant rate, supporting stable industrial flow.",
-		cost: 30,
+		cost: 1,
 
-		model: MODELS["Pipeline"],
 		tags: ["Transporter"],
 		constants: {
-			FlowRate: 300,
 			FluidCapacity: 6,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -420,15 +396,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Redirects fluid flow by 90°, enabling compact and flexible pipe layouts.",
-		cost: 30,
+		cost: 1,
 
-		model: MODELS["Pipeline Turn"],
 		tags: ["Transporter"],
 		constants: {
-			FlowRate: 300,
 			FluidCapacity: 6,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -453,15 +428,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		image: IMAGES["Conveyor"],
 		index: 2,
 		description: "Splits or combines fluid streams to efficiently distribute resources.",
-		cost: 30,
+		cost: 1,
 
-		model: MODELS["Pipeline Junction"],
 		tags: ["Transporter"],
 		constants: {
-			FlowRate: 300,
 			FluidCapacity: 6,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -490,10 +464,10 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		description: "Transfers fluids underground to avoid surface obstacles and congestion.",
 		cost: 0,
 
-		model: MODELS["Underground Pipeline"],
 		tags: [],
 		constants: {},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [],
 			inputs: {
@@ -512,18 +486,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Underground Pipeline Input": {
 		category: "Logistics",
 		subcategory: "Pipelines",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 70,
+		cost: 1,
 
-		model: MODELS["Underground Pipeline Input"],
-		tags: ["LinkedTransporterInput"],
+		tags: ["Transporter"],
 		constants: {
-			FlowRate: 300,
 			FluidCapacity: 6,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -545,18 +517,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 	"Underground Pipeline Output": {
 		category: "Logistics",
 		subcategory: "Pipelines",
-		index: undefined,
 		image: "",
 		description: "",
-		cost: 70,
+		cost: 1,
 
-		model: MODELS["Underground Pipeline Output"],
-		tags: ["LinkedTransporterOutput"],
+		tags: ["Transporter"],
 		constants: {
-			FlowRate: 300,
 			FluidCapacity: 6,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -581,14 +551,12 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Combines multiple item streams into a single, continuous output line.",
-		cost: 100,
+		cost: 1,
 
-		model: MODELS.Merger,
 		tags: ["Merger"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -614,19 +582,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Merges item streams while prioritizing selected inputs when congested.",
-		cost: 500,
-		gamepass: 1546305404,
+		cost: 1,
 
-		model: MODELS["Priority Merger"],
 		tags: ["PriorityMerger"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
 		attributes: {
 			Left: "Low",
 			Backward: "Low",
 			Right: "Low",
 		},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -652,14 +617,13 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 2,
 		image: IMAGES["Conveyor"],
 		description: "Divides incoming items evenly across multiple output paths.",
-		cost: 150,
+		cost: 1,
 
-		model: MODELS.Splitter,
 		tags: ["Splitter"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
 		attributes: {},
+		maxElevation: 4,
+
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -685,18 +649,16 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 3,
 		image: IMAGES["Conveyor"],
 		description: "Sorts items using filters to direct them to specific outputs.",
-		cost: 500,
+		cost: 1,
 
-		model: MODELS["Smart Splitter"],
 		tags: ["SmartSplitter"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
 		attributes: {
 			Left: "Any",
 			Forward: "Any",
 			Right: "Any",
 		},
+		maxElevation: 4,
 		nodes: {
 			cells: [new Vector3()],
 			inputs: {
@@ -722,14 +684,11 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 4,
 		image: IMAGES["Conveyor"],
 		description: "Sorts items using advanced, customizable filtering logic.",
-		cost: 2250,
-		gamepass: 1546149382,
+		cost: 1,
 
-		model: MODELS["Programmable Splitter"],
 		tags: ["ProgrammableSplitter"],
-		constants: {
-			ThroughputRate: 300,
-		},
+		constants: {},
+		maxElevation: 4,
 		attributes: {
 			Left: HttpService.JSONEncode(["Any"]),
 			Forward: HttpService.JSONEncode(["Any"]),
@@ -760,55 +719,54 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		subcategory: "Miscellaneous",
 		description: "Accepts delivered items to progress by producing money.",
-		cost: 17500,
+		cost: 1,
 
-		model: MODELS["Delivery Dock"],
 		tags: ["DeliveryDock"],
 		constants: {},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [
-				new Vector3(-6, -3, -6),
-				new Vector3(2, -3, 6),
-				new Vector3(-2, -3, 2),
-				new Vector3(-2, -3, -2),
-				new Vector3(-6, -3, -2),
-				new Vector3(2, -3, -6),
-				new Vector3(-2, -3, 6),
-				new Vector3(2, -3, -2),
-				new Vector3(6, -3, 2),
-				new Vector3(6, -3, 6),
-				new Vector3(-2, -3, -6),
-				new Vector3(6, -3, -6),
-				new Vector3(6, -3, -2),
-				new Vector3(-6, -3, 6),
-				new Vector3(2, -3, 2),
-				new Vector3(-6, -3, 2),
+				new Vector3(-4, -3, -4),
+				new Vector3(0, -3, 0),
+				new Vector3(0, -3, -4),
+				new Vector3(4, -3, -4),
+				new Vector3(4, -3, 0),
+				new Vector3(-4, -3, -0),
 			],
 			inputs: {
-				solids: new Map<CFrame, boolean>([
-					[new CFrame(-6, -3, -6, 0, -1, 0, 0, 0, -1, 1, 0, 0), true],
-					[new CFrame(6, -3, -6, 0, -1, 0, 0, 0, -1, 1, 0, 0), true],
-					[new CFrame(-6, -3, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(-2, -3, -6, 0, -1, 0, 0, 0, -1, 1, 0, 0), true],
-					[new CFrame(-6, -3, 2, 1, 0, 0, 0, 0, -1, 0, 1, 0), true],
-					[new CFrame(2, -3, -6, 0, -1, 0, 0, 0, -1, 1, 0, 0), true],
-					[new CFrame(6, -3, -2, -1, 0, 0, 0, 0, -1, 0, -1, -0), true],
-					[new CFrame(-2, -3, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(-6, -3, 6, 1, 0, 0, 0, 0, -1, 0, 1, 0), true],
-					[new CFrame(2, -3, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(6, -3, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(-6, -3, -2, 1, 0, 0, 0, 0, -1, 0, 1, 0), true],
-					[new CFrame(6, -3, 2, -1, 0, 0, 0, 0, -1, 0, -1, -0), true],
-					[new CFrame(6, -3, -6, -1, 0, 0, 0, 0, -1, 0, -1, -0), true],
-					[new CFrame(6, -3, 6, -1, 0, 0, 0, 0, -1, 0, -1, -0), true],
-					[new CFrame(-6, -3, -6, 1, 0, 0, 0, 0, -1, 0, 1, 0), true],
-				]),
+				solids: new Map<CFrame, boolean>([[new CFrame(0, -3, 0, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			outputs: {
 				solids: new Map<CFrame, boolean>(),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+		},
+		priority: 0,
+	},
 
+	"Data Center": {
+		image: IMAGES["Conveyor"],
+		category: "Logistics",
+		index: 1,
+		subcategory: "Miscellaneous",
+		description: "Accepts delivered items to progress by producing money.",
+		cost: 1,
+
+		tags: ["DataCenter"],
+		constants: {},
+		attributes: {},
+		maxElevation: 0,
+		nodes: {
+			cells: [new Vector3(0, -3, -4), new Vector3(0, -3, 0), new Vector3(0, -3, 4)],
+			inputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(0, -3, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>(),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			connections: new Map<CFrame, boolean>(),
@@ -816,7 +774,6 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 0,
 	},
 	//#endregion
-
 	//#region Production
 	Miner: {
 		category: "Production",
@@ -824,25 +781,29 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Automatically extracts solid resources from nearby resource deposits.",
-		cost: 200,
+		cost: 1,
 
-		model: MODELS.Miner,
 		tags: ["Miner", "IndicatorLight"],
 		constants: {
-			ThroughputRate: 300,
-			PowerConsumption: 6,
+			PowerConsumption: 5,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
-			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
+			cells: [
+				new Vector3(-2, -3.5, -4),
+				new Vector3(-2, -3.5, 4),
+				new Vector3(2, -3.5, 4),
+				new Vector3(2, -3.5, 0),
+				new Vector3(2, -3.5, -4),
+				new Vector3(-2, -3.5, 0),
+			],
 			inputs: {
 				solids: new Map<CFrame, boolean>(),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			outputs: {
-				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, -8, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				solids: new Map<CFrame, boolean>([[new CFrame(0, -3.5, -12, 0, -1, 0, 0, 0, 1, -1, 0, 0), true]]),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			connections: new Map<CFrame, boolean>(),
@@ -856,18 +817,50 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Pumps water from natural sources for industrial and manufacturing use.",
-		cost: 250,
+		cost: 1,
 
-		model: MODELS["Water Extractor"],
 		tags: ["FluidExtractor", "IndicatorLight"],
 		constants: {
-			FlowRate: 600,
+			Recipe: "Water",
 			FluidCapacity: 200,
-			PowerConsumption: 15,
+			PowerConsumption: 8,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
-			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
+			cells: [new Vector3(0, 0, 2), new Vector3(0, 0, -2)],
+			inputs: {
+				solids: new Map<CFrame, boolean>(),
+
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>(),
+				fluids: new Map<CFrame, boolean>([[new CFrame(0, 0, -8, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+			},
+			connections: new Map<CFrame, boolean>(),
+		},
+		priority: 0,
+	},
+
+	"Oil Extractor": {
+		category: "Production",
+		subcategory: "Extractors",
+		index: 2,
+		image: IMAGES["Conveyor"],
+		description: "Pumps water from natural sources for industrial and manufacturing use.",
+		cost: 1,
+
+		tags: ["FluidExtractor", "IndicatorLight"],
+		constants: {
+			Recipe: "Crude Oil",
+			FluidCapacity: 200,
+			PowerConsumption: 10,
+		},
+		attributes: {},
+		maxElevation: 0,
+		nodes: {
+			cells: [new Vector3(0, 0, 2), new Vector3(0, 0, -2)],
 			inputs: {
 				solids: new Map<CFrame, boolean>(),
 
@@ -888,17 +881,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Refines raw ores into usable metal ingots for production chains.",
-		cost: 225,
+		cost: 1,
 
-		model: MODELS.Smelter,
 		tags: ["Manufacturer", "IndicatorLight"],
 		constants: {
-			ThroughputRate: 300,
-			PowerConsumption: 5,
+			PowerConsumption: 8,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
 			inputs: {
@@ -914,34 +904,86 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 2,
 	},
 
-	"Blast Furnace": {
+	Foundry: {
 		category: "Production",
 		subcategory: "Smelters",
 		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Refines raw ores into usable metal ingots for production chains.",
-		cost: 225,
+		cost: 1,
 
-		model: MODELS["Blast Furnace"],
 		tags: ["Manufacturer", "IndicatorLight"],
 		constants: {
-			ThroughputRate: 300,
-			PowerConsumption: 5,
+			PowerConsumption: 15,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
-			cells: [new Vector3(-2, 0, 2), new Vector3(2, 0, 2), new Vector3(2, 0, -2), new Vector3(-2, 0, -2)],
+			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
 			inputs: {
-				solids: new Map<CFrame, boolean>([
-					[new CFrame(2, 0, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(-2, 0, 4, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-				]),
+				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, 0, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			outputs: {
-				solids: new Map<CFrame, boolean>([[new CFrame(2, 0, -8, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				solids: new Map<CFrame, boolean>([[new CFrame(0, 0, -8, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+		},
+		priority: 2,
+	},
+
+	Crusher: {
+		category: "Production",
+		subcategory: "Processors",
+		index: 0,
+		image: IMAGES["Conveyor"],
+		description: "Refines raw ores into usable metal ingots for production chains.",
+		cost: 1,
+
+		tags: ["Manufacturer", "IndicatorLight"],
+		constants: {
+			PowerConsumption: 10,
+		},
+		attributes: {},
+		maxElevation: 0,
+		nodes: {
+			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
+			inputs: {
+				solids: new Map<CFrame, boolean>([]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>([]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+		},
+		priority: 2,
+	},
+
+	Press: {
+		category: "Production",
+		subcategory: "Processors",
+		index: 1,
+		image: IMAGES["Conveyor"],
+		description: "Refines raw ores into usable metal ingots for production chains.",
+		cost: 1,
+
+		tags: ["Manufacturer", "IndicatorLight"],
+		constants: {
+			PowerConsumption: 10,
+		},
+		attributes: {},
+		maxElevation: 0,
+		nodes: {
+			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
+			inputs: {
+				solids: new Map<CFrame, boolean>([]),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>([]),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			connections: new Map<CFrame, boolean>(),
@@ -955,17 +997,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Converts input materials into crafted components using selected recipes.",
-		cost: 400,
+		cost: 1,
 
-		model: MODELS.Constructor,
 		tags: ["Manufacturer", "IndicatorLight"],
 		constants: {
-			ThroughputRate: 300,
-			PowerConsumption: 20,
+			PowerConsumption: 12,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(0, 0, -4), new Vector3(0, 0, 0)],
 			inputs: {
@@ -988,18 +1027,15 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Combines refined materials to produce advanced industrial components.",
-		cost: 700,
+		cost: 1,
 
-		model: MODELS.Assembler,
 		tags: ["Manufacturer", "IndicatorLight"],
 
 		constants: {
-			ThroughputRate: 300,
-			PowerConsumption: 50,
+			PowerConsumption: 20,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [
 				new Vector3(0, 0, 0),
@@ -1034,18 +1070,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 2,
 		image: IMAGES["Conveyor"],
 		description: "Processes solid and liquid inputs into refined or composite resources.",
-		cost: 1250,
+		cost: 1,
 
-		model: MODELS.Refinery,
 		tags: ["Manufacturer", "IndicatorLight"],
 		constants: {
-			ThroughputRate: 300,
-			FlowRate: 600,
-			PowerConsumption: 5,
+			PowerConsumption: 25,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(-2, 0, 2), new Vector3(-2, 0, -2), new Vector3(2, 0, -2), new Vector3(2, 0, 2)],
 			inputs: {
@@ -1061,84 +1093,31 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 2,
 	},
 
-	Blender: {
-		category: "Production",
-		subcategory: "Manufacturers",
-		index: 3,
+	Incinerator: {
 		image: IMAGES["Conveyor"],
-		description: "Processes solid and liquid inputs into refined or composite resources.",
-		cost: 1250,
+		category: "Production",
+		index: 0,
+		subcategory: "Miscellaneous",
+		description: "DESTROY",
+		cost: 1,
 
-		model: MODELS.Blender,
-		tags: ["Manufacturer", "IndicatorLight"],
+		tags: ["Incinerator", "IndicatorLight"],
 		constants: {
-			ThroughputRate: 300,
-			FlowRate: 600,
-			PowerConsumption: 5,
+			PowerConsumption: 20,
 		},
-		attributes: {
-			Recipe: undefined,
-		},
+		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [
-				new Vector3(6, 0, -6),
-				new Vector3(6, 0, 6),
-				new Vector3(6, 0, -2),
-				new Vector3(-6, 0, -2),
-				new Vector3(-2, 0, -6),
-				new Vector3(-2, 0, 2),
-				new Vector3(2, 0, 6),
-				new Vector3(-2, 0, -2),
-				new Vector3(2, 0, -6),
-				new Vector3(2, 0, 2),
-				new Vector3(-2, 0, 6),
-				new Vector3(-6, 0, 2),
-				new Vector3(-6, 0, -6),
-				new Vector3(6, 0, 2),
-				new Vector3(2, 0, -2),
-				new Vector3(-6, 0, 6),
+				new Vector3(-4, -3, -4),
+				new Vector3(0, -3, 0),
+				new Vector3(0, -3, -4),
+				new Vector3(4, -3, -4),
+				new Vector3(4, -3, 0),
+				new Vector3(-4, -3, -0),
 			],
 			inputs: {
-				solids: new Map<CFrame, boolean>([
-					[new CFrame(2, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(6, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-				]),
-				fluids: new Map<CFrame, boolean>([
-					[new CFrame(-2, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-					[new CFrame(-6, 0, 6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true],
-				]),
-			},
-			outputs: {
-				solids: new Map<CFrame, boolean>([[new CFrame(6, 0, -10, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
-				fluids: new Map<CFrame, boolean>([[new CFrame(-6, 0, -10, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
-			},
-			connections: new Map<CFrame, boolean>(),
-		},
-		priority: 2,
-	},
-
-	//#endregion
-
-	//#region Power
-	"Hand-Crank": {
-		category: "Power",
-		subcategory: "Generators",
-		index: 0,
-		image: IMAGES["Conveyor"],
-		description: "Generates small amounts of power through manual rotation.",
-		cost: 50,
-
-		model: MODELS["Hand-Crank"],
-		tags: ["HandCrank"],
-		constants: {
-			PowerProduction: 25,
-			MaxCrankHandleRotationSpeed: 7,
-		},
-		attributes: {},
-		nodes: {
-			cells: [new Vector3(0, 0, 0)],
-			inputs: {
-				solids: new Map<CFrame, boolean>(),
+				solids: new Map<CFrame, boolean>([[new CFrame(0, -3, 0, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
 				fluids: new Map<CFrame, boolean>(),
 			},
 			outputs: {
@@ -1147,24 +1126,24 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 			},
 			connections: new Map<CFrame, boolean>(),
 		},
-
 		priority: 0,
 	},
-
+	//#endregion
+	//#region Power
 	"Solar Panel": {
 		category: "Power",
-		subcategory: "Generators",
-		index: 1,
+		subcategory: "Renewables",
+		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Converts sunlight into clean, reliable electrical power.",
-		cost: 125,
+		cost: 1,
 
-		model: MODELS["Solar Panel"],
 		tags: ["SolarPanel"],
 		constants: {
-			PowerProduction: 20,
+			PowerProduction: 8,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(0, 0, 0)],
 			inputs: {
@@ -1183,19 +1162,18 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 
 	"Wind Turbine": {
 		category: "Power",
-		subcategory: "Generators",
-		index: 2,
+		subcategory: "Renewables",
+		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Generates continuous power by harnessing wind energy.",
-		cost: 400,
+		cost: 1,
 
-		model: MODELS["Wind Turbine"],
 		tags: ["WindTurbine"],
 		constants: {
-			PowerProduction: 40,
-			MaxRotorRotationSpeed: 12,
+			PowerProduction: 30,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(0, -16, 0)],
 			inputs: {
@@ -1211,21 +1189,80 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		priority: 0,
 	},
 
-	"Coal Generator": {
+	"Hand-Crank": {
 		category: "Power",
-		subcategory: "Generators",
-		index: 3,
+		subcategory: "Renewables",
+		index: 2,
+		image: IMAGES["Conveyor"],
+		description: "Generates small amounts of power through manual rotation.",
+		cost: 1,
+
+		tags: ["HandCrank"],
+		constants: {
+			PowerProduction: 15,
+		},
+		attributes: {},
+		maxElevation: 0,
+		nodes: {
+			cells: [new Vector3(0, 0, 0)],
+			inputs: {
+				solids: new Map<CFrame, boolean>(),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>(),
+				fluids: new Map<CFrame, boolean>(),
+			},
+			connections: new Map<CFrame, boolean>(),
+		},
+
+		priority: 0,
+	},
+
+	Boiler: {
+		category: "Power",
+		subcategory: "Non-Renewables",
+		index: 0,
 		image: IMAGES["Conveyor"],
 		description: "Burns coal to boil water to produce power.",
-		cost: 1250,
+		cost: 1,
 
-		model: MODELS["Coal Generator"],
-		tags: ["PowerGenerator", "CoalGenerator", "IndicatorLight"],
+		tags: ["Manufacturer", "IndicatorLight"],
+		constants: {},
+		attributes: {
+			Recipe: "Steam",
+		},
+		maxElevation: 0,
+		nodes: {
+			cells: [new Vector3(-2, 0, 2), new Vector3(-2, 0, -2), new Vector3(2, 0, -2), new Vector3(2, 0, 2)],
+			inputs: {
+				solids: new Map<CFrame, boolean>([[new CFrame(-2, 0, 2, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+				fluids: new Map<CFrame, boolean>([[new CFrame(2, 0, 2, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+			},
+			outputs: {
+				solids: new Map<CFrame, boolean>(),
+				fluids: new Map<CFrame, boolean>([[new CFrame(2, 0, -6, 0, 1, 0, 0, 0, -1, -1, 0, 0), true]]),
+			},
+			connections: new Map<CFrame, boolean>(),
+		},
+		priority: 0,
+	},
+
+	"Coal Generator": {
+		category: "Power",
+		subcategory: "Non-Renewables",
+		index: 1,
+		image: IMAGES["Conveyor"],
+		description: "Burns coal to boil water to produce power.",
+		cost: 1,
+
+		tags: ["CoalGenerator", "IndicatorLight"],
 		constants: {
 			FluidCapacity: 50,
 			PowerProduction: 75,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [
 				new Vector3(0, 0, 0),
@@ -1259,10 +1296,10 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		description: "Transfers electrical power between connected structures.",
 		cost: 0,
 
-		model: MODELS["Power Line"],
 		tags: [],
 		constants: {},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [],
 			inputs: {
@@ -1284,14 +1321,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 1,
 		image: IMAGES["Conveyor"],
 		description: "Extends the power network to supply nearby buildings.",
-		cost: 85,
+		cost: 1,
 
-		model: MODELS["Power Pole"],
 		tags: [],
 		constants: {
 			MaxConnections: 5,
 		},
 		attributes: {},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(0, -6, 0)],
 			inputs: {
@@ -1313,14 +1350,14 @@ export const STRUCTURES: Record<string, StructureDefinition> = {
 		index: 2,
 		image: IMAGES["Conveyor"],
 		description: "Manually controls power flow between connected circuits.",
-		cost: 275,
+		cost: 1,
 
-		model: MODELS["Power Switch"],
 		tags: ["PowerSwitch"],
 		constants: {},
 		attributes: {
 			On: false,
 		},
+		maxElevation: 0,
 		nodes: {
 			cells: [new Vector3(0, -6, 0)],
 			inputs: {

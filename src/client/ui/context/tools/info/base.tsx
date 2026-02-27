@@ -1,10 +1,10 @@
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { useMotion, usePrevious, useUpdateEffect } from "@rbxts/pretty-react-hooks";
+import { useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { colors, springs, fonts } from "client/ui/constants";
 import { STRUCTURES } from "shared/constants/structures";
-import { selectContext, selectContextStructureModels } from "client/store/context";
 import { CanvasGroup, Frame, Image, Text } from "client/ui/core";
+import { selectContext, selectContextStructureModels } from "client/hooks/store/context";
 
 interface BaseInfoPanelProps extends React.PropsWithChildren {
 	active: boolean;
@@ -14,14 +14,10 @@ interface BaseInfoPanelProps extends React.PropsWithChildren {
 export function BaseInfoPanel({ active, size, children }: BaseInfoPanelProps) {
 	const context = useSelector(selectContext);
 	const structureModel = useSelector(selectContextStructureModels)[0];
-	const previousStructureModel = usePrevious(structureModel);
 	const isActive = context === "Info" && active;
 	const [mountAnimation, mountAnimationMotion] = useMotion(0);
 
 	useUpdateEffect(() => {
-		if (structureModel !== undefined && structureModel.Name !== previousStructureModel?.Name && isActive) {
-			mountAnimationMotion.immediate(0);
-		}
 		mountAnimationMotion.spring(isActive ? 1 : 0, springs.gentle);
 	}, [structureModel, isActive]);
 

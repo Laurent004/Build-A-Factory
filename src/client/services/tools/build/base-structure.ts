@@ -1,9 +1,10 @@
-import { Players, RunService, Workspace } from "@rbxts/services";
+import { RunService } from "@rbxts/services";
 import { BaseStructurePreviewService } from "../placement/structure-preview";
 import { BaseStructureCFrameService } from "../placement/structure-cframe";
 import BaseBuildingService from "./base";
 import MouseService from "../mouse";
 import BaseStructurePlacementService from "../placement/structure-placement";
+import { STRUCTURES } from "shared/constants/structures";
 
 export class BaseStructureBuildingService extends BaseBuildingService {
 	private connection: RBXScriptConnection | undefined;
@@ -25,10 +26,20 @@ export class BaseStructureBuildingService extends BaseBuildingService {
 				this.baseStructureCFrameService.setTargetPosition(
 					new Vector3(
 						newClampedCell.worldPosition.X,
-						math.max(
-							this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Y / 2 + 0.5,
-							this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position.Y,
-						),
+						this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Y/2+.5+
+						this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Y*math.clamp(
+								newClampedCell.position.Y,
+								0,
+								STRUCTURES[
+									baseStructurePreviewService
+										.getStructureModelHolder()
+										.GetChildren()
+										.find(
+											(instance): instance is Model =>
+												instance.IsA("Model") && instance.Name in STRUCTURES,
+										)!.Name
+								].maxElevation,
+							),
 						newClampedCell.worldPosition.Z,
 					),
 				);
@@ -45,10 +56,7 @@ export class BaseStructureBuildingService extends BaseBuildingService {
 				this.baseStructureCFrameService.setTargetPosition(
 					new Vector3(
 						newClampedCellVertexPosition.X,
-						math.max(
-							this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Y / 2 + 0.5,
-							this.baseStructurePreviewService.getStructureModelHolder().GetPivot().Position.Y,
-						),
+						this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart!.Size.Y / 2 + 0.5,
 						newClampedCellVertexPosition.Z,
 					),
 				);
@@ -60,13 +68,7 @@ export class BaseStructureBuildingService extends BaseBuildingService {
 		super.enter();
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
-		rayParams.AddToFilter([
-			Workspace.WaitForChild("Plots")
-				.GetChildren()
-				.find((plot) => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
-				.WaitForChild("Structures"),
-			this.baseStructurePreviewService.getStructureModelHolder(),
-		]);
+		rayParams.AddToFilter([this.baseStructurePreviewService.getStructureModelHolder()]);
 		this.mouseService.setRaycastParams(rayParams);
 		this.mouseService.startUpdating();
 		this.baseStructurePreviewService.initStructurePlacementPreview(structureModel);
@@ -87,16 +89,10 @@ export class BaseStructureBuildingService extends BaseBuildingService {
 
 	private startUpdatingStructure(): void {
 		this.connection = RunService.Heartbeat.Connect((dt) => {
-			if (
-				this.baseStructureCFrameService
-					.getTargetCF()
-					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
-			)
-				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
-				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()).success,
 			);
 		});
 	}
@@ -117,5 +113,9 @@ export class BaseStructureBuildingService extends BaseBuildingService {
 		this.baseStructureCFrameService.setTargetRotation(
 			this.baseStructureCFrameService.getTargetCF().Rotation.mul(CFrame.Angles(0, math.rad(90), 0)),
 		);
+	}
+
+	public onMirror(): void {
+		this.baseStructurePreviewService.mirrorStructurePreview();
 	}
 }

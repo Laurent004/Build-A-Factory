@@ -24,7 +24,6 @@ export function ToolInputPanel({ inputs, active }: ToolInputPanelProps) {
 			Position={UDim2.fromScale(0.989, 0.99)}
 			Size={UDim2.fromScale(0.22, 0)}
 			BackgroundColor3={colors.black}
-			ZIndex={0}
 		>
 			<uipadding
 				PaddingTop={new UDim(0, 20)}

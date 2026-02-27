@@ -1,30 +1,30 @@
 import React, { useBinding, useMemo, useRef } from "@rbxts/react";
 import { BaseInfoPanel } from "../base";
-import FluidExtractorComponent from "client/components/production/fluid-extractor";
+import FluidExtractorComponent from "shared/components/production/fluid-extractor";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { colors, fonts } from "client/ui/constants";
 import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
 import { IMAGES } from "shared/assets/images";
 import { RunService } from "@rbxts/services";
-import { useSelector } from "@rbxts/react-reflex";
-import { selectContextStructureComponents } from "client/store/context";
+import { useSelectorCreator } from "@rbxts/react-reflex";
 import { Frame, Image, Text } from "client/ui/core";
 import { Object } from "@rbxts/luau-polyfill";
 import { STRUCTURES } from "shared/constants/structures";
 import { InfoPanelFluidIndicator } from "../components";
-import { round } from "shared/utils/math";
+import { round } from "shared/utils";
+import { selectContextStructureComponents } from "client/hooks/store/context";
 
 export function FluidExtractorInfoPanel() {
-	const fluidExtractorComponent = useSelector(selectContextStructureComponents(FluidExtractorComponent))[0];
+	const fluidExtractorComponent = useSelectorCreator(selectContextStructureComponents, FluidExtractorComponent)[0];
 	const recipe = useMemo<string | undefined>(() => {
-		return Object.entries(ITEM_RECIPES).find(
-			([, itemRecipeDefinition]) => itemRecipeDefinition.structureName === fluidExtractorComponent?.instance.Name,
-		)?.[0];
+		if (fluidExtractorComponent === undefined) return undefined;
+		return STRUCTURES[fluidExtractorComponent.instance.Name].constants["Recipe"] as string;
 	}, [fluidExtractorComponent]);
 	const [data, setData] = useBinding<{
 		extractionProgress: number;
+		efficiency: number;
 		volume: number;
-	}>({ extractionProgress: 0, volume: 0 });
+	}>({ extractionProgress: 0, efficiency: 0, volume: 0 });
 	const connectionRef = useRef<RBXScriptConnection>();
 
 	useUpdateEffect(() => {
@@ -34,7 +34,8 @@ export function FluidExtractorInfoPanel() {
 		connectionRef.current = RunService.Heartbeat.Connect(() => {
 			setData({
 				extractionProgress: fluidExtractorComponent.getExtractionProgress(),
-				volume: fluidExtractorComponent.getFluids().get(Object.keys(ITEM_RECIPES[recipe!].outputItems)[0]) ?? 0,
+				efficiency: fluidExtractorComponent.getEfficiency(),
+				volume: Object.values(fluidExtractorComponent.getFluids())[0] ?? 0,
 			});
 		});
 	}, [fluidExtractorComponent]);
@@ -55,9 +56,7 @@ export function FluidExtractorInfoPanel() {
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.141, 0.403)}
 					Size={UDim2.fromScale(0.276, 0.408)}
-					Image={
-						recipe !== undefined ? ITEMS[Object.keys(ITEM_RECIPES[recipe].outputItems)[0]].image : undefined
-					}
+					Image={""}
 				></Image>
 
 				<Text
@@ -73,26 +72,15 @@ export function FluidExtractorInfoPanel() {
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.66, 0.41)}
 					Size={UDim2.fromScale(0.657, 0.08)}
-					FontFace={fonts.josefinSans.light}
 					RichText={true}
 					Text={`<font weight="regular" color="rgb(176,208,255)">${
 						recipe !== undefined
-							? math.floor(60 / ITEM_RECIPES[recipe].time) *
-							  ITEM_RECIPES[recipe].outputItems[Object.keys(ITEM_RECIPES[recipe].outputItems)[0]]
+							? (60 / ITEM_RECIPES[recipe].time) * Object.values(ITEM_RECIPES[recipe].outputItems)[0]
 							: 0
 					}m³</font> per minute`}
 					TextSize={15}
 					TextXAlignment={Enum.TextXAlignment.Left}
-				>
-					<Image
-						AnchorPoint={new Vector2(0.5, 0.5)}
-						Position={UDim2.fromScale(0.062, 0.5)}
-						Size={UDim2.fromScale(0.2, 1.6)}
-						Image={IMAGES.Glow}
-						ImageColor3={colors.lightblue}
-						ImageTransparency={0.8}
-					></Image>
-				</Text>
+				></Text>
 
 				<Frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
@@ -126,6 +114,7 @@ export function FluidExtractorInfoPanel() {
 					<uilistlayout
 						FillDirection={Enum.FillDirection.Horizontal}
 						SortOrder={Enum.SortOrder.LayoutOrder}
+						Wraps={true}
 					></uilistlayout>
 
 					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={0}>
@@ -138,14 +127,7 @@ export function FluidExtractorInfoPanel() {
 
 						<Text
 							Size={UDim2.fromScale(1, 1)}
-							Text={`Value : $${
-								recipe !== undefined
-									? Object.entries(ITEM_RECIPES[recipe].outputItems).reduce(
-											(value, [itemName, count]) => (value += ITEMS[itemName].value.cash * count),
-											0,
-									  )
-									: 0
-							}`}
+							Text={`Value : $${0}`}
 							TextSize={14}
 							TextXAlignment={Enum.TextXAlignment.Left}
 						>
@@ -203,7 +185,7 @@ export function FluidExtractorInfoPanel() {
 
 						<Text
 							Size={UDim2.fromScale(1, 1)}
-							Text={`Efficiency : 100%`}
+							Text={data.map((value) => `Efficiency : ${math.round(value.efficiency * 100)}%`)}
 							TextSize={14}
 							TextXAlignment={Enum.TextXAlignment.Left}
 						>
@@ -226,8 +208,8 @@ export function FluidExtractorInfoPanel() {
 				<Frame Position={UDim2.fromScale(0, 0.16)} Size={UDim2.fromScale(1, 0.84)} BackgroundTransparency={1}>
 					<InfoPanelFluidIndicator
 						fluid={data.map((value) =>
-							fluidExtractorComponent !== undefined
-								? [Object.keys(ITEM_RECIPES[recipe!].outputItems)[0], value.volume]
+							recipe !== undefined
+								? [Object.keys(ITEM_RECIPES[recipe].outputItems)[0], value.volume]
 								: undefined,
 						)}
 					></InfoPanelFluidIndicator>
@@ -282,11 +264,7 @@ export function FluidExtractorInfoPanel() {
 								`Current Volume : <br></br> <font color="rgb(176,208,255)" weight="regular">${round(
 									value.volume,
 									2,
-								)}m³</font>/${
-									fluidExtractorComponent !== undefined
-										? STRUCTURES[fluidExtractorComponent.instance.Name].constants["FluidCapacity"]
-										: 0
-								}m³`,
+								)}m³</font>/${fluidExtractorComponent?.fluidCapacity ?? 0}m³`,
 						)}
 						TextSize={13}
 					></Text>

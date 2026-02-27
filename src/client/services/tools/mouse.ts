@@ -1,8 +1,7 @@
-	import { GridCell } from "shared/types/grid";
-import GridService from "../plot/grid";
 import { Players, RunService, Workspace } from "@rbxts/services";
 import Signal from "@rbxts/signal";
 import { STRUCTURES } from "shared/constants/structures";
+import { GridCell, GridService } from "shared/services/plot";
 
 export default class MouseService {
 	private readonly player = Players.LocalPlayer;

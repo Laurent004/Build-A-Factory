@@ -3,8 +3,8 @@ import { StrictMode } from "@rbxts/react";
 import { createPortal, createRoot } from "@rbxts/react-roblox";
 import { Players } from "@rbxts/services";
 import { App } from "./app";
-import { store } from "client/store";
 import { ReflexProvider } from "@rbxts/react-reflex";
+import { store } from "client/hooks/store";
 
 const root = createRoot(new Instance("Folder"));
 root.render(

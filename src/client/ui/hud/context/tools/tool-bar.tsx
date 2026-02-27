@@ -1,22 +1,16 @@
 import { Object } from "@rbxts/luau-polyfill";
-import { lerpBinding, useEventListener, useKeyPress, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
+import { lerpBinding, useKeyPress, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
 import { TOOLS } from "client/constants/context/tools";
-import { EventBus } from "client/event-bus";
 import { useStore } from "client/hooks";
-import { selectContext } from "client/store/context";
+import { selectContext } from "client/hooks/store/context";
 import { colors, fonts, springs } from "client/ui/constants";
 import { Button, Frame, Image, Text } from "client/ui/core";
 import { IMAGES } from "shared/assets/images";
 
 export function ToolBar() {
-	const store = useStore();
 	const context = useSelector(selectContext);
-
-	useEventListener(EventBus.OnSelection, (selectedStructuresModels) => {
-		store.setContextStructuresModels(selectedStructuresModels);
-	});
 
 	return (
 		<Frame
@@ -46,7 +40,7 @@ interface ToolButtonProps {
 
 function ToolButton({ tool, isSelected }: ToolButtonProps) {
 	const store = useStore();
-	const pressed = useKeyPress([TOOLS[tool].key]);
+	const isKeyPressed = useKeyPress([TOOLS[tool].key]);
 	const [hoverAnimation, hoverAnimationMotion] = useMotion(0);
 	const [clickAnimation, clickAnimationMotion] = useMotion(0);
 
@@ -55,9 +49,9 @@ function ToolButton({ tool, isSelected }: ToolButtonProps) {
 	}, [isSelected]);
 
 	useUpdateEffect(() => {
-		if (!pressed) return;
+		if (!isKeyPressed) return;
 		store.setContext(tool);
-	}, [pressed]);
+	}, [isKeyPressed]);
 
 	return (
 		<Button

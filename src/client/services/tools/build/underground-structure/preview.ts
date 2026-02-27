@@ -15,6 +15,7 @@ export class UndergroundStructurePreviewService {
 
 	public initUndergroundStructurePreview(
 		undergroundStructureModel: Model,
+		undergroundTransporterStructureModel: Model,
 		startPosition: Vector3,
 		endPosition: Vector3,
 	): void {
@@ -48,12 +49,8 @@ export class UndergroundStructurePreviewService {
 						? undergroundStructureModel.PrimaryPart!.Size.Z
 						: -undergroundStructureModel.PrimaryPart!.Size.Z
 			) {
-				const newTransporter = (
-					STRUCTURES[undergroundStructureModel.Name].subcategory === "Conveyor Belts"
-						? STRUCTURES["Transporter"].model
-						: STRUCTURES["Fluid Transporter"].model
-				).Clone();
-				newTransporter.PivotTo(
+				const newTransporterStructureModel = undergroundTransporterStructureModel.Clone();
+				newTransporterStructureModel.PivotTo(
 					CFrame.lookAlong(
 						new Vector3(
 							startPosition.X,
@@ -63,7 +60,7 @@ export class UndergroundStructurePreviewService {
 						endPosition.sub(startPosition),
 					),
 				);
-				newTransporter.Parent = newUndergroundStructureModel;
+				newTransporterStructureModel.Parent = newUndergroundStructureModel;
 			}
 		} else {
 			for (
@@ -78,12 +75,8 @@ export class UndergroundStructurePreviewService {
 						? undergroundStructureModel.PrimaryPart!.Size.Z
 						: -undergroundStructureModel.PrimaryPart!.Size.Z
 			) {
-				const newTransporter = (
-					STRUCTURES[undergroundStructureModel.Name].subcategory === "Conveyor Belts"
-						? STRUCTURES["Transporter"].model
-						: STRUCTURES["Fluid Transporter"].model
-				).Clone();
-				newTransporter.PivotTo(
+				const newTransporterStructureModel = undergroundTransporterStructureModel.Clone();
+				newTransporterStructureModel.PivotTo(
 					CFrame.lookAlong(
 						new Vector3(
 							x,
@@ -93,7 +86,7 @@ export class UndergroundStructurePreviewService {
 						endPosition.sub(startPosition),
 					),
 				);
-				newTransporter.Parent = newUndergroundStructureModel;
+				newTransporterStructureModel.Parent = newUndergroundStructureModel;
 			}
 		}
 		newUndergroundStructureModel.Parent = this.undergroundStructureModelHolder;

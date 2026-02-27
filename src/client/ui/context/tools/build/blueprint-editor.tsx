@@ -1,16 +1,16 @@
 import React, { useBinding, useState } from "@rbxts/react";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext, selectContextOpen } from "client/store/context";
 import { Button } from "client/ui/core/button";
 import { colors, fonts, springs } from "client/ui/constants";
 import { IMAGES } from "shared/assets/images";
 import { Events } from "client/network";
-import { selectIsBlueprintEditorOpen, selectStructureInfo } from "client/store/context/tools/build";
 import { useStore } from "client/hooks";
 import { MarketplaceService } from "@rbxts/services";
 import { Object } from "@rbxts/luau-polyfill";
 import { CanvasGroup, Frame, Image, ScrollingFrame, Text, TextBox } from "client/ui/core";
+import { selectContext, selectContextOpen } from "client/hooks/store/context";
+import { selectIsBlueprintEditorOpen, selectStructureInfo } from "client/hooks/store/context/tools";
 
 export function BlueprintEditor() {
 	const store = useStore();
@@ -266,7 +266,7 @@ export function BlueprintEditor() {
 					BackgroundTransparency={1}
 					Event={{
 						MouseButton1Click: () => {
-							Events.DeleteBlueprint(structureInfo.structureModel);
+							Events.DeleteBlueprint(structureInfo.structureModel.GetAttribute("Id") as string);
 							store.setBlueprintEditorOpen(false);
 						},
 					}}
@@ -301,7 +301,7 @@ export function BlueprintEditor() {
 					Event={{
 						MouseButton1Click: () => {
 							Events.EditBlueprint(
-								structureInfo.structureModel,
+								structureInfo.structureModel.GetAttribute("Id") as string,
 								name.getValue(),
 								description.getValue(),
 								image.getValue(),

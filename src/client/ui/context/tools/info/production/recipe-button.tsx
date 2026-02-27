@@ -1,15 +1,13 @@
 import { lerpBinding, useMotion } from "@rbxts/pretty-react-hooks";
 import React, { useEffect } from "@rbxts/react";
 import { springs, colors } from "client/ui/constants";
-import { useStore } from "client/hooks";
 import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
 import { IMAGES } from "shared/assets/images";
-import { useSelector } from "@rbxts/react-reflex";
-import { selectContextStructureAttribute, selectContextStructureComponents } from "client/store/context";
-import ManufacturerComponent from "client/components/production/manufacturer";
-import MinerComponent from "client/components/production/miner";
 import { Button, Image, Text } from "client/ui/core";
 import { Object } from "@rbxts/luau-polyfill";
+import { Events } from "client/network";
+import { useSelector } from "@rbxts/react-reflex";
+import { selectContextStructureModels } from "client/hooks/store/context";
 
 interface InfoPanelRecipeButtonProps {
 	recipeName: string;
@@ -18,9 +16,7 @@ interface InfoPanelRecipeButtonProps {
 }
 
 export function InfoPanelRecipeButton({ recipeName, index, isSelected }: InfoPanelRecipeButtonProps) {
-	const store = useStore();
-	const minerComponent = useSelector(selectContextStructureComponents(MinerComponent));
-	const manufacturerComponent = useSelector(selectContextStructureComponents(ManufacturerComponent));
+	const structuresModels = useSelector(selectContextStructureModels);
 	const [clickAnimation, clickAnimationMotion] = useMotion(0);
 
 	useEffect(() => {
@@ -30,15 +26,20 @@ export function InfoPanelRecipeButton({ recipeName, index, isSelected }: InfoPan
 	return (
 		<Button
 			LayoutOrder={index}
+			ZIndex={isSelected ? 1 : 0}
 			Event={{
 				MouseButton1Click: () => {
-					if (minerComponent === undefined && manufacturerComponent === undefined) return;
-					store.setContextStructuresModelsAttribute("Recipe", isSelected ? undefined : recipeName);
+					Events.SetStructuresAttribute(
+						structuresModels.filter((structureModel) => structureModel.Name === structuresModels[0].Name),
+						"Recipe",
+						isSelected ? undefined : recipeName,
+					);
 				},
 			}}
 		>
 			<uistroke
 				ApplyStrokeMode={Enum.ApplyStrokeMode.Border}
+				BorderStrokePosition={Enum.BorderStrokePosition.Center}
 				Color={lerpBinding(clickAnimation, colors.grey, colors.lightblue)}
 				LineJoinMode={Enum.LineJoinMode.Miter}
 			></uistroke>
@@ -65,7 +66,7 @@ export function InfoPanelRecipeButton({ recipeName, index, isSelected }: InfoPan
 				Size={UDim2.fromScale(0.85, 0.12)}
 				Text={recipeName}
 				TextColor3={lerpBinding(clickAnimation, colors.grey, colors.lightblue)}
-				TextSize={9}
+				TextScaled={true}
 			></Text>
 		</Button>
 	);

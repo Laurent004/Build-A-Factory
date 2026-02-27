@@ -1,11 +1,11 @@
 import React, { forwardRef, useEffect, useState } from "@rbxts/react";
-import { round } from "shared/utils/math";
+import { round } from "shared/utils";
 import { colors, fonts } from "client/ui/constants";
 import { Frame } from "./frame";
 import { Text } from "./text";
 import { CanvasGroup } from "./canvas-group";
-import { HttpService } from "@rbxts/services";
-import { useMotion } from "@rbxts/pretty-react-hooks";
+import { HttpService, TextService } from "@rbxts/services";
+import { isBinding, useMotion } from "@rbxts/pretty-react-hooks";
 
 interface NumberSpinnerProps extends React.InstanceProps<TextLabel> {
 	value: number;
@@ -16,36 +16,35 @@ interface NumberSpinnerProps extends React.InstanceProps<TextLabel> {
 	commas?: boolean;
 }
 
-export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref)=>{
+export const NumberSpinner = forwardRef<CanvasGroup, NumberSpinnerProps>((props, ref) => {
 	const {
-		BackgroundTransparency=1,
-		BorderSizePixel=0,
+		BackgroundTransparency = 1,
+		BorderSizePixel = 0,
 		FontFace = fonts.josefinSans.regular,
 		TextColor3 = colors.white,
-		TextXAlignment=Enum.TextXAlignment.Center,
-		TextYAlignment=Enum.TextYAlignment.Center,
-		duration=.3,
-		decimals=0,
-		prefix="",
-		suffix="",
-		commas=false, 
-	}=props
+		TextXAlignment = Enum.TextXAlignment.Center,
+		TextYAlignment = Enum.TextYAlignment.Center,
+		duration = 0.3,
+		decimals = 0,
+		prefix = "",
+		suffix = "",
+		commas = false,
+	} = props;
 	const [whole, decimal] = string.split(
 		decimals > 0 ? tostring(round(props.value, decimals)) : string.format("%d", math.abs(props.value)),
 		".",
 	);
-	const [wholeDigits,setWholeDigits] = useState<{value:number|undefined,id:string}[]>([]);
-	const [decimalDigits, setDecimalDigits] = useState<{ value: number | undefined, id:string}[]>([]);
+	const [wholeDigits, setWholeDigits] = useState<{ value: number | undefined; id: string }[]>([]);
+	const [decimalDigits, setDecimalDigits] = useState<{ value: number | undefined; id: string }[]>([]);
 
 	useEffect(() => {
 		setWholeDigits((previousWholeDigits) => {
 			const newWholeDigits = [...previousWholeDigits];
 			for (let i = 0; i < newWholeDigits.size(); i++) {
-				if(i<whole.size()){
-					newWholeDigits[i].value=tonumber([...whole][i])
-				}
-				else{
-					newWholeDigits[i].value=undefined;
+				if (i < whole.size()) {
+					newWholeDigits[i].value = tonumber([...whole][i]);
+				} else {
+					newWholeDigits[i].value = undefined;
 					task.delay(duration, () => {
 						setWholeDigits((previousWholeDigits) => {
 							const newWholeDigits = [...previousWholeDigits];
@@ -56,7 +55,7 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 				}
 			}
 			for (let i = newWholeDigits.size(); i < whole.size(); i++) {
-				newWholeDigits.push({ value: tonumber([...whole][i]), id:HttpService.GenerateGUID()});
+				newWholeDigits.push({ value: tonumber([...whole][i]), id: HttpService.GenerateGUID() });
 			}
 			return newWholeDigits;
 		});
@@ -66,11 +65,10 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 		setDecimalDigits((previousDecimalDigits) => {
 			const newDecimalDigits = [...previousDecimalDigits];
 			for (let i = 0; i < newDecimalDigits.size(); i++) {
-				if(i<(decimal??"").size()){
-					newDecimalDigits[i].value=tonumber([...decimal][i])
-				}
-				else{
-					newDecimalDigits[i].value=undefined
+				if (i < (decimal ?? "").size()) {
+					newDecimalDigits[i].value = tonumber([...decimal][i]);
+				} else {
+					newDecimalDigits[i].value = undefined;
 					task.delay(duration, () => {
 						setDecimalDigits((previousDecimalDigits) => {
 							const newDecimalDigits = [...previousDecimalDigits];
@@ -78,10 +76,10 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 							return newDecimalDigits;
 						});
 					});
-				}					
+				}
 			}
 			for (let i = newDecimalDigits.size(); i < (decimal ?? "").size(); i++) {
-				newDecimalDigits.push({ value: tonumber([...decimal][i]), id:HttpService.GenerateGUID()});
+				newDecimalDigits.push({ value: tonumber([...decimal][i]), id: HttpService.GenerateGUID() });
 			}
 			return newDecimalDigits;
 		});
@@ -95,7 +93,7 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 			AutomaticSize={Enum.AutomaticSize.X}
 			Position={props.Position}
 			Rotation={props.Rotation}
-			Size={UDim2.fromScale(0,1)}
+			Size={UDim2.fromScale(0, isBinding(props.Size) ? props.Size.getValue().Y.Scale : props.Size?.Y.Scale ?? 1)}
 			BackgroundTransparency={BackgroundTransparency}
 			BorderSizePixel={BorderSizePixel}
 			Interactable={false}
@@ -103,7 +101,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 			ZIndex={props.ZIndex}
 		>
 			<uilistlayout
-				Padding={new UDim(0, 0)}
 				FillDirection={Enum.FillDirection.Horizontal}
 				SortOrder={Enum.SortOrder.LayoutOrder}
 				HorizontalAlignment={
@@ -124,7 +121,8 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
-				LayoutOrder={-1000}	
+				Size={UDim2.fromScale(0, 1)}
+				LayoutOrder={-1000}
 				Visible={prefix !== ""}
 				FontFace={FontFace}
 				LineHeight={props.LineHeight}
@@ -147,6 +145,7 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
+				Size={UDim2.fromScale(0, 1)}
 				LayoutOrder={-999}
 				Visible={props.value < 0}
 				FontFace={FontFace}
@@ -193,38 +192,37 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 				></NumberSpinnerDigit>
 			))}
 
-			{(commas ? [...string.format("%d", math.floor(math.abs(props.value)))] : []).map(
-				(_, index) => {
-					if (index === 0 || index % 3 !== 0) return undefined;
-					return (
-						<Text
-							AutomaticSize={Enum.AutomaticSize.X}
-							LayoutOrder={whole.size() * 2 - 900 - (index - 1) * 2 - 1}
-							Text=","
-							FontFace={FontFace}
-							LineHeight={props.LineHeight}
-							MaxVisibleGraphemes={props.MaxVisibleGraphemes}
-							OpenTypeFeatures={props.OpenTypeFeatures}
-							RichText={props.RichText}
-							TextColor3={TextColor3}
-							TextDirection={props.TextDirection}
-							TextScaled={props.TextScaled}
-							TextSize={props.TextSize}
-							TextStrokeColor3={props.TextStrokeColor3}
-							TextStrokeTransparency={props.TextStrokeTransparency}
-							TextTransparency={props.TextTransparency}
-							TextTruncate={props.TextTruncate}
-							TextWrapped={props.TextWrapped}
-							TextXAlignment={TextXAlignment}
-							TextYAlignment={TextYAlignment}
-						></Text>
-					);
-				},
-			)}
+			{(commas ? [...string.format("%d", math.floor(math.abs(props.value)))] : []).map((_, index) => {
+				if (index === 0 || index % 3 !== 0) return undefined;
+				return (
+					<Text
+						AutomaticSize={Enum.AutomaticSize.X}
+						Size={UDim2.fromScale(0, 1)}
+						LayoutOrder={whole.size() * 2 - 900 - (index - 1) * 2 - 1}
+						Text=","
+						FontFace={FontFace}
+						LineHeight={props.LineHeight}
+						MaxVisibleGraphemes={props.MaxVisibleGraphemes}
+						OpenTypeFeatures={props.OpenTypeFeatures}
+						RichText={props.RichText}
+						TextColor3={TextColor3}
+						TextDirection={props.TextDirection}
+						TextScaled={props.TextScaled}
+						TextSize={props.TextSize}
+						TextStrokeColor3={props.TextStrokeColor3}
+						TextStrokeTransparency={props.TextStrokeTransparency}
+						TextTransparency={props.TextTransparency}
+						TextTruncate={props.TextTruncate}
+						TextWrapped={props.TextWrapped}
+						TextXAlignment={TextXAlignment}
+						TextYAlignment={TextYAlignment}
+					></Text>
+				);
+			})}
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
-				Size={new UDim2(0, 0, 1, 0)}
+				Size={UDim2.fromScale(0, 1)}
 				Visible={decimal !== undefined}
 				FontFace={FontFace}
 				LineHeight={props.LineHeight}
@@ -272,6 +270,7 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
+				Size={UDim2.fromScale(0, 1)}
 				LayoutOrder={1000}
 				Visible={suffix !== ""}
 				FontFace={FontFace}
@@ -296,42 +295,50 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 			{props.children}
 		</CanvasGroup>
 	);
-})  
-
-
-
+});
 
 interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 	value: number | undefined;
 	duration: number;
 }
 
- function NumberSpinnerDigit(props: NumberSpinnerDigitProps) {
+function NumberSpinnerDigit(props: NumberSpinnerDigitProps) {
 	const { BorderSizePixel = 0, FontFace = fonts.josefinSans.regular, TextColor3 = colors.white } = props;
-	const [mountAnimation, mountAnimationMotion] = useMotion(UDim2.fromScale(0,1));
-	const [updateAnimation, udateAnimationMotion] = useMotion(-(props.value ?? 0));
+	const [mountAnimation, mountAnimationMotion] = useMotion(0);
+	const [updateAnimation, updateAnimationMotion] = useMotion(-(props.value ?? 0));
 
 	useEffect(() => {
-		if(props.value!==undefined) return
-		mountAnimationMotion.tween(UDim2.fromScale(0,1), { time: props.duration });
+		if (props.value !== undefined) {
+			mountAnimationMotion.tween(
+				TextService.GetTextSize(
+					tostring(props.value),
+					isBinding(props.TextSize) ? props.TextSize.getValue() : props.TextSize!,
+					Enum.Font.JosefinSans,
+					new Vector2(10000, 10000),
+				).X,
+				{ time: props.duration },
+			);
+		} else {
+			mountAnimationMotion.tween(0, { time: props.duration });
+		}
 	}, [props.value]);
 
 	useEffect(() => {
 		if (props.value === undefined) return;
-		udateAnimationMotion.tween(props.value, { time: props.duration });
+		updateAnimationMotion.tween(props.value, { time: props.duration });
 	}, [props.value]);
 
 	return (
 		<Frame
-			AutomaticSize={Enum.AutomaticSize.X}
-			Size={mountAnimation}
+			Size={mountAnimation.map((value) => new UDim2(0, value, 1, 0))}
 			BackgroundTransparency={1}
 			LayoutOrder={props.LayoutOrder}
 			ClipsDescendants={true}
 		>
 			<Frame
+				AutomaticSize={Enum.AutomaticSize.X}
 				Position={updateAnimation.map((value) => UDim2.fromScale(0, -value))}
-				Size={UDim2.fromScale(1, 10)}
+				Size={UDim2.fromScale(0, 10)}
 				BackgroundTransparency={1}
 			>
 				{[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map((value) => {
@@ -341,6 +348,10 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 							Active={props.Active}
 							AnchorPoint={props.AnchorPoint}
 							AutomaticSize={Enum.AutomaticSize.X}
+							Position={UDim2.fromScale(0, value * 0.1)}
+							Rotation={props.Rotation}
+							Size={UDim2.fromScale(0, 0.1)}
+							SizeConstraint={props.SizeConstraint}
 							BackgroundColor3={props.BackgroundColor3}
 							BackgroundTransparency={1}
 							BorderColor3={props.BorderColor3}
@@ -348,10 +359,6 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 							BorderSizePixel={BorderSizePixel}
 							Interactable={props.Interactable}
 							LayoutOrder={props.LayoutOrder}
-							Position={UDim2.fromScale(0, value * 0.1)}
-							Rotation={props.Rotation}
-							Size={UDim2.fromScale(1, 0.1)}
-							SizeConstraint={props.SizeConstraint}
 							Visible={props.Visible}
 							ZIndex={props.ZIndex}
 							ClipsDescendants={props.ClipsDescendants}
@@ -365,9 +372,7 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 							SelectionGroup={props.SelectionGroup}
 							SelectionOrder={props.SelectionOrder}
 							Event={props.Event}
-							Change={{...props.Change,"AbsolutePosition":(text)=>{
-								mountAnimationMotion.tween(new UDim2(text.AbsoluteSize.X,0,1,0),{time:props.duration})
-							}}}
+							Change={props.Change}
 							FontFace={FontFace}
 							LineHeight={props.LineHeight}
 							MaxVisibleGraphemes={props.MaxVisibleGraphemes}
@@ -392,4 +397,3 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 		</Frame>
 	);
 }
-

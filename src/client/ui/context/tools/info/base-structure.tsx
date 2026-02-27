@@ -1,7 +1,7 @@
 import React from "@rbxts/react";
 import { BaseInfoPanel } from "./base";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContextStructureModels } from "client/store/context";
+import { selectContextStructureModels } from "client/hooks/store/context";
 
 export function BaseStructureInfoPanel() {
 	const structureModel = useSelector(selectContextStructureModels)[0];

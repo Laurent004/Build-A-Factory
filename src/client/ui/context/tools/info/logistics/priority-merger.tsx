@@ -1,17 +1,17 @@
 import React, { useRef } from "@rbxts/react";
 import { fonts, colors } from "client/ui/constants";
-import { useSelector } from "@rbxts/react-reflex";
-import { mergerPriorities, PriorityMergerComponent } from "client/components/logistics/mergers/priority-merger";
-import { mergerInputDirections } from "client/components/logistics/mergers/merger";
-import { selectContextStructureAttribute, selectContextStructureComponents } from "client/store/context";
+import { useSelector, useSelectorCreator } from "@rbxts/react-reflex";
 import { Frame, Image, Text } from "client/ui/core";
-import { useStore } from "client/hooks";
 import { IMAGES } from "shared/assets/images";
 import { BaseInfoPanel } from "../base";
 import { useMountEffect } from "@rbxts/pretty-react-hooks";
+import { Events } from "client/network";
+import { mergerPriorities, PriorityMergerComponent } from "shared/components/logistics/mergers/priority-merger";
+import { selectContextStructureAttribute, selectContextStructureComponents, selectContextStructureModels } from "client/hooks/store/context";
+import { mergerInputDirections } from "shared/components/logistics/mergers/merger";
 
 export function PriortyMergerInfoPanel() {
-	const priorityMergerComponent = useSelector(selectContextStructureComponents(PriorityMergerComponent))[0];
+	const priorityMergerComponent = useSelectorCreator(selectContextStructureComponents,PriorityMergerComponent)[0];
 
 	return (
 		<BaseInfoPanel active={priorityMergerComponent !== undefined} size={UDim2.fromScale(.212,.371)}>
@@ -47,7 +47,7 @@ interface PriorityMergerInfoPanelPriorityProps {
 }
 
 function PriorityMergerInfoPanelPriority({ inputDirection }: PriorityMergerInfoPanelPriorityProps) {
-	const store = useStore();
+	const structuresModels = useSelector(selectContextStructureModels);
 	const priority = useSelector(selectContextStructureAttribute(inputDirection)) as string | undefined;
 	const frameRef = useRef<Frame>();
 	const uiDragDetectorRef=useRef<UIDragDetector>();
@@ -101,7 +101,10 @@ function PriorityMergerInfoPanelPriority({ inputDirection }: PriorityMergerInfoP
 						Event={
 							{
 								DragEnd:(uiDragDetector)=>{
-									store.setContextStructuresModelsAttribute(
+									Events.SetStructuresAttribute(
+										structuresModels.filter(
+											(structureModel) => structureModel.Name === structuresModels[0].Name,
+										),
 										inputDirection,
 										mergerPriorities[math.round(uiDragDetector.DragUDim2.Y.Scale*-2+1)],
 									);

@@ -1,9 +1,9 @@
 import { Players, Workspace } from "@rbxts/services";
 import BaseStructureArrowService from "./structure-arrow";
 import BaseStructureHighlightService from "./structure-highlight";
-import { STRUCTURES } from "shared/constants/structures";
+import { getStructureModel, STRUCTURES } from "shared/constants/structures";
 import BaseStructureBeamService from "./structure-beam";
-import GridService from "client/services/plot/grid";
+import { GridService } from "shared/services/plot";
 
 export class BaseStructurePreviewService {
 	//#region Singleton
@@ -115,7 +115,7 @@ export class BaseStructurePreviewService {
 				Workspace.WaitForChild("Plots")
 					.GetChildren()
 					.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
-					.WaitForChild("Power Lines")
+					.WaitForChild("PowerLines")
 					.GetChildren() as RopeConstraint[],
 			].find((powerLines) => powerLines.size() > 0) ?? []) {
 				const startAttachment = attachments.find((attachment) =>
@@ -210,6 +210,64 @@ export class BaseStructurePreviewService {
 		this.baseStructureBeamService.updateStructureBeams();
 	}
 
+	public mirrorStructurePreview(): void {
+		this.baseStructureArrowService.resetStructureArrows();
+		for (const structureModel of this.structureModelHolder
+			.GetChildren()
+			.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES)) {
+			const localCF = this.structureModelHolder.PrimaryPart!.CFrame.Inverse().mul(structureModel.GetPivot());
+			const [rx, ry, rz] = localCF.ToEulerAnglesYXZ();
+			const mirroredCF = this.structureModelHolder.PrimaryPart!.CFrame.mul(
+				new CFrame(-localCF.Position.X, localCF.Position.Y, localCF.Position.Z).mul(
+					CFrame.fromEulerAnglesYXZ(rx, -ry, -rz),
+				),
+			);
+			const mirroredStructureModel = (
+				structureModel.Name.find("Left")[0] !== undefined
+					? getStructureModel(structureModel.Name.gsub("Left", "Right")[0])
+					: structureModel.Name === "Right Turn Conveyor"
+					? getStructureModel("Left Turn Conveyor")
+					: getStructureModel(structureModel.Name, !(structureModel.GetAttribute("IsMirrored") === true))
+			)?.Clone();
+			if (mirroredStructureModel !== undefined) {
+				mirroredStructureModel.PivotTo(mirroredCF);
+				for (const [attributeName, attributeValue] of structureModel.GetAttributes()) {
+					if (attributeName === "IsMirrored") continue;
+					mirroredStructureModel.SetAttribute(attributeName, attributeValue);
+				}
+				structureModel.Destroy();
+				for (const powerLine of this.structureModelHolder
+					.GetChildren()
+					.filter((instance): instance is RopeConstraint => instance.IsA("RopeConstraint"))) {
+					if (powerLine.Attachment0?.Parent === undefined || powerLine.Attachment1?.Parent === undefined) {
+						let attachment: Attachment | undefined;
+						while (attachment === undefined) {
+							attachment = mirroredStructureModel
+								.GetDescendants()
+								.find(
+									(instance): instance is Attachment =>
+										instance.IsA("Attachment") && instance.Name === "PowerAttachment",
+								);
+							task.wait();
+						}
+						if (powerLine.Attachment0 === undefined) {
+							powerLine.Attachment0 = attachment;
+						} else {
+							powerLine.Attachment1 = attachment;
+						}
+					}
+				}
+				mirroredStructureModel.Parent = this.structureModelHolder;
+				if (this.structureModelHolder.PrimaryPart === undefined) {
+					this.structureModelHolder.PrimaryPart = mirroredStructureModel.PrimaryPart;
+				}
+			} else {
+				structureModel.PivotTo(mirroredCF);
+			}
+		}
+		this.baseStructureArrowService.initStructureArrows(this.structureModelHolder);
+	}
+
 	public resetStructurePlacementPreview(): void {
 		for (const instance of this.structureModelHolder.GetChildren()) {
 			instance.Destroy();
@@ -230,12 +288,7 @@ export class BaseStructurePreviewService {
 			structureModel.Parent = structures;
 			for (const basePart of structureModel
 				.GetDescendants()
-				.filter(
-					(instance): instance is BasePart =>
-						instance.IsA("BasePart") &&
-						instance.FindFirstAncestorOfClass("Model") === structureModel &&
-						instance !== structureModel.PrimaryPart,
-				)) {
+				.filter((instance): instance is BasePart => instance.IsA("BasePart") && instance.Transparency !== 1)) {
 				basePart.CanCollide = true;
 			}
 		}

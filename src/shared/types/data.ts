@@ -1,5 +1,5 @@
 export interface Data {
-	games: {
+	saves: {
 		id: string;
 		size: number;
 	}[];

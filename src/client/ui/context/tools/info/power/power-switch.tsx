@@ -3,14 +3,14 @@ import { fonts, colors, springs } from "client/ui/constants";
 import { useSelector } from "@rbxts/react-reflex";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { IMAGES } from "shared/assets/images";
-import { store } from "client/store";
 import { BaseInfoPanel } from "../base";
-import { selectContextStructureAttribute, selectContextStructureModels } from "client/store/context";
 import { Button, Frame, Image, Text } from "client/ui/core";
 import { InfoPanelPowerGraph } from "./power-graph";
+import { Events } from "client/network";
+import { selectContextStructureAttribute, selectContextStructureModels } from "client/hooks/store/context";
 
 export function PowerSwitchInfoPanel() {
-	const structureModel = useSelector(selectContextStructureModels)[0];
+	const structuresModels = useSelector(selectContextStructureModels);
 	const on = useSelector(selectContextStructureAttribute("On"));
 	const [clickAnimation, clickAnimationMotion] = useMotion(0);
 
@@ -19,7 +19,7 @@ export function PowerSwitchInfoPanel() {
 	}, [on]);
 
 	return (
-		<BaseInfoPanel active={structureModel?.Name === "Power Switch"} size={UDim2.fromScale(0.212, 0.687)}>
+		<BaseInfoPanel active={structuresModels[0]?.Name === "Power Switch"} size={UDim2.fromScale(0.212, 0.687)}>
 			<Frame Size={UDim2.fromScale(1, 0.41)} BackgroundTransparency={1} LayoutOrder={1}>
 				<Text
 					Size={UDim2.fromScale(0.511, 0.074)}
@@ -31,18 +31,14 @@ export function PowerSwitchInfoPanel() {
 				></Text>
 
 				<InfoPanelPowerGraph
-					attachment={
-						structureModel !== undefined
-							? structureModel
-									.GetDescendants()
-									.find(
-										(instance): instance is Attachment =>
-											instance.IsA("Attachment") &&
-											instance.Name === "PowerAttachment" &&
-											instance.Parent?.Name === "Red",
-									)
-							: undefined
-					}
+					attachment={structuresModels[0]
+						?.GetDescendants()
+						.find(
+							(instance): instance is Attachment =>
+								instance.IsA("Attachment") &&
+								instance.Name === "PowerAttachment" &&
+								instance.Parent?.Name === "Red",
+						)}
 				></InfoPanelPowerGraph>
 			</Frame>
 
@@ -71,8 +67,11 @@ export function PowerSwitchInfoPanel() {
 					Size={UDim2.fromScale(0.193, 0.85)}
 					Event={{
 						MouseButton1Click: () => {
-							if (structureModel.Name !== "Power Switch") return;
-							store.setContextStructuresModelsAttribute("On", !on);
+							Events.SetStructuresAttribute(
+								structuresModels.filter((structureModel) => structureModel.Name === "Power Switch"),
+								"On",
+								!on,
+							);
 						},
 					}}
 				>
@@ -134,18 +133,14 @@ export function PowerSwitchInfoPanel() {
 				></Text>
 
 				<InfoPanelPowerGraph
-					attachment={
-						structureModel !== undefined
-							? structureModel
-									.GetDescendants()
-									.find(
-										(instance): instance is Attachment =>
-											instance.IsA("Attachment") &&
-											instance.Name === "PowerAttachment" &&
-											instance.Parent?.Name === "Blue",
-									)
-							: undefined
-					}
+					attachment={structuresModels[0]
+						?.GetDescendants()
+						.find(
+							(instance): instance is Attachment =>
+								instance.IsA("Attachment") &&
+								instance.Name === "PowerAttachment" &&
+								instance.Parent?.Name === "Blue",
+						)}
 				></InfoPanelPowerGraph>
 			</Frame>
 		</BaseInfoPanel>

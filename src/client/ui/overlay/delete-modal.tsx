@@ -3,8 +3,9 @@ import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hoo
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
 import { useStore } from "client/hooks";
+import { selectContext, selectContextStructureModels } from "client/hooks/store/context";
 import { Events } from "client/network";
-import { selectContext, selectContextStructureModels } from "client/store/context";
+import SoundService from "client/services/sound";
 import { colors, fonts, springs } from "client/ui/constants";
 import { Button, CanvasGroup, Frame, Image, Text } from "client/ui/core";
 import { IMAGES } from "shared/assets/images";
@@ -15,6 +16,7 @@ export function DeleteModal() {
 	const context = useSelector(selectContext);
 	const structuresModels = useSelector(selectContextStructureModels);
 	const isActive = context === "Delete" && structuresModels.size() > 1;
+	const soundService = SoundService.getInst();
 	const [mountAnimation, mountAnimationMotion] = useMotion(0);
 
 	useUpdateEffect(() => {
@@ -30,7 +32,7 @@ export function DeleteModal() {
 			Size={lerpBinding(mountAnimation, UDim2.fromScale(0, 0), UDim2.fromScale(0.264, 0.157))}
 			BackgroundColor3={colors.black}
 			Interactable={isActive}
-			ZIndex={4}
+			ZIndex={3}
 		>
 			<Text
 				AnchorPoint={new Vector2(0.5, 0.5)}
@@ -91,6 +93,7 @@ export function DeleteModal() {
 					Size={UDim2.fromScale(0.5, 1)}
 					Event={{
 						MouseButton1Click: () => {
+							soundService.playSound("sfx/destroy", structuresModels[0].GetPivot().Position);
 							Events.DestroyStructures(
 								Array.flatMap(structuresModels, (structureModel) =>
 									[structureModel, ...structureModel.GetDescendants()].filter(

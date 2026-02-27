@@ -5,7 +5,7 @@ export interface StructureData {
 	children: unknown;
 }
 
-export interface StructureMovementData {
+export interface StructureEditData {
 	model: Model;
 	cf: CFrame;
 }

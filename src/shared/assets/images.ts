@@ -1,4 +1,5 @@
 export const IMAGES: Record<string, string> = {
+	"Tech Tree": "rbxassetid://129647173134873",
 	Items: "rbxassetid://118136638604622",
 	Settings: "rbxassetid://76532374632008",
 	Info: "rbxassetid://72348582600314",
@@ -21,6 +22,7 @@ export const IMAGES: Record<string, string> = {
 
 	"Iron Ore": "rbxassetid://118137441817637",
 	"Copper Ore": "rbxassetid://128912562458298",
+	Coal: "rbxassetid://83800666354606",
 	"Iron Plate": "rbxassetid://113068900881076",
 	Water: "rbxassetid://70796879760375",
 	Elixir: "rbxassetid://82828523492543",

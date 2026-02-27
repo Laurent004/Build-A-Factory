@@ -35,9 +35,9 @@ export function SettingsMenuSettingPerformanceDropdown({
 
 			<Text
 				Size={UDim2.fromScale(1, 1)}
-				Text={`${
-					performanceDropdownSettingDefinition.dropdownText
-				} (${userIds.size()}/${Players.GetPlayers().size()})`}
+				Text={`${performanceDropdownSettingDefinition.dropdownText} (${Players.GetPlayers()
+					.filter((player) => userIds.includes(player.UserId))
+					.size()}/${Players.GetPlayers().size()})`}
 				TextSize={14}
 				TextXAlignment={Enum.TextXAlignment.Left}
 			>

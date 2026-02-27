@@ -1,4 +1,3 @@
-import GridService from "client/services/plot/grid";
 import { Players, RunService, Workspace } from "@rbxts/services";
 import { BaseStructurePreviewService } from "../../placement/structure-preview";
 import { BaseStructureCFrameService } from "../../placement/structure-cframe";
@@ -9,10 +8,12 @@ import BaseStructureHighlightService from "../../placement/structure-highlight";
 import BaseStructureArrowService from "../../placement/structure-arrow";
 import BaseStructureBeamService from "../../placement/structure-beam";
 import BaseStructurePlacementService from "../../placement/structure-placement";
+import { GridService } from "shared/services/plot";
 
 export class UndergroundStructureBuildingService extends BaseBuildingService {
 	private readonly undergroundStructurePreviewService: UndergroundStructurePreviewService;
 	private undergroundStructureModel!: Model;
+	private undergroundTransporterStructureModel!: Model;
 	private startPosition: Vector3 | undefined;
 	private endPosition: Vector3 | undefined;
 	private connection: RBXScriptConnection | undefined;
@@ -49,15 +50,22 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 				math.abs(newClampedCell.worldPosition.Z - this.startPosition.Z)
 					? new Vector3(newClampedCell.worldPosition.X, 0, this.startPosition.Z)
 					: new Vector3(this.startPosition.X, 0, newClampedCell.worldPosition.Z);
-			if (this.endPosition!.FuzzyEq(newEndPositon)) return;
+			if (
+				this.endPosition!.FuzzyEq(newEndPositon) ||
+				this.startPosition.sub(newEndPositon).Magnitude / this.undergroundStructureModel.PrimaryPart!.Size.Z -
+					1 >
+					(Players.LocalPlayer.GetAttribute("UndergroundDistance") as number)
+			)
+				return;
 			this.endPosition = newEndPositon;
 			this.rebuildUndergroundStructure();
 		});
 	}
 
-	public enter(undergroundStructureModel: Model): void {
+	public enter(undergroundStructureModel: Model, undergroundTransporterStructureModel: Model): void {
 		super.enter();
 		this.undergroundStructureModel = undergroundStructureModel;
+		this.undergroundTransporterStructureModel = undergroundTransporterStructureModel;
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
 		rayParams.AddToFilter([
@@ -93,16 +101,10 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 
 	private startUpdatingUndergroundStructureInput(): void {
 		this.connection = RunService.Heartbeat.Connect((dt) => {
-			if (
-				this.baseStructureCFrameService
-					.getTargetCF()
-					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
-			)
-				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
-				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()).success,
 			);
 		});
 	}
@@ -112,7 +114,7 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 			this.undergroundStructurePreviewService.updateUndergroundStructurePreview(
 				this.baseStructurePlacementService.canPlace(
 					this.undergroundStructurePreviewService.getUndergroundStructureModelHolder(),
-				),
+				).success,
 			);
 		});
 	}
@@ -126,6 +128,7 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 		this.undergroundStructurePreviewService.resetUndergroundStructurePreview();
 		this.undergroundStructurePreviewService.initUndergroundStructurePreview(
 			this.undergroundStructureModel,
+			this.undergroundTransporterStructureModel,
 			this.startPosition!,
 			this.endPosition!,
 		);
@@ -138,7 +141,7 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 				this.undergroundStructurePreviewService.getUndergroundStructureModelHolder().GetPivot(),
 			);
 			this.exit();
-			this.enter(this.undergroundStructureModel);
+			this.enter(this.undergroundStructureModel, this.undergroundTransporterStructureModel);
 		} else {
 			const cell = this.mouseService.getCell();
 			if (cell === undefined) return;

@@ -6,11 +6,11 @@ import { colors, fonts, springs } from "client/ui/constants";
 import { useStore } from "client/hooks";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext, selectContextOpen } from "client/store/context";
-import { selectIsBlueprintEditorOpen, selectStructureCategory, selectStructureInfo } from "client/store/context/tools/build";
 import { IMAGES } from "shared/assets/images";
 import { BlueprintEditor } from "./blueprint-editor";
 import { Button, CanvasGroup, Frame, Image, Text, ViewportFrame } from "client/ui/core";
+import { selectContext, selectContextOpen } from "client/hooks/store/context";
+import { selectIsBlueprintEditorOpen, selectStructureCategory, selectStructureInfo } from "client/hooks/store/context/tools";
 
 export function BuildMenu() {
 	const store = useStore();
@@ -90,7 +90,7 @@ export function BuildMenu() {
 							},
 						}}
 					>
-						<Image Size={new UDim2(1, 0, 1, 0)} Image="rbxassetid://85748466046800"></Image>
+						<Image Size={UDim2.fromScale(1, 1)} Image="rbxassetid://85748466046800"></Image>
 					</Button>
 				</Frame>
 
@@ -137,8 +137,7 @@ export function BuildMenu() {
 						Size={UDim2.fromScale(0.8, 0.035)}
 						FontFace={fonts.josefinSans.medium}
 						Text={structureInfo.structureModel.Name}
-						TextSize={23}
-						TextTruncate={Enum.TextTruncate.SplitWord}
+						TextScaled={true}
 					></Text>
 
 					<ViewportFrame

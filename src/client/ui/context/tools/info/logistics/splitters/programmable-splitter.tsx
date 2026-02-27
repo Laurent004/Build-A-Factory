@@ -1,21 +1,26 @@
 import React, { useMemo, useRef, useState } from "@rbxts/react";
 import { fonts, colors } from "client/ui/constants";
-import { useSelector } from "@rbxts/react-reflex";
+import { useSelector, useSelectorCreator } from "@rbxts/react-reflex";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
-import { ProgrammableSplitterComponent } from "client/components/logistics/splitters/programmable-splitter";
-import { splitterOutputDirections } from "client/components/logistics/splitters/splitter";
-import { selectContextStructureAttribute, selectContextStructureComponents } from "client/store/context";
 import { HttpService } from "@rbxts/services";
-import { useStore } from "client/hooks";
 import { Frame, Button, Image, ScrollingFrame, TextBox, Text } from "client/ui/core";
-import { splitterFilters } from "client/components/logistics/splitters/smart-splitter";
 import { IMAGES } from "shared/assets/images";
 import { SplitterInfoPanelFilterButton } from "./filter-button";
 import { BaseInfoPanel } from "../../base";
+import { Events } from "client/network";
+import {
+	selectContextStructureAttribute,
+	selectContextStructureComponents,
+	selectContextStructureModels,
+} from "client/hooks/store/context";
+import { ProgrammableSplitterComponent } from "shared/components/logistics/splitters/programmable-splitter";
+import { splitterOutputDirections } from "shared/components/logistics/splitters/splitter";
+import { splitterFilters } from "shared/components/logistics/splitters/smart-splitter";
 
 export function ProgrammableSplitterInfoPanel() {
-	const programmableSplitterComponent = useSelector(
-		selectContextStructureComponents(ProgrammableSplitterComponent),
+	const programmableSplitterComponent = useSelectorCreator(
+		selectContextStructureComponents,
+		ProgrammableSplitterComponent,
 	)[0];
 
 	return (
@@ -52,9 +57,10 @@ interface ProgrammableSplitterInfoPanelFiltersProps {
 }
 
 function ProgrammableSplitterInfoPanelFilters({ outputDirection }: ProgrammableSplitterInfoPanelFiltersProps) {
-	const store = useStore();
-	const programmableSplitterComponent = useSelector(
-		selectContextStructureComponents(ProgrammableSplitterComponent),
+	const structuresModels = useSelector(selectContextStructureModels);
+	const programmableSplitterComponent = useSelectorCreator(
+		selectContextStructureComponents,
+		ProgrammableSplitterComponent,
 	)[0];
 	const filtersJSON = useSelector(selectContextStructureAttribute(outputDirection)) as string | undefined;
 	const filters =
@@ -112,7 +118,10 @@ function ProgrammableSplitterInfoPanelFilters({ outputDirection }: ProgrammableS
 				Size={UDim2.fromScale(1, 0.1)}
 				Event={{
 					MouseButton1Click: () => {
-						store.setContextStructuresModelsAttribute(
+						Events.SetStructuresAttribute(
+							structuresModels.filter(
+								(structureModel) => structureModel.Name === structuresModels[0].Name,
+							),
 							outputDirection,
 							HttpService.JSONEncode([...filters!, splitterFilters[0]]),
 						);
@@ -136,9 +145,10 @@ function ProgrammableSplitterInfoPanelFilter({
 	selectedFilter,
 	index,
 }: ProgrammableSplitterInfoPanelFilterProps) {
-	const store = useStore();
-	const programmableSplitterComponent = useSelector(
-		selectContextStructureComponents(ProgrammableSplitterComponent),
+	const structuresModels = useSelector(selectContextStructureModels);
+	const programmableSplitterComponent = useSelectorCreator(
+		selectContextStructureComponents,
+		ProgrammableSplitterComponent,
 	)[0];
 	const filtersJson = useSelector(selectContextStructureAttribute(outputDirection)) as string | undefined;
 	const filters =
@@ -196,7 +206,10 @@ function ProgrammableSplitterInfoPanelFilter({
 							if (programmableSplitterComponent === undefined) return;
 							const newFilters = [...filters!];
 							newFilters.remove(index);
-							store.setContextStructuresModelsAttribute(
+							Events.SetStructuresAttribute(
+								structuresModels.filter(
+									(structureModel) => structureModel.Name === structuresModels[0].Name,
+								),
 								outputDirection,
 								HttpService.JSONEncode(newFilters),
 							);
@@ -297,7 +310,10 @@ function ProgrammableSplitterInfoPanelFilter({
 								if (programmableSplitterComponent === undefined) return;
 								const newFilters = [...filters!];
 								newFilters[index] = filter;
-								store.setContextStructuresModelsAttribute(
+								Events.SetStructuresAttribute(
+									structuresModels.filter(
+										(structureModel) => structureModel.Name === structuresModels[0].Name,
+									),
 									outputDirection,
 									HttpService.JSONEncode(newFilters),
 								);

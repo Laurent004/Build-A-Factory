@@ -1,8 +1,8 @@
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectTips } from "client/store/overlay";
 import { Frame, Text } from "../core";
 import { useMouse } from "@rbxts/pretty-react-hooks";
+import { selectTips } from "client/hooks/store/overlay";
 
 export function Tooltip() {
 	const tips = useSelector(selectTips);
@@ -13,7 +13,7 @@ export function Tooltip() {
 			AnchorPoint={new Vector2(0, 1)}
 			AutomaticSize={Enum.AutomaticSize.XY}
 			Position={mouse.map((value) => UDim2.fromOffset(value.X, value.Y))}
-			Size={UDim2.fromScale(0.058, 0.023)}
+			Size={UDim2.fromScale(0, 0)}
 			BackgroundColor3={Color3.fromRGB(32, 32, 32)}
 			Visible={tips.size() > 0}
 			ZIndex={100}

@@ -1,8 +1,8 @@
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext } from "client/store/context";
-import { selectBuildingStructureModel } from "client/store/context/tools/build";
 import { ToolInputPanel } from "../input-panel";
+import { selectBuildingStructureModel } from "client/hooks/store/context/tools";
+import { selectContext } from "client/hooks/store/context";
 
 export function LiftStructureBuildInputPanel() {
 	const context = useSelector(selectContext);

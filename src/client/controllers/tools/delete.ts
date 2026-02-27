@@ -1,20 +1,21 @@
-import { Controller, OnInit } from "@flamework/core";
+import { Controller } from "@flamework/core";
 import ToolController from "./tool";
 import MouseService from "client/services/tools/mouse";
 import BaseStructureSelectionService from "client/services/tools/selection/structure-selection";
 import { Events } from "client/network";
 import { StandardActionBuilder } from "@rbxts/mechanism";
-import GridService from "client/services/plot/grid";
 import BaseStructureArrowService from "client/services/tools/placement/structure-arrow";
 import BaseStructureBeamService from "client/services/tools/placement/structure-beam";
 import { Players, Workspace } from "@rbxts/services";
 import { EventBus } from "client/event-bus";
-import { Array } from "@rbxts/luau-polyfill";
 import { STRUCTURES } from "shared/constants/structures";
 import SoundService from "client/services/sound";
+import ValidationService from "shared/services/validation";
+import { GridService } from "shared/services/plot";
+import { store } from "client/hooks/store";
 
-@Controller({})
-export default class DeleteController extends ToolController implements OnInit {
+@Controller()
+export default class DeleteController extends ToolController {
 	protected readonly context = "Delete";
 	protected readonly inputActions = [
 		{
@@ -30,6 +31,7 @@ export default class DeleteController extends ToolController implements OnInit {
 
 	private readonly gridService = GridService.getInst();
 	private readonly mouseService = new MouseService(this.gridService);
+	private readonly validationService = ValidationService.getInst();
 	private readonly soundService = SoundService.getInst();
 
 	private readonly baseStructureSelectionService = new BaseStructureSelectionService(
@@ -40,9 +42,9 @@ export default class DeleteController extends ToolController implements OnInit {
 		{ FillColor: Color3.fromRGB(255, 60, 89), FillTransparency: 0.7, OutlineColor: Color3.fromRGB(255, 101, 104) },
 	);
 
-	public override onInit(): void | Promise<void> {
-		super.onInit();
-		EventBus.OnSelection.Connect((selectedStructuresModels) => {
+	protected override initEvents(): void {
+		super.initEvents();
+		this.baseStructureSelectionService.OnSelection.Connect((selectedStructuresModels) => {
 			if (!this.active) return;
 			const rayParams = new RaycastParams();
 			rayParams.FilterType = Enum.RaycastFilterType.Include;
@@ -54,19 +56,29 @@ export default class DeleteController extends ToolController implements OnInit {
 				...selectedStructuresModels,
 			]);
 			this.mouseService.setRaycastParams(rayParams);
-			if (selectedStructuresModels.size() === 1) {
-				Events.DestroyStructures(
-					Array.flatMap(selectedStructuresModels, (structureModel) =>
-						[structureModel, ...structureModel.GetDescendants()].filter(
-							(instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES,
-						),
-					),
-				);
+			if (selectedStructuresModels.size() > 0) {
+				if (this.validationService.canDelete(Players.LocalPlayer, selectedStructuresModels)) {
+					if (selectedStructuresModels.size() === 1) {
+						this.soundService.playSound("sfx/destroy", selectedStructuresModels[0].GetPivot().Position);
+						Events.DestroyStructures(
+							[selectedStructuresModels[0], ...selectedStructuresModels[0].GetDescendants()].filter(
+								(instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES,
+							),
+						);
+					}
+				} else {
+					EventBus.OnNotification.Fire(
+						`<font color="rgb(255, 98, 98)">You cannot delete this during the tutorial!</font>`,
+						"sfx/error",
+					);
+				}
 			}
-		});
-
-		Events.OnStructuresDestroying.connect((_, structuresModels) => {
-			this.soundService.playSound("sfx/destroy", structuresModels[0].GetPivot().Position);
+			store.setContextStructuresModels(
+				selectedStructuresModels.size() > 1 &&
+					this.validationService.canDelete(Players.LocalPlayer, selectedStructuresModels)
+					? selectedStructuresModels
+					: [],
+			);
 		});
 	}
 

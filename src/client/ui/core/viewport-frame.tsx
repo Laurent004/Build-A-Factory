@@ -2,7 +2,6 @@ import React, { forwardRef, useEffect, useRef } from "@rbxts/react";
 import { useMotion } from "@rbxts/pretty-react-hooks";
 import { RunService } from "@rbxts/services";
 import { springs } from "../constants";
-import Make from "@rbxts/make";
 
 interface ViewportFrameProps extends React.InstanceProps<ViewportFrame> {
 	cameraRotationSpeed?: number;
@@ -28,8 +27,9 @@ export const ViewportFrame = forwardRef<ViewportFrame, ViewportFrameProps>((prop
 
 	useEffect(() => {
 		if (cameraRotationSpeed === undefined || localRef.current === undefined) return;
-		const camera = Make("Camera", { Parent: localRef.current });
-		localRef.current!.CurrentCamera = camera;
+		const camera = new Instance("Camera");
+		localRef.current.CurrentCamera = camera;
+		camera.Parent = localRef.current;
 		let yaw: number = 0;
 		RunService.Heartbeat.Connect((dt) => {
 			yaw += dt * cameraRotationSpeed!;

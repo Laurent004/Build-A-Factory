@@ -1,4 +1,3 @@
-import GridService from "client/services/plot/grid";
 import { ContextActionService, Players, RunService, Workspace } from "@rbxts/services";
 import { BaseStructurePreviewService } from "../../placement/structure-preview";
 import { BaseStructureCFrameService } from "../../placement/structure-cframe";
@@ -9,11 +8,11 @@ import BaseStructureHighlightService from "../../placement/structure-highlight";
 import BaseStructureArrowService from "../../placement/structure-arrow";
 import BaseStructureBeamService from "../../placement/structure-beam";
 import BaseStructurePlacementService from "../../placement/structure-placement";
+import { GridService } from "shared/services/plot";
 
 export class LiftStructureBuildingService extends BaseBuildingService {
 	private readonly liftStructurePreviewService: LiftStructurePreviewService;
 	private liftStructureModel!: Model;
-	private liftElevatorStructureModel!: Model;
 	private startCf: CFrame | undefined;
 	private endCf: CFrame | undefined;
 	private connection: RBXScriptConnection | undefined;
@@ -60,7 +59,11 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 						if (
 							cell === undefined ||
 							cell.worldPosition.FuzzyEq(this.startCf.Position) ||
-							cell.worldPosition.FuzzyEq(this.endCf!.Position)
+							cell.worldPosition.FuzzyEq(this.endCf!.Position) ||
+							this.startCf.Position.sub(cell.worldPosition).Magnitude /
+								this.liftStructureModel.PrimaryPart!.Size.Y -
+								1 >
+								(Players.LocalPlayer.GetAttribute("LiftHeight") as number)
 						)
 							return;
 						this.endCf = new CFrame(
@@ -86,10 +89,9 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 		});
 	}
 
-	public enter(liftStructureModel: Model, liftElevatorStructureModel: Model): void {
+	public enter(liftStructureModel: Model): void {
 		super.enter();
 		this.liftStructureModel = liftStructureModel;
-		this.liftElevatorStructureModel = liftElevatorStructureModel;
 		const rayParams = new RaycastParams();
 		rayParams.FilterType = Enum.RaycastFilterType.Exclude;
 		rayParams.AddToFilter([
@@ -121,16 +123,10 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 
 	private startUpdatingLiftStructureInput(): void {
 		this.connection = RunService.Heartbeat.Connect((dt) => {
-			if (
-				this.baseStructureCFrameService
-					.getTargetCF()
-					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
-			)
-				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
-				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()).success,
 			);
 		});
 	}
@@ -140,7 +136,7 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 			this.liftStructurePreviewService.updateLiftStructurePreview(
 				this.baseStructurePlacementService.canPlace(
 					this.liftStructurePreviewService.getLiftStructureModelHolder(),
-				),
+				).success,
 			);
 		});
 	}
@@ -152,12 +148,7 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 
 	private rebuildLiftStructure(): void {
 		this.liftStructurePreviewService.resetLiftStructurePreview();
-		this.liftStructurePreviewService.initLiftStructurePreview(
-			this.liftStructureModel,
-			this.liftElevatorStructureModel,
-			this.startCf!,
-			this.endCf!,
-		);
+		this.liftStructurePreviewService.initLiftStructurePreview(this.liftStructureModel, this.startCf!, this.endCf!);
 	}
 
 	public onStart(): void {
@@ -167,7 +158,7 @@ export class LiftStructureBuildingService extends BaseBuildingService {
 				this.liftStructurePreviewService.getLiftStructureModelHolder().GetPivot(),
 			);
 			this.exit();
-			this.enter(this.liftStructureModel, this.liftElevatorStructureModel);
+			this.enter(this.liftStructureModel);
 			ContextActionService.UnbindAction("DisableScroll");
 		} else {
 			const cell = this.mouseService.getCell();

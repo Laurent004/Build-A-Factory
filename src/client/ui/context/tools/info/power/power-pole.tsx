@@ -2,9 +2,9 @@ import React from "@rbxts/react";
 import { fonts } from "client/ui/constants";
 import { useSelector } from "@rbxts/react-reflex";
 import { BaseInfoPanel } from "../base";
-import { selectContextStructureModels } from "client/store/context";
 import { Frame, Text } from "client/ui/core";
 import { InfoPanelPowerGraph } from "./power-graph";
+import { selectContextStructureModels } from "client/hooks/store/context";
 
 export function PowerPoleInfoPanel() {
 	const structureModel = useSelector(selectContextStructureModels)[0];

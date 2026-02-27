@@ -1,5 +1,5 @@
 export * from "./tool-bar";
-export * from "./info-input-panel";
+export * from "./info";
 export * from "./build";
 export * from "./edit-input-panel";
 export * from "./copy-input-panel";

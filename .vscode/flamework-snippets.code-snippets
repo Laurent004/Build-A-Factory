@@ -20,7 +20,7 @@
 		"body": [
 			"import { Service, OnStart } from \"@flamework/core\";",
 			"",
-			"@Service({})",
+			"@Service()",
 			"export class ${TM_FILENAME_BASE/(.*)/${1:/pascalcase}/g} implements OnStart {",
 				"\tonStart() {",
 					"\t\t$0",

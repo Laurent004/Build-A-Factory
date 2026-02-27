@@ -1,18 +1,22 @@
 import React, { useMemo, useRef, useState } from "@rbxts/react";
 import { fonts, colors } from "client/ui/constants";
-import { useSelector } from "@rbxts/react-reflex";
+import { useSelector, useSelectorCreator } from "@rbxts/react-reflex";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
-import { SmartSplitterComponent, splitterFilters } from "client/components/logistics/splitters/smart-splitter";
-import { splitterOutputDirections } from "client/components/logistics/splitters/splitter";
-import { selectContextStructureAttribute, selectContextStructureComponents } from "client/store/context";
 import { Button, Frame, Image, ScrollingFrame, Text, TextBox } from "client/ui/core";
-import { useStore } from "client/hooks";
 import { IMAGES } from "shared/assets/images";
 import { SplitterInfoPanelFilterButton } from "./filter-button";
 import { BaseInfoPanel } from "../../base";
+import { Events } from "client/network";
+import {
+	selectContextStructureAttribute,
+	selectContextStructureComponents,
+	selectContextStructureModels,
+} from "client/hooks/store/context";
+import { SmartSplitterComponent, splitterFilters } from "shared/components/logistics/splitters/smart-splitter";
+import { splitterOutputDirections } from "shared/components/logistics/splitters/splitter";
 
 export function SmartSplitterInfoPanel() {
-	const smartSplitterComponent = useSelector(selectContextStructureComponents(SmartSplitterComponent))[0];
+	const smartSplitterComponent = useSelectorCreator(selectContextStructureComponents, SmartSplitterComponent)[0];
 
 	return (
 		<BaseInfoPanel active={smartSplitterComponent !== undefined} size={UDim2.fromScale(0.212, 0.345)}>
@@ -50,8 +54,7 @@ interface SmartSplitterInfoPanelFilterProps {
 }
 
 function SmartSplitterInfoPanelFilter({ outputDirection }: SmartSplitterInfoPanelFilterProps) {
-	const store = useStore();
-	const smartSplitterComponent = useSelector(selectContextStructureComponents(SmartSplitterComponent));
+	const structuresModels = useSelector(selectContextStructureModels);
 	const selectedFilter = useSelector(selectContextStructureAttribute(outputDirection)) as string | undefined;
 	const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 	const [isSearching, setIsSearching] = useState<boolean>(false);
@@ -203,8 +206,13 @@ function SmartSplitterInfoPanelFilter({ outputDirection }: SmartSplitterInfoPane
 								filter={filter}
 								index={index}
 								mouseButton1Click={() => {
-									if (smartSplitterComponent === undefined) return;
-									store.setContextStructuresModelsAttribute(outputDirection, filter);
+									Events.SetStructuresAttribute(
+										structuresModels.filter(
+											(structureModel) => structureModel.Name === structuresModels[0].Name,
+										),
+										outputDirection,
+										filter,
+									);
 									setIsDropdownOpen(false);
 								}}
 								isVisible={visibleFilters.includes(filter)}

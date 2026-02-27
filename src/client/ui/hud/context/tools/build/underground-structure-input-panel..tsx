@@ -1,7 +1,7 @@
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext } from "client/store/context";
-import { selectBuildingStructureModel } from "client/store/context/tools/build";
+import { selectBuildingStructureModel } from "client/hooks/store/context/tools";
+import { selectContext } from "client/hooks/store/context";
 import { ToolInputPanel } from "../input-panel";
 
 export function UndergroundStructureBuildInputPanel() {

@@ -1,102 +1,156 @@
 import { OnInit, Service } from "@flamework/core";
-import { Workspace } from "@rbxts/services";
-import DataService from "../data/data";
+import { Players, Workspace } from "@rbxts/services";
 import { TUTORIAL } from "shared/constants/tutorial/definitions";
 import { Events } from "server/network";
+import { Janitor } from "@rbxts/janitor";
 import { TutorialStepDefinition } from "shared/constants/tutorial";
-import { StructureData } from "shared/constants/structures";
-import { EventBus } from "server/event-bus";
+import { SaveService, SaveData } from "../data/save";
 
-@Service({})
+@Service()
 export default class TutorialService implements OnInit {
-	private readonly tutorialSteps = new Map<Player, number>();
-	private readonly connections = new Map<Player, RBXScriptConnection[]>();
+	private readonly janitors = new Map<Player, Janitor>();
+	private readonly tutorialSteps: {
+		[K in TutorialStepDefinition["type"]]: (
+			player: Player,
+			plot: Model,
+			tutorialStepDefinition: Extract<TutorialStepDefinition, { type: K }>,
+		) => RBXScriptConnection;
+	} = {
+		Build: (player, plot, tutorialStepDefinition) =>
+			plot.WaitForChild("Structures").ChildAdded.Connect(() => {
+				if (
+					tutorialStepDefinition.structuresData.some(
+						(structureData) =>
+							!(plot.WaitForChild("Structures").GetChildren() as Model[]).some(
+								(structureModel) =>
+									structureModel.Name === structureData.name &&
+									(structureData.rotation !== undefined
+										? plot
+												.GetPivot()
+												.ToObjectSpace(structureModel.GetPivot())
+												.FuzzyEq(
+													new CFrame(structureData.position).mul(structureData.rotation),
+													0.01,
+												)
+										: plot
+												.GetPivot()
+												.ToObjectSpace(structureModel.GetPivot())
+												.Position.FuzzyEq(structureData.position, 0.01)),
+							),
+					)
+				)
+					return;
+				this.updateTutorialStep(player);
+			}),
+		Edit: (player, plot, tutorialStepDefinition) =>
+			plot
+				.WaitForChild("Structures")
+				.GetChildren()
+				.find(
+					(structureModel): structureModel is Model =>
+						structureModel.Name === tutorialStepDefinition.structureData.name,
+				)!
+				.PrimaryPart!.GetPropertyChangedSignal("CFrame")
+				.Once(() => {
+					this.updateTutorialStep(player);
+				}),
+		Delete: (player, plot, tutorialStepDefinition) =>
+			plot.WaitForChild("Structures").ChildRemoved.Connect(() => {
+				if (
+					tutorialStepDefinition.structuresData.some((structureData) =>
+						(plot.WaitForChild("Structures").GetChildren() as Model[]).some(
+							(structureModel) =>
+								structureModel.Name === structureData.name &&
+								plot
+									.GetPivot()
+									.ToObjectSpace(structureModel.GetPivot())
+									.Position.FuzzyEq(structureData.position, 0.01),
+						),
+					)
+				)
+					return;
+				this.updateTutorialStep(player);
+			}),
+		SetAttribute: (player, plot, tutorialStepDefinition) =>
+			plot
+				.WaitForChild("Structures")
+				.GetChildren()
+				.find(
+					(instance): instance is Model =>
+						instance.IsA("Model") && instance.Name === tutorialStepDefinition.structureName,
+				)!
+				.AttributeChanged.Once(() => {
+					this.updateTutorialStep(player);
+				}),
+		Connect: (player, plot) =>
+			plot.WaitForChild("PowerLines").ChildAdded.Once(() => {
+				this.updateTutorialStep(player);
+			}),
+		Delivery: (player) =>
+			(player.WaitForChild("leaderstats").WaitForChild("Cash") as NumberValue).Changed.Once(() => {
+				this.updateTutorialStep(player);
+			}),
+	};
 
-	constructor(private readonly dataService: DataService) {}
+	constructor(private readonly saveService: SaveService) {}
 
 	onInit(): void | Promise<void> {
 		this.initEvents();
 	}
 
 	private initEvents(): void {
-		EventBus.OnGameLoad.Connect((player) => {
-			this.initTutorial(player);
+		Players.PlayerAdded.Connect((player) => {
+			this.janitors.set(player, new Janitor());
 		});
-		EventBus.OnGameUnload.Connect((player) => {
+		Players.PlayerRemoving.Connect((player) => {
+			this.janitors.get(player)!.Destroy();
+			this.janitors.delete(player);
+		});
+		this.saveService.OnSaveLoad.Connect((player, saveData) => {
+			this.initTutorial(player, saveData);
+		});
+		this.saveService.OnSaveUnload.Connect((player) => {
 			this.resetTutorial(player);
 		});
 	}
 
-	private initTutorial(player: Player): void {
-		this.dataService.get(player, "tutorialStep").then((tutorialStep) => {
-			this.tutorialSteps.set(player, tutorialStep);
-			if (tutorialStep < TUTORIAL.size()) {
-				this.initTutorialStep(player, TUTORIAL[tutorialStep]);
-			}
-			Events.OnTutorialStepUpdate.fire(player, tutorialStep);
-		});
+	private initTutorial(player: Player, saveData: SaveData): void {
+		if (saveData.tutorialStep < TUTORIAL.size()) {
+			this.initTutorialStep(player);
+		}
+		player.SetAttribute("TutorialStep", saveData.tutorialStep);
 	}
 
 	private resetTutorial(player: Player): void {
-		this.tutorialSteps.delete(player);
-		for (const connection of this.connections.get(player) ?? []) connection.Disconnect();
+		this.janitors.get(player)?.Cleanup();
+		player.SetAttribute("TutorialStep", TUTORIAL.size());
 	}
 
-	private initTutorialStep(player: Player, tutorialStep: TutorialStepDefinition): void {
-		const plot = Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!;
-		this.connections.set(player, [
-			...(this.connections.get(player) ?? []),
-			tutorialStep.type === "Build"
-				? plot.WaitForChild("Structures").ChildAdded.Once(() => {
-						this.updateTutorialStep(player);
-				  })
-				: tutorialStep.type === "Delete"
-				? plot.WaitForChild("Structures").ChildRemoved.Connect(() => {
-						if (
-							tutorialStep.structuresData.some((structureData) =>
-								(plot.WaitForChild("Structures").GetChildren() as Model[]).some(
-									(structureModel) =>
-										structureModel.Name === structureData.name &&
-										plot
-											.GetPivot()
-											.ToObjectSpace(structureModel.GetPivot())
-											.FuzzyEq(structureData.cf, 0.01),
-								),
-							)
-						)
-							return;
-						this.updateTutorialStep(player);
-				  })
-				: tutorialStep.type === "SetAttribute"
-				? plot
-						.WaitForChild("Structures")
-						.GetChildren()
-						.find(
-							(instance): instance is Model =>
-								instance.IsA("Model") && instance.Name === tutorialStep.structureName,
-						)!
-						.AttributeChanged.Once(() => {
-							this.updateTutorialStep(player);
-						})
-				: tutorialStep.type === "Connect"
-				? plot.WaitForChild("Power Lines").ChildAdded.Once(() => {
-						this.updateTutorialStep(player);
-				  })
-				: plot.WaitForChild("Power Lines").ChildRemoved.Once(() => {
-						this.updateTutorialStep(player);
-				  }),
-		]);
+	private initTutorialStep(player: Player): void {
+		const tutorialStepDefinition = TUTORIAL[player.GetAttribute("TutorialStep") as number];
+		this.janitors.get(player)!.Add(
+			(
+				this.tutorialSteps[tutorialStepDefinition.type] as (
+					player: Player,
+					plot: Model,
+					tutorialStepDefinition: TutorialStepDefinition,
+				) => RBXScriptConnection
+			)(
+				player,
+				Workspace.WaitForChild("Plots")
+					.GetChildren()
+					.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!,
+				tutorialStepDefinition,
+			),
+		);
 	}
 
 	private updateTutorialStep(player: Player): void {
-		const newTutorialStep = this.tutorialSteps.get(player)! + 1;
-		this.tutorialSteps.set(player, newTutorialStep);
-		for (const connection of this.connections.get(player)!) connection.Disconnect();
-		this.dataService.set(player, "tutorialStep", newTutorialStep);
+		this.janitors.get(player)!.Cleanup();
+		const newTutorialStep = (player.GetAttribute("TutorialStep") as number)! + 1;
+		this.saveService.set(player, "tutorialStep", newTutorialStep);
 		if (newTutorialStep < TUTORIAL.size()) {
-			this.initTutorialStep(player, TUTORIAL[newTutorialStep]);
+			this.initTutorialStep(player);
 		} else {
 			Events.OnNotification.fire(
 				player,
@@ -104,83 +158,6 @@ export default class TutorialService implements OnInit {
 				"sfx/success",
 			);
 		}
-		Events.OnTutorialStepUpdate.fire(player, newTutorialStep);
-	}
-
-	public canPlace(player: Player, structures: StructureData[]): boolean {
-		if (this.tutorialSteps.get(player) === TUTORIAL.size()) return true;
-		const tutorialStep = TUTORIAL[this.tutorialSteps.get(player)!];
-		if (tutorialStep.type !== "Build") return false;
-		const plot = Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!;
-		return tutorialStep.structuresData.every((structureData) =>
-			structures.some(
-				(structure) =>
-					structure.name === structureData.name &&
-					plot
-						.GetPivot()
-						.ToObjectSpace(new CFrame(...structure.cf))
-						.FuzzyEq(structureData.cf, 0.01),
-			),
-		);
-	}
-
-	public canMove(player: Player): boolean {
-		return this.tutorialSteps.get(player) === TUTORIAL.size();
-	}
-
-	public canDelete(player: Player, structuresModels: Model[]): boolean {
-		if (this.tutorialSteps.get(player) === TUTORIAL.size()) return true;
-		const tutorialStep = TUTORIAL[this.tutorialSteps.get(player)!];
-		if (tutorialStep.type !== "Delete") return false;
-		const plot = Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!;
-		return structuresModels.every((structureModel) =>
-			tutorialStep.structuresData.some(
-				(structureData) =>
-					structureData.name === structureModel.Name &&
-					structureData.cf.FuzzyEq(plot.GetPivot().ToObjectSpace(structureModel.GetPivot()), 0.01),
-			),
-		);
-	}
-
-	public canSetAttribute(player: Player, structureModels: Model[], attributeName: string): boolean {
-		if (this.tutorialSteps.get(player) === TUTORIAL.size()) return true;
-		const tutorialStep = TUTORIAL[this.tutorialSteps.get(player)!];
-		return (
-			tutorialStep.type === "SetAttribute" &&
-			structureModels[0].Name === tutorialStep.structureName &&
-			attributeName === tutorialStep.attributeName
-		);
-	}
-
-	public canConnect(player: Player, startAttachment: Attachment, endAttachment: Attachment): boolean {
-		if (this.tutorialSteps.get(player) === TUTORIAL.size()) return true;
-		const tutorialStep = TUTORIAL[this.tutorialSteps.get(player)!];
-		const startStructureModel = startAttachment.FindFirstAncestorOfClass("Model")!;
-		const endStructureModel = endAttachment.FindFirstAncestorOfClass("Model")!;
-		return (
-			tutorialStep.type === "Connect" &&
-			((startStructureModel.Name === tutorialStep.startStructureName &&
-				endStructureModel.Name === tutorialStep.endStructureName) ||
-				(startStructureModel.Name === tutorialStep.endStructureName &&
-					endStructureModel.Name === tutorialStep.startStructureName))
-		);
-	}
-
-	public canDisconnect(player: Player, startAttachment: Attachment, endAttachment: Attachment): boolean {
-		if (this.tutorialSteps.get(player) === TUTORIAL.size()) return true;
-		const tutorialStep = TUTORIAL[this.tutorialSteps.get(player)!];
-		const startStructureModel = startAttachment.FindFirstAncestorOfClass("Model")!;
-		const endStructureModel = endAttachment.FindFirstAncestorOfClass("Model")!;
-		return (
-			tutorialStep.type === "Disconnect" &&
-			((startStructureModel.Name === tutorialStep.startStructureName &&
-				endStructureModel.Name === tutorialStep.endStructureName) ||
-				(startStructureModel.Name === tutorialStep.endStructureName &&
-					endStructureModel.Name === tutorialStep.startStructureName))
-		);
+		player.SetAttribute("TutorialStep", newTutorialStep);
 	}
 }

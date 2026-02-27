@@ -11,6 +11,8 @@ interface BuildMenuStructureButtonProps {
 	structureDescription: string;
 	index: number;
 	isVisible: boolean;
+	isUnlocked: boolean;
+	isPurchased: boolean;
 }
 
 export function BuildMenuStructureButton({
@@ -19,12 +21,10 @@ export function BuildMenuStructureButton({
 	structureDescription,
 	index,
 	isVisible,
+	isUnlocked,
+	isPurchased,
 }: BuildMenuStructureButtonProps) {
 	const store = useStore();
-	const isUnlocked =
-		structureModel.GetAttribute("Id") !== undefined ||
-		STRUCTURES[structureModel.Name].gamepass === undefined ||
-		MarketplaceService.UserOwnsGamePassAsync(Players.LocalPlayer.UserId, STRUCTURES[structureModel.Name].gamepass!);
 
 	return (
 		<Button
@@ -40,10 +40,10 @@ export function BuildMenuStructureButton({
 				},
 			}}
 			onDoubleClick={() => {
-				if (isUnlocked) {
+				if (isUnlocked && isPurchased) {
 					store.setBuildingStructureModel(structureModel);
 					store.setContextOpen(false);
-				} else {
+				} else if (!isPurchased) {
 					MarketplaceService.PromptGamePassPurchase(
 						Players.LocalPlayer,
 						STRUCTURES[structureModel.Name].gamepass!,
@@ -56,7 +56,7 @@ export function BuildMenuStructureButton({
 				Position={UDim2.fromScale(0.5, 0.4)}
 				Size={UDim2.fromScale(0.8, 0.8)}
 				Image={structureImage}
-				ImageColor3={isUnlocked ? colors.white : Color3.fromRGB(122, 122, 122)}
+				ImageColor3={isUnlocked && isPurchased ? colors.white : Color3.fromRGB(122, 122, 122)}
 			></Image>
 
 			<Text
@@ -65,7 +65,7 @@ export function BuildMenuStructureButton({
 				Size={UDim2.fromScale(1, 0.18)}
 				Text={structureModel.Name}
 				TextSize={13}
-				TextColor3={isUnlocked ? colors.white : Color3.fromRGB(122, 122, 122)}
+				TextColor3={isUnlocked && isPurchased ? colors.white : Color3.fromRGB(122, 122, 122)}
 				TextTruncate={Enum.TextTruncate.SplitWord}
 			></Text>
 
@@ -93,7 +93,7 @@ export function BuildMenuStructureButton({
 					AnchorPoint={new Vector2(1, 0)}
 					Position={UDim2.fromScale(1, 0)}
 					Size={UDim2.fromScale(0.16, 0.16)}
-					Visible={!isUnlocked}
+					Visible={!isUnlocked || !isPurchased}
 					Image="rbxassetid://105817330245525"
 					ImageColor3={colors.white}
 				></Image>

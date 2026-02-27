@@ -1,7 +1,6 @@
 import React, { useBinding, useState } from "@rbxts/react";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext, selectContextStructureModels } from "client/store/context";
 import { colors, fonts, springs } from "client/ui/constants";
 import { IMAGES } from "shared/assets/images";
 import { Events } from "client/network";
@@ -9,6 +8,7 @@ import { MarketplaceService } from "@rbxts/services";
 import { Object } from "@rbxts/luau-polyfill";
 import { Button, CanvasGroup, Frame, Image, ScrollingFrame, Text, TextBox } from "client/ui/core";
 import { STRUCTURES } from "shared/constants/structures";
+import { selectContext, selectContextStructureModels } from "client/hooks/store/context";
 
 export function BlueprintDesigner() {
 	const context = useSelector(selectContext);
@@ -37,7 +37,7 @@ export function BlueprintDesigner() {
 		<>
 			<Button
 				AnchorPoint={new Vector2(0.5, 0.5)}
-				Position={lerpBinding(mountAnimation, UDim2.fromScale(1.2, 0.5), UDim2.fromScale(0.986, 0.5))}
+				Position={lerpBinding(mountAnimation, UDim2.fromScale(1.2, 0.5), UDim2.fromScale(0.97, 0.5))}
 				Size={UDim2.fromScale(0.034, 0.06)}
 				Event={{
 					MouseButton1Click: () => {

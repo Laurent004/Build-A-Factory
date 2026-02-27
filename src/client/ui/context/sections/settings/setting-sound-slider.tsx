@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "@rbxts/react";
 import { SoundService } from "@rbxts/services";
+import { store } from "client/hooks/store";
 import { Events } from "client/network";
-import { store } from "client/store";
 import { colors } from "client/ui/constants";
 import { Frame, Text } from "client/ui/core";
 

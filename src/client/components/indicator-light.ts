@@ -1,8 +1,9 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
 import { OnStart } from "@flamework/core";
 import { TweenService } from "@rbxts/services";
-import StructureComponent from "./structure";
+import StructureComponent from "../../shared/components/structure";
 import { Janitor } from "@rbxts/janitor";
+import { isPowerConsumer, isPowerProducer, PowerConsumer, PowerProducer } from "shared/services/plot";
 
 @Component({ tag: "IndicatorLight" })
 export default class IndicatorLightComponent extends BaseComponent<{}, Model> implements OnStart {
@@ -13,7 +14,8 @@ export default class IndicatorLightComponent extends BaseComponent<{}, Model> im
 		Working: Color3.fromRGB(20, 182, 74),
 	};
 	private indicatorLight!: Part;
-	private structureComponent!: StructureComponent;
+	private structureComponent!: StructureComponent & (PowerConsumer | PowerProducer);
+	private blinkThread: thread | undefined;
 	private blinkTween: Tween | undefined;
 	private readonly janitor = new Janitor();
 
@@ -23,24 +25,44 @@ export default class IndicatorLightComponent extends BaseComponent<{}, Model> im
 
 	onStart(): void {
 		this.indicatorLight = this.instance.WaitForChild("IndicatorLight") as Part;
-		this.structureComponent = this.components.getComponents<StructureComponent>(this.instance)[0];
+		let structureComponent: StructureComponent | undefined;
+		while (
+			structureComponent === undefined ||
+			(!isPowerConsumer(structureComponent) && !isPowerProducer(structureComponent))
+		) {
+			structureComponent = this.components.getComponents<StructureComponent>(this.instance)[0];
+			task.wait();
+		}
+		this.structureComponent = structureComponent;
 		this.janitor.LinkToInstance(this.instance, false);
-		this.updateIndicatorLight();
 		this.initEvents();
 	}
 
 	private initEvents(): void {
-		this.janitor.Add(
-			this.structureComponent.OnStateChanged.Connect(() => {
-				this.updateIndicatorLight();
-			}),
-		);
+		if (isPowerConsumer(this.structureComponent)) {
+			this.updateIndicatorLight(this.structureComponent.state);
+			this.janitor.Add(
+				this.structureComponent.OnStateChanged.Connect((state) => {
+					this.updateIndicatorLight(state);
+				}),
+			);
+		} else if (
+			isPowerProducer(this.structureComponent) &&
+			this.structureComponent.state !== undefined &&
+			this.structureComponent.OnStateChanged !== undefined
+		) {
+			this.updateIndicatorLight(this.structureComponent.state);
+			this.janitor.Add(
+				this.structureComponent.OnStateChanged.Connect((state) => {
+					this.updateIndicatorLight(state);
+				}),
+			);
+		}
 	}
 
-	private updateIndicatorLight(): void {
-		if (this.structureComponent.state === "Standby" && this.blinkTween === undefined) {
-			task.delay(1.5, () => {
-				if (this.structureComponent.state !== "Standby" || this.blinkTween !== undefined) return;
+	private updateIndicatorLight(state: string): void {
+		if (state === "No Power" || state === "Standby") {
+			this.blinkThread = task.delay(2, () => {
 				this.blinkTween = TweenService.Create(
 					this.indicatorLight,
 					new TweenInfo(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.In, -1, true, 0.5),
@@ -51,11 +73,15 @@ export default class IndicatorLightComponent extends BaseComponent<{}, Model> im
 				this.blinkTween.Play();
 			});
 		} else {
+			if (this.blinkThread !== undefined) {
+				task.cancel(this.blinkThread);
+				this.blinkThread = undefined;
+			}
 			this.blinkTween?.Cancel();
 			this.blinkTween = undefined;
 		}
 		TweenService.Create(this.indicatorLight, new TweenInfo(0.2, Enum.EasingStyle.Linear, Enum.EasingDirection.In), {
-			Color: this.colors[this.structureComponent.state],
+			Color: this.colors[state],
 		}).Play();
 	}
 }

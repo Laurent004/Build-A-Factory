@@ -4,7 +4,7 @@ import { colors, springs } from "client/ui/constants";
 import { Object } from "@rbxts/luau-polyfill";
 import { useStore } from "client/hooks";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext } from "client/store/context";
+import { selectContext } from "client/hooks/store/context";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { IMAGES } from "shared/assets/images";
 import { Button, Image } from "client/ui/core";

@@ -1,7 +1,5 @@
-import { Controller, OnInit } from "@flamework/core";
-import { EventBus } from "client/event-bus";
+import { Controller } from "@flamework/core";
 import ToolController from "./tool";
-import GridService from "client/services/plot/grid";
 import { BaseStructurePreviewService } from "client/services/tools/placement/structure-preview";
 import { BaseStructureCFrameService } from "client/services/tools/placement/structure-cframe";
 import { Players, RunService, Workspace } from "@rbxts/services";
@@ -12,13 +10,14 @@ import BaseStructureArrowService from "client/services/tools/placement/structure
 import BaseStructureHighlightService from "client/services/tools/placement/structure-highlight";
 import BaseStructureBeamService from "client/services/tools/placement/structure-beam";
 import BaseStructurePlacementService from "client/services/tools/placement/structure-placement";
-import TutorialService from "client/services/progression/tutorial";
-import CollisionService from "shared/services/collision";
 import { STRUCTURES } from "shared/constants/structures";
 import SoundService from "client/services/sound";
+import { GridService } from "shared/services/plot";
+import ValidationService from "shared/services/validation";
+import { store } from "client/hooks/store";
 
-@Controller({})
-export default class CopyController extends ToolController implements OnInit {
+@Controller()
+export default class CopyController extends ToolController {
 	protected readonly context = "Copy";
 	protected readonly inputActions = [
 		{
@@ -56,12 +55,17 @@ export default class CopyController extends ToolController implements OnInit {
 				);
 			},
 		},
+		{
+			action: new StandardActionBuilder("T"),
+			activated: () => {
+				this.baseStructurePreviewService.mirrorStructurePreview();
+			},
+		},
 	];
 
 	private readonly gridService = GridService.getInst();
-	private readonly collisionService = CollisionService.getInst();
-	private readonly tutorialService = TutorialService.getInst();
 	private readonly mouseService = new MouseService(this.gridService);
+	private readonly validationService = ValidationService.getInst();
 	private readonly soundService = SoundService.getInst();
 
 	private readonly baseStructureHighlightService = BaseStructureHighlightService.getInst();
@@ -90,17 +94,12 @@ export default class CopyController extends ToolController implements OnInit {
 		);
 		this.baseStructurePreviewService = BaseStructurePreviewService.getInst();
 
-		BaseStructurePlacementService.init(
-			this.gridService,
-			this.collisionService,
-			this.tutorialService,
-			this.soundService,
-		);
+		BaseStructurePlacementService.init(this.validationService, this.soundService);
 		this.baseStructurePlacementService = BaseStructurePlacementService.getInst();
 	}
 
-	public override onInit(): void | Promise<void> {
-		super.onInit();
+	protected override initEvents(): void {
+		super.initEvents();
 		this.mouseService.onClampedCellChanged.Connect((newClampedCell) => {
 			if (
 				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart !== undefined &&
@@ -133,7 +132,7 @@ export default class CopyController extends ToolController implements OnInit {
 			}
 		});
 
-		EventBus.OnSelection.Connect((selectedStructuresModels) => {
+		this.baseStructureSelectionService.OnSelection.Connect((selectedStructuresModels) => {
 			if (!this.active) return;
 			const rayParams = new RaycastParams();
 			rayParams.FilterType = Enum.RaycastFilterType.Include;
@@ -147,6 +146,7 @@ export default class CopyController extends ToolController implements OnInit {
 			if (selectedStructuresModels.size() > 0) {
 				this.copy(selectedStructuresModels);
 			}
+			store.setContextStructuresModels(selectedStructuresModels);
 		});
 	}
 
@@ -198,16 +198,11 @@ export default class CopyController extends ToolController implements OnInit {
 
 	private startUpdating(): void {
 		this.connection = RunService.Heartbeat.Connect((dt) => {
-			if (
-				this.baseStructureCFrameService
-					.getTargetCF()
-					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
-			)
-				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
-				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder())
+					.success,
 			);
 		});
 	}

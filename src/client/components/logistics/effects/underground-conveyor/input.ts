@@ -1,8 +1,7 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
-import { Solid } from "shared/constants/items";
 import { OnStart } from "@flamework/core";
-import TransporterComponent from "../../transporter";
 import { Janitor } from "@rbxts/janitor";
+import TransporterComponent from "shared/components/logistics/transporter";
 
 @Component({ tag: "UndergroundConveyorInput" })
 export default class UndergroundConveyorInputEffectsComponent extends BaseComponent<{}, Model> implements OnStart {
@@ -14,7 +13,12 @@ export default class UndergroundConveyorInputEffectsComponent extends BaseCompon
 	}
 
 	onStart(): void {
-		this.transporterComponent = this.components.getComponents<TransporterComponent>(this.instance)[0];
+		let transporterComponent: TransporterComponent | undefined;
+		while (transporterComponent === undefined) {
+			transporterComponent = this.components.getComponents<TransporterComponent>(this.instance)[0];
+			task.wait();
+		}
+		this.transporterComponent = transporterComponent;
 		this.janitor.LinkToInstance(this.instance, false);
 		this.initEvents();
 	}
@@ -22,9 +26,9 @@ export default class UndergroundConveyorInputEffectsComponent extends BaseCompon
 	private initEvents(): void {
 		this.janitor.Add(
 			this.transporterComponent.OnOutput.Connect((item) => {
-				if (!(item instanceof Solid) || item.model?.Parent === undefined) return;
+				if (!typeIs(item, "table") || item.m?.Parent === undefined) return;
 				for (const basePart of item
-					.model!.GetDescendants()
+					.m!.GetDescendants()
 					.filter((instance): instance is BasePart => instance.IsA("BasePart"))) {
 					basePart.Transparency = 1;
 				}

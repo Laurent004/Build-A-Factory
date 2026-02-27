@@ -2,7 +2,7 @@ import { Workspace } from "@rbxts/services";
 import BaseStructureHighlightService from "../../placement/structure-highlight";
 import BaseStructureArrowService from "../../placement/structure-arrow";
 import BaseStructureBeamService from "../../placement/structure-beam";
-import { STRUCTURES } from "shared/constants/structures";
+import { getStructureModel, STRUCTURES } from "shared/constants/structures";
 
 export class LiftStructurePreviewService {
 	private readonly liftStructureModelHolder = new Instance("Model", Workspace);
@@ -15,7 +15,6 @@ export class LiftStructurePreviewService {
 
 	public initLiftStructurePreview(
 		liftStructureModel: Model,
-		liftElevatorStructureModel: Model,
 		liftStructureInputCF: CFrame,
 		liftStructureOutputCF: CFrame,
 	): void {
@@ -62,8 +61,8 @@ export class LiftStructurePreviewService {
 					? liftStructureModel.PrimaryPart!.Size.Y
 					: -liftStructureModel.PrimaryPart!.Size.Y
 		) {
-			const newTransporter = STRUCTURES["Transporter"].model.Clone();
-			newTransporter.PivotTo(
+			const newTransporterStructureModel = getStructureModel("Transporter")!.Clone();
+			newTransporterStructureModel.PivotTo(
 				CFrame.lookAlong(
 					new Vector3(
 						liftStructureInputCF.Position.X,
@@ -73,8 +72,8 @@ export class LiftStructurePreviewService {
 					liftStructureOutputCF.Position.sub(liftStructureInputCF.Position),
 				),
 			);
-			newTransporter.Parent = newLiftStructureModel;
-			const newLiftElevator = liftElevatorStructureModel.Clone();
+			newTransporterStructureModel.Parent = newLiftStructureModel;
+			const newLiftElevator = getStructureModel("Conveyor Lift Elevator")!.Clone();
 			newLiftElevator.PivotTo(
 				CFrame.lookAlong(
 					new Vector3(

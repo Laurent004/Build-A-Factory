@@ -1,11 +1,13 @@
 import React, { useMemo, useState } from "@rbxts/react";
 import { colors } from "client/ui/constants";
-import { STRUCTURE_SUB_CATEGORIES, STRUCTURES } from "shared/constants/structures";
+import { BlueprintData, createBlueprint, getStructureModel, STRUCTURE_SUB_CATEGORIES, STRUCTURES } from "shared/constants/structures";
 import { useEventListener } from "@rbxts/pretty-react-hooks";
 import { Events } from "client/network";
 import { Object } from "@rbxts/luau-polyfill";
 import { BuildMenuStructureButton } from "./structure-button";
 import { Frame, Image, ScrollingFrame, Text, TextBox } from "client/ui/core";
+import { HttpService, MarketplaceService, Players, Workspace } from "@rbxts/services";
+import { TECHS } from "shared/constants/tech";
 
 interface BuildMenuStructureCategoryProps {
 	structureCategory: string;
@@ -13,14 +15,7 @@ interface BuildMenuStructureCategoryProps {
 }
 
 export function BuildMenuStructureCategory({ structureCategory, isVisible }: BuildMenuStructureCategoryProps) {
-	const [blueprints, setBlueprints] = useState<
-		{
-			model: Model;
-			description: string;
-			subcategory: string;
-			image: string;
-		}[]
-	>([]);
+	const [blueprints, setBlueprints] = useState<BlueprintData[]>([]);
 
 	const [searchText, setSearchText] = useState<string>("");
 	const visibleStructures = useMemo<string[]>(
@@ -39,43 +34,20 @@ export function BuildMenuStructureCategory({ structureCategory, isVisible }: Bui
 			blueprints
 				.filter(
 					(blueprint) =>
-						blueprint.model.Name.lower().find(searchText.lower())[0] !== undefined||
+						blueprint.name.lower().find(searchText.lower())[0] !== undefined||
 						blueprint.subcategory.lower().find(searchText.lower())[0] !== undefined
 				)
-				.map((blueprint) => blueprint.model.GetAttribute("Id") as string),
+				.map((blueprint) => blueprint.id),
 		[blueprints, searchText],
 	);
 
 	useEventListener(
-		Events.OnBlueprintCreation,
-		(blueprintModel, blueprintDescription, blueprintSubCategory, blueprintImage) => {
+		Events.OnBlueprintsUpdate,
+		(blueprints) => {
 			if (structureCategory !== "Blueprints") return;
-			const newBlueprint = {
-				model: blueprintModel,
-				description: blueprintDescription,
-				subcategory: blueprintSubCategory,
-				image: blueprintImage,
-			};
-			setBlueprints((previousBlueprints) => [...previousBlueprints, newBlueprint]);
-			blueprintModel.Destroying.Once(() => {
-				setBlueprints((previousBlueprints) => 
-					 previousBlueprints.filter((blueprint) => blueprint !== newBlueprint)
-				);
-			});
+			setBlueprints(blueprints);
 		},
 	);
-
-	useEventListener(Events.OnBlueprintEdit, (blueprintModel, blueprintDescription, blueprintImage) => {
-		if (structureCategory !== "Blueprints") return;
-		setBlueprints((previousBlueprints) => 
-		{
-			const newBlueprints=[...previousBlueprints]
-			const blueprint=newBlueprints.find((blueprint) => blueprint.model === blueprintModel)!
-			blueprint.description = blueprintDescription;
-			blueprint.image = blueprintImage;
-			return newBlueprints
-		});
-	});
 
 	return (
 		<ScrollingFrame
@@ -145,7 +117,7 @@ export function BuildMenuStructureCategory({ structureCategory, isVisible }: Bui
 									Size={UDim2.fromScale(0.428, 0.048)}
 									BackgroundColor3={colors.white}
 									LayoutOrder={index*2+1}
-									Visible={subcategory.lower().find(searchText.lower())[0]!==undefined||(structureCategory==="Blueprints"?visibleBlueprints.some((blueprintId)=>blueprints.find((blueprint)=>blueprint.model.GetAttribute("Id")===blueprintId)!.subcategory===subcategory):visibleStructures.some((structureName)=>STRUCTURES[structureName].subcategory===subcategory))}
+									Visible={subcategory.lower().find(searchText.lower())[0]!==undefined||(structureCategory==="Blueprints"?visibleBlueprints.some((blueprintId)=>blueprints.find((blueprint)=>blueprint.id===blueprintId)!.subcategory===subcategory):visibleStructures.some((structureName)=>STRUCTURES[structureName].subcategory===subcategory))}
 								>
 									<uigradient
 										Color={
@@ -178,7 +150,7 @@ export function BuildMenuStructureCategory({ structureCategory, isVisible }: Bui
 									Size={UDim2.fromScale(1, 0)}
 									BackgroundTransparency={1}
 									LayoutOrder={index*2+2}
-									Visible={subcategory.lower().find(searchText.lower())[0]!==undefined||(structureCategory==="Blueprints"?visibleBlueprints.some((blueprintId)=>blueprints.find((blueprint)=>blueprint.model.GetAttribute("Id")===blueprintId)!.subcategory===subcategory):visibleStructures.some((structureName)=>STRUCTURES[structureName].subcategory===subcategory))}
+									Visible={subcategory.lower().find(searchText.lower())[0]!==undefined||(structureCategory==="Blueprints"?visibleBlueprints.some((blueprintId)=>blueprints.find((blueprint)=>blueprint.id===blueprintId)!.subcategory===subcategory):visibleStructures.some((structureName)=>STRUCTURES[structureName].subcategory===subcategory))}
 								>
 									<uipadding
 										PaddingTop={new UDim(0,16)}
@@ -200,11 +172,13 @@ export function BuildMenuStructureCategory({ structureCategory, isVisible }: Bui
 												<BuildMenuStructureButton
 													structureImage={blueprint.image}
 													structureDescription={blueprint.description}
-													structureModel={blueprint.model}
+													structureModel={createBlueprint(blueprint,Workspace.WaitForChild("Plots").GetChildren()
+													.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!
+													.GetPivot())}
 													index={index}
-													isVisible={visibleBlueprints.includes(
-														blueprint.model.GetAttribute("Id") as string,
-													)}
+													isVisible={visibleBlueprints.includes(blueprint.id)}
+													isUnlocked={true}
+													isPurchased={true}
 												></BuildMenuStructureButton>
 											)):
 											Object.entries(STRUCTURES)
@@ -221,9 +195,14 @@ export function BuildMenuStructureCategory({ structureCategory, isVisible }: Bui
 												<BuildMenuStructureButton
 													structureImage={structureDefinition.image}
 													structureDescription={structureDefinition.description}
-													structureModel={structureDefinition.model}
+													structureModel={getStructureModel(structureName)!}
 													index={index}
 													isVisible={visibleStructures.includes(structureName)}
+													isUnlocked={Object.entries(TECHS).every(
+														([techName, techDefinition]) =>
+															techDefinition.type !== "Structure" || !techDefinition.structures.includes(structureName)||(HttpService.JSONDecode(Players.LocalPlayer.GetAttribute("Techs") as string) as string[]).includes(techName)
+													)}
+													isPurchased={structureDefinition.gamepass===undefined || MarketplaceService.UserOwnsGamePassAsync(Players.LocalPlayer.UserId, structureDefinition.gamepass)}
 												></BuildMenuStructureButton>
 											))
 										}

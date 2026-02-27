@@ -3,15 +3,16 @@ import { STRUCTURES } from "shared/constants/structures";
 import MouseService from "../mouse";
 import BaseStructureArrowService from "../placement/structure-arrow";
 import BaseStructureBeamService from "../placement/structure-beam";
-import { EventBus } from "client/event-bus";
 import { Object } from "@rbxts/luau-polyfill";
 import SoundService from "client/services/sound";
+import Signal from "@rbxts/signal";
 
 export default class BaseStructureSelectionService {
 	private readonly hoverSelectionHighlight = new Instance("Highlight", Workspace);
 	private readonly selectionBox: Part = ReplicatedStorage.WaitForChild("SelectionBox").Clone() as Part;
 	private readonly selectionModel = new Instance("Model", Workspace);
 	private readonly selectionHighlight = new Instance("Highlight", Workspace);
+	public readonly OnSelection = new Signal<(selectedStructuresModels: Model[]) => void>();
 
 	private startPosition: Vector3 | undefined;
 	private currentPosition: Vector3 | undefined;
@@ -140,15 +141,15 @@ export default class BaseStructureSelectionService {
 			this.selectionHighlight.Adornee = this.selectionModel;
 			this.selectionHighlight.Enabled = true;
 			this.soundService.playSound("sfx/select");
-			EventBus.OnSelection.Fire([structureModel]);
+			this.OnSelection.Fire([structureModel]);
 		} else {
-			EventBus.OnSelection.Fire([]);
+			this.OnSelection.Fire([]);
 		}
 	}
 
 	private boxSelect(): void {
 		if (math.floor(this.selectionBox.Size.X) === 0 || math.floor(this.selectionBox.Size.Z) === 0) {
-			EventBus.OnSelection.Fire([]);
+			this.OnSelection.Fire([]);
 			return;
 		}
 
@@ -182,7 +183,7 @@ export default class BaseStructureSelectionService {
 			this.selectionHighlight.Enabled = true;
 			this.soundService.playSound("sfx/select");
 		}
-		EventBus.OnSelection.Fire([...selectedStructuresModels]);
+		this.OnSelection.Fire([...selectedStructuresModels]);
 	}
 
 	public stopSelection(): void {

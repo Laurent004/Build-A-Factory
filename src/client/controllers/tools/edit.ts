@@ -1,6 +1,5 @@
-import { Controller, OnInit } from "@flamework/core";
+import { Controller } from "@flamework/core";
 import ToolController from "./tool";
-import GridService from "client/services/plot/grid";
 import { BaseStructurePreviewService } from "client/services/tools/placement/structure-preview";
 import { BaseStructureCFrameService } from "client/services/tools/placement/structure-cframe";
 import { Players, RunService, Workspace } from "@rbxts/services";
@@ -13,14 +12,13 @@ import BaseStructureArrowService from "client/services/tools/placement/structure
 import BaseStructureHighlightService from "client/services/tools/placement/structure-highlight";
 import BaseStructureBeamService from "client/services/tools/placement/structure-beam";
 import BaseStructurePlacementService from "client/services/tools/placement/structure-placement";
-import TutorialService from "client/services/progression/tutorial";
-import { EventBus } from "client/event-bus";
 import { Array } from "@rbxts/luau-polyfill";
-import CollisionService from "shared/services/collision";
 import SoundService from "client/services/sound";
+import ValidationService from "shared/services/validation";
+import { GridService } from "shared/services/plot";
 
-@Controller({})
-export default class EditController extends ToolController implements OnInit {
+@Controller()
+export default class EditController extends ToolController {
 	protected readonly context = "Edit";
 	protected readonly inputActions = [
 		{
@@ -63,9 +61,8 @@ export default class EditController extends ToolController implements OnInit {
 	];
 
 	private readonly gridService = GridService.getInst();
-	private readonly collisionService = CollisionService.getInst();
-	private readonly tutorialService = TutorialService.getInst();
 	private readonly mouseService = new MouseService(this.gridService);
+	private readonly validationService = ValidationService.getInst();
 	private readonly soundService = SoundService.getInst();
 
 	private readonly baseStructureHighlightService = BaseStructureHighlightService.getInst();
@@ -95,18 +92,12 @@ export default class EditController extends ToolController implements OnInit {
 		);
 		this.baseStructurePreviewService = BaseStructurePreviewService.getInst();
 
-		BaseStructurePlacementService.init(
-			this.gridService,
-			this.collisionService,
-			this.tutorialService,
-			this.soundService,
-		);
+		BaseStructurePlacementService.init(this.validationService, this.soundService);
 		this.baseStructurePlacementService = BaseStructurePlacementService.getInst();
 	}
 
-	public override onInit(): void | Promise<void> {
-		super.onInit();
-
+	protected override initEvents(): void {
+		super.initEvents();
 		this.mouseService.onClampedCellChanged.Connect((newClampedCell) => {
 			if (
 				this.baseStructurePreviewService.getStructureModelHolder().PrimaryPart !== undefined &&
@@ -139,7 +130,7 @@ export default class EditController extends ToolController implements OnInit {
 			}
 		});
 
-		EventBus.OnSelection.Connect((selectedStructuresModels) => {
+		this.baseStructureSelectionService.OnSelection.Connect((selectedStructuresModels) => {
 			if (!this.active) return;
 			const rayParams = new RaycastParams();
 			rayParams.FilterType = Enum.RaycastFilterType.Include;
@@ -153,7 +144,7 @@ export default class EditController extends ToolController implements OnInit {
 			);
 			this.mouseService.setRaycastParams(rayParams);
 			if (selectedStructuresModels.size() > 0) {
-				Events.StartStructuresMovement.fire(
+				Events.StartStructuresEdit.fire(
 					Array.flatMap(selectedStructuresModels, (structureModel) =>
 						[structureModel, ...structureModel.GetDescendants()].filter(
 							(instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES,
@@ -164,7 +155,7 @@ export default class EditController extends ToolController implements OnInit {
 			}
 		});
 
-		Events.OnStructuresMovement.connect((player) => {
+		Events.OnStructuresEdit.connect((player) => {
 			if (player !== Players.LocalPlayer) return;
 			this.debounce = true;
 			task.delay(0.1, () => {
@@ -216,7 +207,8 @@ export default class EditController extends ToolController implements OnInit {
 		) {
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getSavedCF()!,
-				this.baseStructurePlacementService.canMove(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canEdit(this.baseStructurePreviewService.getStructureModelHolder())
+					.success,
 			);
 			Events.CancelStructuresMovement.fire(
 				this.baseStructurePreviewService
@@ -253,22 +245,17 @@ export default class EditController extends ToolController implements OnInit {
 
 	private startUpdating(): void {
 		this.connection = RunService.Heartbeat.Connect((dt) => {
-			if (
-				this.baseStructureCFrameService
-					.getTargetCF()
-					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
-			)
-				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
-				this.baseStructurePlacementService.canMove(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canEdit(this.baseStructurePreviewService.getStructureModelHolder())
+					.success,
 			);
 		});
 	}
 
 	private move(): void {
-		this.baseStructurePlacementService.move(
+		this.baseStructurePlacementService.edit(
 			this.baseStructurePreviewService.getStructureModelHolder(),
 			this.baseStructureCFrameService.getTargetCF(),
 		);

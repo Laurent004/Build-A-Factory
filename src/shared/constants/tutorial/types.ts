@@ -1,12 +1,13 @@
 export type TutorialStepDefinition =
 	| BuildTutorialStepDefinition
+	| EditTutorialStepDefinition
 	| DeleteTutorialStepDefinition
 	| SetAttributeTutorialStepDefinition
 	| ConnectTutorialStepDefinition
-	| DisconnectTutorialStepDefinition;
+	| DeliveryTutorialStepDefinition;
 
 export interface BaseTutorialStepDefinition {
-	type: "Build" | "Delete" | "SetAttribute" | "Connect" | "Disconnect" | "Milestone";
+	type: "Build" | "Edit" | "Delete" | "SetAttribute" | "Connect" | "Delivery";
 	description: string;
 }
 
@@ -14,31 +15,40 @@ export interface BuildTutorialStepDefinition extends BaseTutorialStepDefinition 
 	type: "Build";
 	structuresData: {
 		name: string;
-		cf: CFrame;
+		position: Vector3;
+		rotation?: CFrame;
 	}[];
+}
+
+export interface EditTutorialStepDefinition extends BaseTutorialStepDefinition {
+	type: "Edit";
+	structureData: {
+		name: string;
+		position: Vector3;
+		rotation?: CFrame;
+	};
 }
 
 export interface DeleteTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "Delete";
 	structuresData: {
 		name: string;
-		cf: CFrame;
+		position: Vector3;
 	}[];
 }
+
 export interface SetAttributeTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "SetAttribute";
 	structureName: string;
 	attributeName: string;
+	attributeValue: AttributeValue | undefined;
 }
 
 export interface ConnectTutorialStepDefinition extends BaseTutorialStepDefinition {
 	type: "Connect";
-	startStructureName: string;
-	endStructureName: string;
+	structuresNames: [string, string];
 }
 
-export interface DisconnectTutorialStepDefinition extends BaseTutorialStepDefinition {
-	type: "Disconnect";
-	startStructureName: string;
-	endStructureName: string;
+export interface DeliveryTutorialStepDefinition extends BaseTutorialStepDefinition {
+	type: "Delivery";
 }

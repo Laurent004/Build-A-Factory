@@ -5,21 +5,23 @@ import { colors, fonts } from "client/ui/constants";
 import { ITEMS } from "shared/constants/items";
 import { STRUCTURES } from "shared/constants/structures";
 import { IMAGES } from "shared/assets/images";
-import { useSelector } from "@rbxts/react-reflex";
-import { selectContextStructureComponents } from "client/store/context";
-import CoalGeneratorComponent from "client/components/power/coal-generator";
+import { useSelectorCreator } from "@rbxts/react-reflex";
 import { RunService } from "@rbxts/services";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { InfoPanelFluidIndicator } from "../components";
-import { round } from "shared/utils/math";
+import { round } from "shared/utils";
+import { selectContextStructureComponents } from "client/hooks/store/context";
+import CoalGeneratorComponent from "shared/components/power/coal-generator";
 
 export function CoalGeneratorInfoPanel() {
-	const coalGeneratorComponent = useSelector(selectContextStructureComponents(CoalGeneratorComponent))[0];
+	const coalGeneratorComponent = useSelectorCreator(selectContextStructureComponents, CoalGeneratorComponent)[0];
 	const [data, setData] = useBinding<{
 		time: number;
+		efficiency: number;
 		water: number;
 	}>({
 		time: 0,
+		efficiency: 0,
 		water: 0,
 	});
 	const connectionRef = useRef<RBXScriptConnection>();
@@ -31,13 +33,14 @@ export function CoalGeneratorInfoPanel() {
 		connectionRef.current = RunService.Heartbeat.Connect(() => {
 			setData({
 				time: coalGeneratorComponent.getTime(),
+				efficiency: coalGeneratorComponent.getEfficiency(),
 				water: coalGeneratorComponent.getFluids().get("Water") ?? 0,
 			});
 		});
 	}, [coalGeneratorComponent]);
 
 	return (
-		<BaseInfoPanel active={coalGeneratorComponent !== undefined} size={UDim2.fromScale(.183,.514)}>
+		<BaseInfoPanel active={coalGeneratorComponent !== undefined} size={UDim2.fromScale(0.183, 0.514)}>
 			<Frame Size={UDim2.fromScale(1, 0.439)} BackgroundTransparency={1} LayoutOrder={1}>
 				<Text
 					Size={UDim2.fromScale(0.16, 0.085)}
@@ -61,11 +64,14 @@ export function CoalGeneratorInfoPanel() {
 					Size={UDim2.fromScale(0.648, 0.077)}
 					Text={data.map(
 						(value) =>
-							`Coal (${math.max(0,math.ceil(
-								value.time /
-									(ITEMS["Coal"].energy /
-										(STRUCTURES["Coal Generator"].constants["PowerProduction"] as number)),
-							))} rem.)`,
+							`Coal (${math.max(
+								0,
+								math.ceil(
+									value.time /
+										(ITEMS["Coal"].energy /
+											(STRUCTURES["Coal Generator"].constants["PowerProduction"] as number)),
+								),
+							)} rem.)`,
 					)}
 					TextSize={21}
 					TextTruncate={Enum.TextTruncate.SplitWord}
@@ -76,7 +82,6 @@ export function CoalGeneratorInfoPanel() {
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.66, 0.41)}
 					Size={UDim2.fromScale(0.647, 0.08)}
-					FontFace={fonts.josefinSans.light}
 					RichText={true}
 					Text={`<font weight="regular" color="rgb(176,208,255)">${
 						60 /
@@ -84,16 +89,7 @@ export function CoalGeneratorInfoPanel() {
 					}</font> per minute`}
 					TextSize={15}
 					TextXAlignment={Enum.TextXAlignment.Left}
-				>
-					<Image
-						AnchorPoint={new Vector2(0.5, 0.5)}
-						Position={UDim2.fromScale(0.062, 0.5)}
-						Size={UDim2.fromScale(0.2, 1.6)}
-						Image={IMAGES.Glow}
-						ImageColor3={colors.lightblue}
-						ImageTransparency={0.8}
-					></Image>
-				</Text>
+				></Text>
 
 				<Frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
@@ -106,7 +102,7 @@ export function CoalGeneratorInfoPanel() {
 						Position={UDim2.fromScale(0, 0.5)}
 						Size={data.map((value) =>
 							UDim2.fromScale(
-								1-(value.time %
+								(value.time %
 									(ITEMS["Coal"].energy /
 										(STRUCTURES["Coal Generator"].constants["PowerProduction"] as number))) /
 									(ITEMS["Coal"].energy /
@@ -135,9 +131,10 @@ export function CoalGeneratorInfoPanel() {
 				>
 					<uilistlayout
 						FillDirection={Enum.FillDirection.Horizontal}
-						SortOrder={Enum.SortOrder.LayoutOrder}	
+						SortOrder={Enum.SortOrder.LayoutOrder}
+						Wraps={true}
 					></uilistlayout>
-					
+
 					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={0}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
@@ -159,21 +156,17 @@ export function CoalGeneratorInfoPanel() {
 						</Text>
 					</Frame>
 
-					<Frame
-						Size={UDim2.fromScale(0.5, 0.5)}
-						BackgroundTransparency={1}
-						LayoutOrder={1}
-					>
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={1}>
 						<Image
+							AnchorPoint={new Vector2(0, 0.5)}
+							Position={UDim2.fromScale(0, 0.5)}
 							Size={UDim2.fromScale(0.145, 0.7)}
 							Image="rbxassetid://136540953943718"
 						></Image>
 
 						<Text
 							Size={UDim2.fromScale(1, 1)}
-							Text={`Prod. : ${
-								 STRUCTURES["Coal Generator"].constants["PowerProduction"]
-							} MW`}
+							Text={`Prod. : ${STRUCTURES["Coal Generator"].constants["PowerProduction"]} MW`}
 							TextSize={14}
 							TextXAlignment={Enum.TextXAlignment.Left}
 						>
@@ -181,20 +174,17 @@ export function CoalGeneratorInfoPanel() {
 						</Text>
 					</Frame>
 
-					<Frame
-						Size={UDim2.fromScale(0.5, 0.5)}
-						BackgroundTransparency={1}
-						LayoutOrder={2}
-					>
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={2}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
+							Position={UDim2.fromScale(0, 0.5)}
 							Size={UDim2.fromScale(0.145, 0.7)}
 							Image="rbxassetid://136540953943718"
 						></Image>
 
 						<Text
 							Size={UDim2.fromScale(1, 1)}
-							Text={`Efficiency : 100%`}
+							Text={data.map((value) => `Efficiency : ${math.round(value.efficiency * 100)}%`)}
 							TextSize={14}
 							TextXAlignment={Enum.TextXAlignment.Left}
 						>
@@ -215,7 +205,9 @@ export function CoalGeneratorInfoPanel() {
 				></Text>
 
 				<Frame Position={UDim2.fromScale(0, 0.16)} Size={UDim2.fromScale(1, 0.84)} BackgroundTransparency={1}>
-					<InfoPanelFluidIndicator fluid={data.map((value)=>["Water",value.water])}></InfoPanelFluidIndicator>
+					<InfoPanelFluidIndicator
+						fluid={data.map((value) => ["Water", value.water])}
+					></InfoPanelFluidIndicator>
 
 					<Frame
 						AnchorPoint={new Vector2(0.5, 0.5)}
@@ -223,8 +215,6 @@ export function CoalGeneratorInfoPanel() {
 						Size={UDim2.fromScale(0.145, 0.271)}
 						BackgroundColor3={Color3.fromRGB(32, 32, 32)}
 					>
-						<uicorner CornerRadius={new UDim(0, 4)}></uicorner>
-
 						<Image
 							AnchorPoint={new Vector2(0.5, 0.5)}
 							Position={UDim2.fromScale(0.5, 0.5)}
@@ -252,16 +242,7 @@ export function CoalGeneratorInfoPanel() {
 						Text={`<font weight="regular" color="rgb(176,208,255)">${45}m³</font> per minute`}
 						TextSize={11}
 						TextXAlignment={Enum.TextXAlignment.Left}
-					>
-						<Image
-							AnchorPoint={new Vector2(0.5, 0.5)}
-							Position={UDim2.fromScale(0.15, 0.5)}
-							Size={UDim2.fromScale(0.4, 1.6)}
-							Image={IMAGES.Glow}
-							ImageColor3={colors.lightblue}
-							ImageTransparency={0.8}
-						></Image>
-					</Text>
+					></Text>
 
 					<Frame
 						AnchorPoint={new Vector2(0.5, 0.5)}

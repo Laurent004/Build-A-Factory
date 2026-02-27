@@ -7,6 +7,7 @@ import { BaseStructurePreviewService } from "../../placement/structure-preview";
 import BaseStructureHighlightService from "../../placement/structure-highlight";
 import BaseStructureArrowService from "../../placement/structure-arrow";
 import BaseStructurePlacementService from "../../placement/structure-placement";
+import { STRUCTURES } from "shared/constants/structures";
 
 export default class PathStructureBuildingService extends BaseBuildingService {
 	private readonly pathStructurePreviewService: PathStructurePreviewService;
@@ -40,7 +41,12 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 				this.baseStructureCFrameService.setTargetPosition(
 					new Vector3(
 						newClampedCell.worldPosition.X,
-						newClampedCell.worldPosition.Y + this.straightStructureModel.PrimaryPart!.Size.Y / 2 + 0.5,
+						this.straightStructureModel.PrimaryPart!.Size.Y/2+.5+
+						this.straightStructureModel.PrimaryPart!.Size.Y*math.clamp(
+								newClampedCell.position.Y,
+								0,
+								STRUCTURES[this.straightStructureModel.Name].maxElevation,
+							),
 						newClampedCell.worldPosition.Z,
 					),
 				);
@@ -127,16 +133,10 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 
 	private startUpdatingStructure(): void {
 		this.connection = RunService.Heartbeat.Connect((dt) => {
-			if (
-				this.baseStructureCFrameService
-					.getTargetCF()
-					.FuzzyEq(this.baseStructurePreviewService.getStructureModelHolder().GetPivot())
-			)
-				return;
 			this.baseStructureCFrameService.updateCurrentCF(dt);
 			this.baseStructurePreviewService.updateStructurePreview(
 				this.baseStructureCFrameService.getCurrentCF(),
-				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()),
+				this.baseStructurePlacementService.canPlace(this.baseStructurePreviewService.getStructureModelHolder()).success,
 			);
 		});
 	}
@@ -146,7 +146,7 @@ export default class PathStructureBuildingService extends BaseBuildingService {
 			this.pathStructurePreviewService.updatePathStructurePreview(
 				this.baseStructurePlacementService.canPlace(
 					this.pathStructurePreviewService.getPathStructureModelHolder(),
-				),
+				).success,
 			);
 		});
 	}

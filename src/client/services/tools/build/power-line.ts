@@ -1,16 +1,19 @@
 import { Players, RunService, Workspace } from "@rbxts/services";
-import { STRUCTURES } from "shared/constants/structures";
-import { PowerService } from "client/services/plot/power";
+import { getStructureModel, STRUCTURES } from "shared/constants/structures";
 import BaseBuildingService from "./base";
 import MouseService from "../mouse";
 import { EventBus } from "client/event-bus";
 import SoundService from "client/services/sound";
+import { PowerService } from "shared/services/plot";
+import { Events } from "client/network";
 
 export class PowerLineBuildingService extends BaseBuildingService {
-	private readonly powerLine: RopeConstraint = STRUCTURES["Power Line"].model
+	private readonly powerLine: RopeConstraint = getStructureModel("Power Line")!
 		.FindFirstChildOfClass("RopeConstraint")!
 		.Clone();
-	private readonly powerLineEnd: Part = STRUCTURES["Power Line"].model.WaitForChild("Power Line End").Clone() as Part;
+	private readonly powerLineEnd: Part = getStructureModel("Power Line")!
+		.WaitForChild("Power Line End")
+		.Clone() as Part;
 	private connection: RBXScriptConnection | undefined;
 
 	constructor(
@@ -96,7 +99,9 @@ export class PowerLineBuildingService extends BaseBuildingService {
 			this.powerLine.Attachment0 = attachment;
 			this.startUpdatingPowerLine();
 		} else {
-			this.powerService.attemptConnect(this.powerLine.Attachment0, attachment);
+			if (this.powerService.canConnect(this.powerLine.Attachment0, attachment)) {
+				Events.ConnectPowerLine(this.powerLine.Attachment0, attachment);
+			}
 			this.powerLine.Attachment0 = attachment;
 		}
 		this.soundService.playSound("sfx/connect");

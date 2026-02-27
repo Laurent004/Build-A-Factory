@@ -1,28 +1,26 @@
 import { Networking } from "@flamework/networking";
-import { PowerLineData, StructureData, StructureMovementData } from "./constants/structures";
+import { BlueprintData, PowerLineData, StructureData, StructureEditData } from "./constants/structures";
 import { Data } from "./types/data";
 
 interface ClientToServerEvents {
-	CreateGame: () => void;
-	LoadGame: (id: string) => void;
-	UnloadGame: () => void;
-	DeleteGame: () => void;
-
-	OnPlotInitialization: () => void;
+	CreateSave: () => void;
+	LoadSave: (saveId: string) => void;
+	UnloadSave: () => void;
+	DeleteSave: () => void;
 	PurchaseExpansion: (expansion: Part) => void;
+	UnlockTech: (techName: string) => void;
 	PlaceStructures: (structuresData: StructureData[], powerLinesData: PowerLineData[]) => void;
-	StartStructuresMovement: (structuresModels: Model[]) => void;
-	MoveStructures: (structuresMovementData: StructureMovementData[]) => void;
+	StartStructuresEdit: (structuresModels: Model[]) => void;
+	EditStructures: (structuresMovementData: StructureEditData[]) => void;
 	CancelStructuresMovement: (structuresModels: Model[]) => void;
-	DestroyStructures: (structuresModels: Model[]) => void;
 	ClearStructuresItems: (structuresModels: Model[]) => void;
+	DestroyStructures: (structuresModels: Model[]) => void;
 	SetStructuresAttribute: (
 		structuresModels: Model[],
 		attributeName: string,
 		attributeValue: AttributeValue | undefined,
 	) => void;
-	CreatePowerLine: (startAttachment: Attachment, endAttachment: Attachment) => void;
-	DestroyPowerLine: (startAttachment: Attachment, endAttachment: Attachment) => void;
+	ConnectPowerLine: (startAttachment: Attachment, endAttachment: Attachment) => void;
 	CreateBlueprint: (
 		structuresModels: Model[],
 		blueprintName: string,
@@ -31,37 +29,27 @@ interface ClientToServerEvents {
 		blueprintImage: string,
 	) => void;
 	EditBlueprint: (
-		blueprintModel: Model,
+		blueprintId: string,
 		blueprintName: string,
 		blueprintDescription: string,
 		blueprintImage: string,
 	) => void;
-	DeleteBlueprint: (blueprintModel: Model) => void;
+	DeleteBlueprint: (blueprintId: string) => void;
 	SetSetting: (settingName: string, settingValue: unknown) => void;
 }
 
 interface ServerToClientEvents {
-	OnDataInitialization: (data: Data) => void;
-	OnPlotInitialization: (player: Player, plot: Model) => void;
-	OnPlotReset: (player: Player) => void;
-	OnExpansionPurchase: (player: Player, expansion: Part) => void;
-	OnStructuresPlacement: (player: Player, structuresModels: Model[]) => void;
-	OnStructuresMovementStart: (player: Player, structuresModels: Model[]) => void;
-	OnStructuresMovement: (player: Player, structuresModels: Model[]) => void;
-	OnStructuresDestroying: (player: Player, structuresModels: Model[]) => void;
+	OnSavesUpdate: (saves: Data["saves"]) => void;
+	OnStructuresEditStart: (player: Player, structuresModels: Model[]) => void;
+	OnStructuresEdit: (player: Player, structuresModels: Model[]) => void;
 	OnStructuresItemsClear: (player: Player, structuresModels: Model[]) => void;
-	OnBlueprintCreation: (
-		blueprintModel: Model,
-		blueprintDescription: string,
-		blueprintSubcategory: string,
-		blueprintImage: string,
-	) => void;
-	OnBlueprintEdit: (blueprintModel: Model, blueprintDescription: string, blueprintImage: string) => void;
-	OnTutorialStepUpdate: (tutorialStep: number) => void;
+	OnBlueprintsUpdate: (blueprintsData: BlueprintData[]) => void;
 	OnNotification: (notification: string, sound?: string) => void;
 }
 
-interface ClientToServerFunctions {}
+interface ClientToServerFunctions {
+	RequestData: () => Data;
+}
 
 interface ServerToClientFunctions {}
 

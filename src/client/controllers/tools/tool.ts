@@ -1,8 +1,10 @@
+import { Controller, OnInit } from "@flamework/core";
 import { BaseAction, InputManager, StandardActionBuilder } from "@rbxts/mechanism";
-import { store } from "client/store";
-import { selectContext } from "client/store/context";
+import { store } from "client/hooks/store";
+import { selectContext } from "client/hooks/store/context";
 
-export default abstract class ToolController {
+@Controller()
+export default abstract class ToolController implements OnInit {
 	protected active: boolean = false;
 	protected abstract readonly context: string;
 	private static readonly inputManager = new InputManager();
@@ -12,14 +14,22 @@ export default abstract class ToolController {
 		deactivated?: () => void;
 	}[];
 
-	public onInit(): void | Promise<void> {
+	onInit(): void | Promise<void> {
 		this.initInputActions();
+		this.initEvents();
+	}
+
+	protected initEvents(): void {
 		store.subscribe(selectContext, (context, previousContext) => {
 			if (context === this.context) {
-				this.bindInputActions();
+				for (const inputAction of this.inputActions) {
+					ToolController.inputManager.bind(inputAction.action);
+				}
 				this.enter();
 			} else if (previousContext === this.context) {
-				this.unbindInputActions();
+				for (const inputAction of this.inputActions) {
+					ToolController.inputManager.unbind(inputAction.action);
+				}
 				this.exit();
 			}
 		});
@@ -35,18 +45,6 @@ export default abstract class ToolController {
 					inputAction.deactivated !== undefined ? inputAction.deactivated() : undefined;
 				});
 			}
-		}
-	}
-
-	private bindInputActions(): void {
-		for (const inputAction of this.inputActions) {
-			ToolController.inputManager.bind(inputAction.action);
-		}
-	}
-
-	private unbindInputActions(): void {
-		for (const inputAction of this.inputActions) {
-			ToolController.inputManager.unbind(inputAction.action);
 		}
 	}
 

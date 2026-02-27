@@ -1,6 +1,6 @@
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { selectContext } from "client/store/context";
+import { selectContext } from "client/hooks/store/context";
 import { ToolInputPanel } from "./input-panel";
 
 export function CleanerInputPanel() {

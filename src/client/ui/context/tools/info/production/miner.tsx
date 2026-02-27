@@ -1,22 +1,28 @@
 import React, { useBinding, useRef } from "@rbxts/react";
 import { fonts, colors } from "client/ui/constants";
 import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
-import { useSelector } from "@rbxts/react-reflex";
+import { useSelector, useSelectorCreator } from "@rbxts/react-reflex";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { RunService } from "@rbxts/services";
-import MinerComponent from "client/components/production/miner";
+import MinerComponent from "shared/components/production/miner";
 import { IMAGES } from "shared/assets/images";
 import { InfoPanelRecipeButton } from "./recipe-button";
 import { Object } from "@rbxts/luau-polyfill";
 import { BaseInfoPanel } from "../base";
-import { selectContextStructureAttribute, selectContextStructureComponents } from "client/store/context";
 import { Frame, Image, Text } from "client/ui/core";
 import { STRUCTURES } from "shared/constants/structures";
+import { selectContextStructureAttribute, selectContextStructureComponents } from "client/hooks/store/context";
 
 export function MinerInfoPanel() {
-	const minerComponent = useSelector(selectContextStructureComponents(MinerComponent))[0];
+	const minerComponent = useSelectorCreator(selectContextStructureComponents, MinerComponent)[0];
 	const recipe = useSelector(selectContextStructureAttribute("Recipe")) as string | undefined;
-	const [miningProgress, setMiningProgress] = useBinding<number>(0);
+	const [data, setData] = useBinding<{
+		miningProgress: number;
+		efficiency: number;
+	}>({
+		miningProgress: 0,
+		efficiency: 0,
+	});
 	const connectionRef = useRef<RBXScriptConnection>();
 
 	useUpdateEffect(() => {
@@ -24,7 +30,10 @@ export function MinerInfoPanel() {
 		connectionRef.current = undefined;
 		if (minerComponent === undefined) return;
 		connectionRef.current = RunService.Heartbeat.Connect(() => {
-			setMiningProgress(minerComponent.getMiningProgress());
+			setData({
+				miningProgress: minerComponent.getMiningProgress(),
+				efficiency: minerComponent.getEfficiency(),
+			});
 		});
 	}, [minerComponent]);
 
@@ -62,26 +71,15 @@ export function MinerInfoPanel() {
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.66, 0.41)}
 					Size={UDim2.fromScale(0.657, 0.08)}
-					FontFace={fonts.josefinSans.light}
 					RichText={true}
 					Text={`<font weight="regular" color="rgb(176,208,255)">${
 						recipe !== undefined
-							? math.floor(60 / ITEM_RECIPES[recipe].time) *
-							  ITEM_RECIPES[recipe].outputItems[Object.keys(ITEM_RECIPES[recipe].outputItems)[0]]
+							? (60 / ITEM_RECIPES[recipe].time) * Object.values(ITEM_RECIPES[recipe].outputItems)[0]
 							: 0
 					}</font> per minute`}
 					TextSize={15}
 					TextXAlignment={Enum.TextXAlignment.Left}
-				>
-					<Image
-						AnchorPoint={new Vector2(0.5, 0.5)}
-						Position={UDim2.fromScale(0.062, 0.5)}
-						Size={UDim2.fromScale(0.2, 1.6)}
-						Image={IMAGES.Glow}
-						ImageColor3={colors.lightblue}
-						ImageTransparency={0.8}
-					></Image>
-				</Text>
+				></Text>
 
 				<Frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
@@ -92,7 +90,7 @@ export function MinerInfoPanel() {
 					<Frame
 						AnchorPoint={new Vector2(0, 0.5)}
 						Position={UDim2.fromScale(0, 0.5)}
-						Size={miningProgress.map((value) => UDim2.fromScale(value, 0.6))}
+						Size={data.map((value) => UDim2.fromScale(value.miningProgress, 0.6))}
 						BackgroundColor3={colors.lightblue}
 					>
 						<Image
@@ -115,6 +113,7 @@ export function MinerInfoPanel() {
 					<uilistlayout
 						FillDirection={Enum.FillDirection.Horizontal}
 						SortOrder={Enum.SortOrder.LayoutOrder}
+						Wraps={true}
 					></uilistlayout>
 
 					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={0}>
@@ -130,7 +129,7 @@ export function MinerInfoPanel() {
 							Text={`Value : $${
 								recipe !== undefined
 									? Object.entries(ITEM_RECIPES[recipe].outputItems).reduce(
-											(value, [itemName, count]) => (value += ITEMS[itemName].value.cash * count),
+											(value, [itemName, count]) => (value += ITEMS[itemName].value!.cash * count),
 											0,
 									  )
 									: 0
@@ -188,7 +187,7 @@ export function MinerInfoPanel() {
 
 						<Text
 							Size={UDim2.fromScale(1, 1)}
-							Text={`Efficiency : 100%`}
+							Text={data.map((value) => `Efficiency : ${math.round(value.efficiency * 100)}%`)}
 							TextSize={14}
 							TextXAlignment={Enum.TextXAlignment.Left}
 						>

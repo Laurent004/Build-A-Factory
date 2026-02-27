@@ -50,7 +50,6 @@ export function Notifications() {
 			Position={UDim2.fromScale(0.5, 0.652)}
 			Size={UDim2.fromScale(0.259, 0.658)}
 			BackgroundTransparency={1}
-			ZIndex={0}
 		>
 			<uilistlayout SortOrder={Enum.SortOrder.LayoutOrder}></uilistlayout>
 
@@ -68,9 +67,9 @@ interface NotificationProps {
 
 function Notification({ notification, index }: NotificationProps) {
 	return (
-		<Frame Size={new UDim2(1, 0, 0.052, 0)} BackgroundTransparency={1} LayoutOrder={index}>
+		<Frame Size={UDim2.fromScale(1, 0.052)} BackgroundTransparency={1} LayoutOrder={index}>
 			<Text
-				Size={new UDim2(1, 0, 1, 0)}
+				Size={UDim2.fromScale(1, 1)}
 				FontFace={fonts.josefinSans.bold}
 				RichText={true}
 				Text={notification.notification}
@@ -81,8 +80,8 @@ function Notification({ notification, index }: NotificationProps) {
 
 			<Image
 				AnchorPoint={new Vector2(0.5, 0.5)}
-				Position={new UDim2(0.5, 0, 0.5, 0)}
-				Size={new UDim2(0.7, 0, 2, 0)}
+				Position={UDim2.fromScale(0.5, 0.5)}
+				Size={UDim2.fromScale(0.7, 2)}
 				Image={IMAGES.Glow}
 				ImageColor3={Color3.fromRGB(
 					tonumber(

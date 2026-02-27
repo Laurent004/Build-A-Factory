@@ -2,28 +2,30 @@ import React, { useBinding, useRef } from "@rbxts/react";
 import { fonts, colors } from "client/ui/constants";
 import { Object } from "@rbxts/luau-polyfill";
 import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
-import { useSelector } from "@rbxts/react-reflex";
+import { useSelector, useSelectorCreator } from "@rbxts/react-reflex";
 import { useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { RunService } from "@rbxts/services";
 import { InfoPanelRecipeButton } from "./recipe-button";
 import { IMAGES } from "shared/assets/images";
 import { BaseInfoPanel } from "../base";
-import ManufacturerComponent from "client/components/production/manufacturer";
-import { selectContextStructureAttribute, selectContextStructureComponents } from "client/store/context";
+import ManufacturerComponent from "shared/components/production/manufacturer";
 import { Frame, Image, ScrollingFrame, Text } from "client/ui/core";
 import { STRUCTURES } from "shared/constants/structures";
 import { useStore } from "client/hooks";
-import { round } from "shared/utils/math";
+import { round } from "shared/utils";
+import { selectContextStructureAttribute, selectContextStructureComponents } from "client/hooks/store/context";
 
 export function ManufacturerInfoPanel() {
 	const store = useStore();
-	const manufacturerComponent = useSelector(selectContextStructureComponents(ManufacturerComponent))[0];
+	const manufacturerComponent = useSelectorCreator(selectContextStructureComponents, ManufacturerComponent)[0];
 	const recipe = useSelector(selectContextStructureAttribute("Recipe")) as string | undefined;
 	const [data, setData] = useBinding<{
 		productionProgress: number;
+		efficiency: number;
 		items: Record<string, number>;
 	}>({
 		productionProgress: 0,
+		efficiency: 0,
 		items: {},
 	});
 	const connectionRef = useRef<RBXScriptConnection>();
@@ -31,7 +33,15 @@ export function ManufacturerInfoPanel() {
 	useUpdateEffect(() => {
 		connectionRef.current?.Disconnect();
 		connectionRef.current = undefined;
-		if (manufacturerComponent === undefined) return;
+		if (
+			manufacturerComponent === undefined ||
+			Object.entries(ITEM_RECIPES)
+				.filter(
+					([, recipeDefinition]) => recipeDefinition.structureName === manufacturerComponent.instance.Name,
+				)
+				.size() === 1
+		)
+			return;
 		connectionRef.current = RunService.Heartbeat.Connect(() => {
 			const items: Record<string, number> = {};
 			for (const solid of manufacturerComponent.getSolids()) {
@@ -42,13 +52,25 @@ export function ManufacturerInfoPanel() {
 			}
 			setData({
 				productionProgress: manufacturerComponent.getProductionProgress(),
+				efficiency: manufacturerComponent.getEfficiency(),
 				items: items,
 			});
 		});
 	}, [manufacturerComponent]);
 
 	return (
-		<BaseInfoPanel active={manufacturerComponent !== undefined} size={UDim2.fromScale(0.212, 0.621)}>
+		<BaseInfoPanel
+			active={
+				manufacturerComponent !== undefined &&
+				Object.entries(ITEM_RECIPES)
+					.filter(
+						([, recipeDefinition]) =>
+							recipeDefinition.structureName === manufacturerComponent.instance.Name,
+					)
+					.size() > 1
+			}
+			size={UDim2.fromScale(0.212, 0.621)}
+		>
 			<Frame Size={UDim2.fromScale(1, 0.365)} BackgroundTransparency={1} LayoutOrder={1}>
 				<Text
 					Size={UDim2.fromScale(0.425, 0.085)}
@@ -81,26 +103,21 @@ export function ManufacturerInfoPanel() {
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.636, 0.41)}
 					Size={UDim2.fromScale(0.657, 0.08)}
-					FontFace={fonts.josefinSans.light}
 					RichText={true}
 					Text={`<font weight="regular" color="rgb(176,208,255)">${
 						recipe !== undefined
-							? math.floor(60 / ITEM_RECIPES[recipe].time) *
-							  ITEM_RECIPES[recipe].outputItems[Object.keys(ITEM_RECIPES[recipe].outputItems)[0]]
+							? (60 / ITEM_RECIPES[recipe].time) * Object.values(ITEM_RECIPES[recipe].outputItems)[0]
 							: 0
-					}${recipe !== undefined ? (ITEMS[recipe].model !== undefined ? "" : "m³") : ""}</font> per minute`}
+					}${
+						recipe !== undefined
+							? ITEMS[Object.keys(ITEM_RECIPES[recipe].outputItems)[0]].value !== undefined
+								? ""
+								: "m³"
+							: ""
+					}</font> per minute`}
 					TextSize={15}
 					TextXAlignment={Enum.TextXAlignment.Left}
-				>
-					<Image
-						AnchorPoint={new Vector2(0.5, 0.5)}
-						Position={UDim2.fromScale(0.062, 0.5)}
-						Size={UDim2.fromScale(0.2, 1.6)}
-						Image={IMAGES.Glow}
-						ImageColor3={colors.lightblue}
-						ImageTransparency={0.8}
-					></Image>
-				</Text>
+				></Text>
 
 				<Frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
@@ -134,6 +151,7 @@ export function ManufacturerInfoPanel() {
 					<uilistlayout
 						FillDirection={Enum.FillDirection.Horizontal}
 						SortOrder={Enum.SortOrder.LayoutOrder}
+						Wraps={true}
 					></uilistlayout>
 
 					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={0}>
@@ -149,7 +167,8 @@ export function ManufacturerInfoPanel() {
 							Text={`Value : $${
 								recipe !== undefined
 									? Object.entries(ITEM_RECIPES[recipe].outputItems).reduce(
-											(value, [itemName, count]) => (value += ITEMS[itemName].value.cash * count),
+											(value, [itemName, count]) =>
+												(value += (ITEMS[itemName].value?.cash ?? 0) * count),
 											0,
 									  )
 									: 0
@@ -211,7 +230,7 @@ export function ManufacturerInfoPanel() {
 
 						<Text
 							Size={UDim2.fromScale(1, 1)}
-							Text={`Efficiency : 100%`}
+							Text={data.map((value) => `Efficiency : ${math.round(value.efficiency * 100)}%`)}
 							TextSize={14}
 							TextXAlignment={Enum.TextXAlignment.Left}
 						>
@@ -232,9 +251,9 @@ export function ManufacturerInfoPanel() {
 				></Text>
 
 				<ScrollingFrame
-					AnchorPoint={new Vector2(0.5, 0.5)}
-					Position={UDim2.fromScale(0.5, 0.77)}
-					Size={UDim2.fromScale(1, 1.255)}
+					AnchorPoint={new Vector2(0, 1)}
+					Position={UDim2.fromScale(0, 1)}
+					Size={UDim2.fromScale(1, 0.8)}
 				>
 					<uigridlayout
 						CellPadding={UDim2.fromScale(0, 0)}
@@ -299,12 +318,17 @@ export function ManufacturerInfoPanel() {
 											BackgroundColor3={Color3.fromRGB(32, 32, 32)}
 											Event={{
 												MouseEnter: () => {
-													store.setTips([
-														itemName,
-														`<font weight="regular" color="rgb(176,208,255)">${
-															math.floor(60 / ITEM_RECIPES[recipe].time) * count
-														}</font> per minute`,
-													]);
+													store.setTips(
+														[
+															itemName,
+															ITEMS[itemName].energy > 0
+																? `Energy : ${ITEMS[itemName].energy} MJ`
+																: undefined,
+															`<font weight="regular" color="rgb(176,208,255)">${
+																(60 / ITEM_RECIPES[recipe].time) * count
+															}</font> per minute`,
+														].filterUndefined(),
+													);
 												},
 												MouseLeave: () => {
 													store.setTips([]);
@@ -358,12 +382,18 @@ export function ManufacturerInfoPanel() {
 											BackgroundColor3={Color3.fromRGB(32, 32, 32)}
 											Event={{
 												MouseEnter: () => {
-													store.setTips([
-														itemName,
-														`<font weight="regular" color="rgb(176,208,255)">${
-															math.floor(60 / ITEM_RECIPES[recipe].time) * count
-														}</font> per minute`,
-													]);
+													store.setTips(
+														[
+															itemName,
+															ITEMS[itemName].energy > 0
+																? `Energy : ${ITEMS[itemName].energy} MJ`
+																: undefined,
+															`<font weight="regular" color="rgb(176,208,255)">${
+																(60 / ITEM_RECIPES[recipe].time) * count
+															}</font> per minute`,
+															,
+														].filterUndefined(),
+													);
 												},
 												MouseLeave: () => {
 													store.setTips([]);

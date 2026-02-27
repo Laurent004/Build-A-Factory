@@ -9,5 +9,6 @@ export default abstract class BaseBuildingService {
 	abstract onStart(): void;
 	public onEnd(): void {}
 	public onRotate(): void {}
+	public onMirror(): void {}
 	public onScroll(position: Vector3): void {}
 }
