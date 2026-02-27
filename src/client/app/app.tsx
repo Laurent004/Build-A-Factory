@@ -2,7 +2,7 @@ import React from "@rbxts/react";
 import { Layer } from "client/ui/core";
 import { SaveSelector } from "client/ui/save-selector";
 import { TutorialPanel } from "client/ui/hud/tutorial-panel";
-import { CashDisplay } from "client/ui/hud/cash-display";
+import { CurrencyDisplay } from "client/ui/hud/currency-display";
 import { Notifications } from "client/ui/overlay/notifications";
 import { SectionBar } from "client/ui/hud/context/sections";
 import { ItemsMenu } from "client/ui/context/sections/items";
@@ -35,16 +35,16 @@ import {
 	UndergroundStructureBuildInputPanel,
 } from "client/ui/hud/context/tools";
 import { BlueprintDesigner } from "client/ui/context/tools/copy";
-import { DeleteModal } from "client/ui/overlay/tools";
 import { ExpansionModal } from "client/ui/overlay/expansion-modal";
 import { Tooltip } from "client/ui/overlay/tooltip";
+import { DeleteModal } from "client/ui/overlay/delete-modal";
 
 export function App() {
 	return (
 		<Layer>
 			<SaveSelector></SaveSelector>
 			<TutorialPanel></TutorialPanel>
-			<CashDisplay></CashDisplay>
+			<CurrencyDisplay></CurrencyDisplay>
 			<Notifications></Notifications>
 
 			<SectionBar></SectionBar>

@@ -19,7 +19,7 @@ export class ProgrammableSplitterComponent extends TransporterComponent implemen
 		super.initEvents();
 		for (const outputDirection of splitterOutputDirections) {
 			this.updateFilters(outputDirection);
-			this.connections.push(
+			this.janitor.Add(
 				this.instance.GetAttributeChangedSignal(outputDirection).Connect(() => {
 					this.updateFilters(outputDirection);
 				}),

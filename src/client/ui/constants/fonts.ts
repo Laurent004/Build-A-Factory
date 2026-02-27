@@ -12,4 +12,3 @@ export const fonts = {
 		italic: new Font("rbxasset://fonts/families/JosefinSans.json", Enum.FontWeight.Regular, Enum.FontStyle.Italic),
 	},
 };
-

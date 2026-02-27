@@ -5,7 +5,7 @@ import { Frame } from "./frame";
 import { Text } from "./text";
 import { CanvasGroup } from "./canvas-group";
 import { HttpService } from "@rbxts/services";
-import { isBinding, lerp, lerpBinding, useMotion } from "@rbxts/pretty-react-hooks";
+import { useMotion } from "@rbxts/pretty-react-hooks";
 
 interface NumberSpinnerProps extends React.InstanceProps<TextLabel> {
 	value: number;
@@ -14,10 +14,6 @@ interface NumberSpinnerProps extends React.InstanceProps<TextLabel> {
 	prefix?: string;
 	suffix?: string;
 	commas?: boolean;
-	digitSize: UDim2;
-	prefixSize: UDim2;
-	suffixSize: UDim2;
-	commaSize: UDim2;
 }
 
 export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref)=>{
@@ -96,12 +92,14 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 			ref={ref}
 			Active={false}
 			AnchorPoint={props.AnchorPoint}
+			AutomaticSize={Enum.AutomaticSize.X}
 			Position={props.Position}
 			Rotation={props.Rotation}
-			Size={props.Size}
+			Size={UDim2.fromScale(0,1)}
 			BackgroundTransparency={BackgroundTransparency}
 			BorderSizePixel={BorderSizePixel}
 			Interactable={false}
+			LayoutOrder={props.LayoutOrder}
 			ZIndex={props.ZIndex}
 		>
 			<uilistlayout
@@ -126,7 +124,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
-				Size={props.prefixSize}
 				LayoutOrder={-1000}	
 				Visible={prefix !== ""}
 				FontFace={FontFace}
@@ -150,7 +147,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
-				Size={props.prefixSize}
 				LayoutOrder={-999}
 				Visible={props.value < 0}
 				FontFace={FontFace}
@@ -175,7 +171,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 			{wholeDigits.map((whole, index) => (
 				<NumberSpinnerDigit
 					key={whole.id}
-					Size={props.digitSize}
 					LayoutOrder={(index + 1) * 2 - 900}
 					FontFace={FontFace}
 					LineHeight={props.LineHeight}
@@ -204,7 +199,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 					return (
 						<Text
 							AutomaticSize={Enum.AutomaticSize.X}
-							Size={props.commaSize}
 							LayoutOrder={whole.size() * 2 - 900 - (index - 1) * 2 - 1}
 							Text=","
 							FontFace={FontFace}
@@ -254,7 +248,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 			{decimalDigits.map((decimal, index) => (
 				<NumberSpinnerDigit
 					key={decimal.id}
-					Size={props.digitSize}
 					LayoutOrder={index + 1}
 					FontFace={FontFace}
 					LineHeight={props.LineHeight}
@@ -279,7 +272,6 @@ export const NumberSpinner=forwardRef<CanvasGroup,NumberSpinnerProps>((props,ref
 
 			<Text
 				AutomaticSize={Enum.AutomaticSize.X}
-				Size={props.suffixSize}
 				LayoutOrder={1000}
 				Visible={suffix !== ""}
 				FontFace={FontFace}
@@ -316,11 +308,12 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 
  function NumberSpinnerDigit(props: NumberSpinnerDigitProps) {
 	const { BorderSizePixel = 0, FontFace = fonts.josefinSans.regular, TextColor3 = colors.white } = props;
-	const [mountAnimation, mountAnimationMotion] = useMotion(0);
+	const [mountAnimation, mountAnimationMotion] = useMotion(UDim2.fromScale(0,1));
 	const [updateAnimation, udateAnimationMotion] = useMotion(-(props.value ?? 0));
 
 	useEffect(() => {
-		mountAnimationMotion.tween(props.value !== undefined ? 1 : 0, { time: props.duration });
+		if(props.value!==undefined) return
+		mountAnimationMotion.tween(UDim2.fromScale(0,1), { time: props.duration });
 	}, [props.value]);
 
 	useEffect(() => {
@@ -330,13 +323,8 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 
 	return (
 		<Frame
-			Size={lerpBinding(
-				mountAnimation,
-				new UDim2(0, 0, 0, 0),
-				props.value === 1
-					? new UDim2(0, (props.Size as UDim2).X.Offset * 0.5, (props.Size as UDim2).Y.Scale, 0)
-					: (props.Size as UDim2),
-			)}
+			AutomaticSize={Enum.AutomaticSize.X}
+			Size={mountAnimation}
 			BackgroundTransparency={1}
 			LayoutOrder={props.LayoutOrder}
 			ClipsDescendants={true}
@@ -352,7 +340,7 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 							Archivable={props.Archivable}
 							Active={props.Active}
 							AnchorPoint={props.AnchorPoint}
-							AutomaticSize={props.AutomaticSize}
+							AutomaticSize={Enum.AutomaticSize.X}
 							BackgroundColor3={props.BackgroundColor3}
 							BackgroundTransparency={1}
 							BorderColor3={props.BorderColor3}
@@ -377,7 +365,9 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 							SelectionGroup={props.SelectionGroup}
 							SelectionOrder={props.SelectionOrder}
 							Event={props.Event}
-							Change={props.Change}
+							Change={{...props.Change,"AbsolutePosition":(text)=>{
+								mountAnimationMotion.tween(new UDim2(text.AbsoluteSize.X,0,1,0),{time:props.duration})
+							}}}
 							FontFace={FontFace}
 							LineHeight={props.LineHeight}
 							MaxVisibleGraphemes={props.MaxVisibleGraphemes}
@@ -387,7 +377,7 @@ interface NumberSpinnerDigitProps extends React.InstanceProps<TextLabel> {
 							TextColor3={TextColor3}
 							TextDirection={props.TextDirection}
 							TextScaled={props.TextScaled}
-							TextSize={isBinding(props.TextSize)?props.TextSize:lerpBinding(mountAnimation,0,props.TextSize??0)}
+							TextSize={props.TextSize}
 							TextStrokeColor3={props.TextStrokeColor3}
 							TextStrokeTransparency={props.TextStrokeTransparency}
 							TextTransparency={props.TextTransparency}

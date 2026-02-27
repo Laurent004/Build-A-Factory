@@ -1,5 +1,5 @@
 import { MarketplaceService, Players, Workspace } from "@rbxts/services";
-import { getStructureData, getStructuresData, STRUCTURES } from "shared/constants/structures";
+import { createStructure, getStructureData, getStructuresData, STRUCTURES } from "shared/constants/structures";
 import { OnInit, Service } from "@flamework/core";
 import DataService from "../data/data";
 import { Events } from "server/network";
@@ -7,22 +7,20 @@ import GridService from "./grid";
 import { EventBus } from "server/event-bus";
 import { Array } from "@rbxts/luau-polyfill";
 import PowerService from "./power";
-import CashService from "../progression/cash";
+import CurrencyService from "../progression/currency";
 import TutorialService from "../progression/tutorial";
 import CollisionService from "shared/services/collision";
-import FactoryService from "shared/services/factory";
 
 @Service()
 export default class PlotService implements OnInit {
 	private readonly collisionService = CollisionService.getInst();
-	private readonly factoryService = FactoryService.getInst();
 
 	constructor(
 		private readonly dataService: DataService,
 		private readonly gridService: GridService,
 		private readonly powerService: PowerService,
 		private readonly tutorialService: TutorialService,
-		private readonly cashService: CashService,
+		private readonly cashService: CurrencyService,
 	) {}
 
 	onInit(): void | Promise<void> {
@@ -44,34 +42,24 @@ export default class PlotService implements OnInit {
 		EventBus.OnGameUnload.Connect((player) => {
 			this.resetPlot(player);
 		});
+
+		Events.OnPlotInitialization.connect((player) => {
+			for (const structureModel of this.getPlot(player)!
+				.WaitForChild("Structures")
+				.GetDescendants()
+				.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES)) {
+				for (const tag of STRUCTURES[structureModel.Name].tags) {
+					structureModel.AddTag(tag);
+				}
+			}
+		});
 		Events.PurchaseExpansion.connect((player, expansion) => {
-			if (
-				this.cashService.getCash(player) <
-				tonumber(
-					expansion
-						.GetDescendants()
-						.find((instance) => instance.IsA("TextLabel"))!
-						.Text.gsub("%D", "")[0],
-				)!
-			)
-				return;
-			this.cashService.addCash(
-				player,
-				-tonumber(
-					expansion
-						.GetDescendants()
-						.find((instance) => instance.IsA("TextLabel"))!
-						.Text.gsub("%D", "")[0],
-				)!,
-			);
+			if (this.cashService.getCurrency(player, "Cash") < (expansion.GetAttribute("Price") as number)) return;
+			this.cashService.addCurrency(player, "Cash", -(expansion.GetAttribute("Price") as number));
 			expansion.SetAttribute("Owned", true);
 			this.gridService.updateGrid(player, expansion);
 			this.dataService.get(player, "expansions").then((expansions) => {
-				const position = Workspace.WaitForChild("Plots")
-					.GetChildren()
-					.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!
-					.GetPivot()
-					.PointToObjectSpace(expansion.Position);
+				const position = this.getPlot(player)!.GetPivot().PointToObjectSpace(expansion.Position);
 				this.dataService.set(player, "expansions", [...expansions, [position.X, position.Y, position.Z]]);
 			});
 			Events.OnExpansionPurchase.broadcast(player, expansion);
@@ -87,7 +75,7 @@ export default class PlotService implements OnInit {
 				!this.collisionService.canPlace(player, structuresData) ||
 				!this.gridService.canPlace(player, structuresData) ||
 				!this.tutorialService.canPlace(player, structuresData) ||
-				this.cashService.getCash(player) <
+				this.cashService.getCurrency(player, "Cash") <
 					structuresData.reduce((value, structure) => (value += STRUCTURES[structure.name].cost), 0) ||
 				structuresData.some(
 					(structure) =>
@@ -96,14 +84,15 @@ export default class PlotService implements OnInit {
 				)
 			)
 				return;
-			this.cashService.addCash(
+			this.cashService.addCurrency(
 				player,
+				"Cash",
 				-structuresData.reduce((value, structure) => (value += STRUCTURES[structure.name].cost), 0),
 			);
 
 			const structuresModels: Model[] = [];
 			for (const structure of structures) {
-				const newStructureModel = this.factoryService.createStructure(
+				const newStructureModel = createStructure(
 					structure,
 					undefined,
 					true,
@@ -177,9 +166,7 @@ export default class PlotService implements OnInit {
 		Events.DestroyStructures.connect((player, structuresModels) => {
 			if (!this.tutorialService.canDelete(player, structuresModels)) return;
 			this.gridService.clearStructuresCells(structuresModels);
-			for (const powerLine of Workspace.WaitForChild("Plots")
-				.GetChildren()
-				.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!
+			for (const powerLine of this.getPlot(player)!
 				.WaitForChild("Power Lines")
 				.GetChildren() as RopeConstraint[]) {
 				if (
@@ -191,7 +178,7 @@ export default class PlotService implements OnInit {
 			}
 			Events.OnStructuresDestroying.broadcast(player, structuresModels);
 			for (const structureModel of structuresModels) {
-				this.cashService.addCash(player, STRUCTURES[structureModel.Name].cost);
+				this.cashService.addCurrency(player, "Cash", STRUCTURES[structureModel.Name].cost);
 				structureModel.Destroy();
 			}
 		});
@@ -219,9 +206,7 @@ export default class PlotService implements OnInit {
 	}
 
 	private initPlot(player: Player): void {
-		const plot = Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!;
+		const plot = this.getPlot(player)!;
 		this.dataService.get(player, "name").then((name) => {
 			plot.Name = name;
 		});
@@ -246,12 +231,7 @@ export default class PlotService implements OnInit {
 			}),
 			this.dataService.get(player, "structures").then((structures) => {
 				for (const structure of structures!) {
-					this.factoryService.createStructure(
-						structure,
-						plot.GetPivot(),
-						true,
-						plot.WaitForChild("Structures"),
-					);
+					createStructure(structure, plot.GetPivot(), false, plot.WaitForChild("Structures"));
 				}
 				this.gridService.initStructuresCells(
 					player,
@@ -288,22 +268,14 @@ export default class PlotService implements OnInit {
 		]).then(() => {
 			Events.OnPlotInitialization.broadcast(player, plot);
 			for (const otherPlayer of Players.GetPlayers().filter((player_) => player_ !== player)) {
-				Events.OnPlotInitialization.fire(
-					player,
-					otherPlayer,
-					Workspace.WaitForChild("Plots")
-						.GetChildren()
-						.find((plot): plot is Model => plot.GetAttribute("UserId") === otherPlayer.UserId)!,
-				);
+				Events.OnPlotInitialization.fire(player, otherPlayer, this.getPlot(otherPlayer)!);
 			}
 		});
 	}
 
 	private resetPlot(player: Player): void {
 		this.save(player);
-		const plot = Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!;
+		const plot = this.getPlot(player)!;
 		for (const structureModel of plot.WaitForChild("Structures").GetChildren()) {
 			structureModel.Destroy();
 		}
@@ -326,9 +298,7 @@ export default class PlotService implements OnInit {
 	}
 
 	private save(player: Player): void {
-		const plot = Workspace.WaitForChild("Plots")
-			.GetChildren()
-			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!;
+		const plot = this.getPlot(player)!;
 		this.dataService.set(
 			player,
 			"structures",
@@ -349,5 +319,11 @@ export default class PlotService implements OnInit {
 				};
 			}),
 		);
+	}
+
+	private getPlot(player: Player): Model | undefined {
+		return Workspace.WaitForChild("Plots")
+			.GetChildren()
+			.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId);
 	}
 }

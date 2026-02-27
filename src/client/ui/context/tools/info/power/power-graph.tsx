@@ -1,10 +1,10 @@
 import { useMountEffect, useUpdate } from "@rbxts/pretty-react-hooks";
 import React, { useRef } from "@rbxts/react";
-import { PowerService } from "client/services/plot/power";
 import { round } from "shared/utils/math";
 import { Players } from "@rbxts/services";
 import { Frame, Text } from "client/ui/core";
 import { colors } from "client/ui/constants";
+import PowerService from "client/services/plot/power";
 
 const attachmentsHistories = new Map<Attachment, number[][]>();
 Players.PlayerAdded.Connect((player)=>{
@@ -102,19 +102,16 @@ export function InfoPanelPowerGraph({attachment}: InfoPanelPowerGraphProps) {
 				Size={UDim2.fromScale(1, 0.228)}
 				BackgroundTransparency={1}
 			>
+				<uilistlayout
+					FillDirection={Enum.FillDirection.Horizontal}
+					SortOrder={Enum.SortOrder.LayoutOrder}	
+				></uilistlayout>
+
 				{[0, 1, 2, 3].map((value) => (
 					<Frame
-						Position={
-							value === 0
-								? UDim2.fromScale(0, 0)
-								: value === 1
-								? UDim2.fromScale(0.5, 0)
-								: value === 2
-								? UDim2.fromScale(0, 0.5)
-								: UDim2.fromScale(0.5, 0.5)
-						}
 						Size={UDim2.fromScale(0.5, 0.5)}
 						BackgroundTransparency={1}
+						LayoutOrder={value}
 					>
 						<Frame
 							AnchorPoint={new Vector2(0, 0.5)}

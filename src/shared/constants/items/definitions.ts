@@ -5,7 +5,7 @@ import { MODELS } from "shared/assets/models";
 export const ITEMS: Record<string, ItemDefintion> = {
 	"Iron Ore": {
 		index: 0,
-		image: IMAGES.ui["Iron Ore"],
+		image: IMAGES["Iron Ore"],
 		description: "Common metallic ore used for all structural parts.",
 		energy: 0,
 		value: 8,
@@ -13,7 +13,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Copper Ore": {
 		index: 1,
-		image: IMAGES.ui["Copper Ore"],
+		image: IMAGES["Copper Ore"],
 		description: "Conductive ore used for electronics.",
 		energy: 0,
 		value: 8,
@@ -29,7 +29,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	Silica: {
 		index: 3,
-		image: IMAGES.ui.Silica,
+		image: IMAGES.Silica,
 		description: "Refined quartz for glass and electronics.",
 		energy: 0,
 		value: 10,
@@ -38,7 +38,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 
 	"Iron Ingot": {
 		index: 4,
-		image: IMAGES.ui["Iron Ingot"],
+		image: IMAGES["Iron Ingot"],
 		description: "Refined iron for structural components.",
 		energy: 0,
 		value: 16,
@@ -46,7 +46,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Copper Ingot": {
 		index: 5,
-		image: IMAGES.ui["Copper Ingot"],
+		image: IMAGES["Copper Ingot"],
 		description: "Refined copper for wiring and circuits.",
 		energy: 0,
 		value: 16,
@@ -54,7 +54,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Steel Ingot": {
 		index: 6,
-		image: IMAGES.ui["Steel Ingot"],
+		image: IMAGES["Steel Ingot"],
 		description: "Strong alloy for machinery and frames.",
 		energy: 0,
 		value: 25,
@@ -62,7 +62,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	Silicon: {
 		index: 7,
-		image: IMAGES.ui.Silicon,
+		image: IMAGES.Silicon,
 		description: "Processed silica used in electronics and glass.",
 		energy: 0,
 		value: 20,
@@ -71,7 +71,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 
 	"Iron Plate": {
 		index: 8,
-		image: IMAGES.ui["Iron Plate"],
+		image: IMAGES["Iron Plate"],
 		description: "Flat metal sheets used in most constructions.",
 		energy: 0,
 		value: 24,
@@ -79,7 +79,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Iron Rod": {
 		index: 9,
-		image: IMAGES.ui["Iron Rod"],
+		image: IMAGES["Iron Rod"],
 		description: "Basic metal rod for structures and machines.",
 		energy: 0,
 		value: 20,
@@ -87,7 +87,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Copper Wire": {
 		index: 10,
-		image: IMAGES.ui["Copper Wire"],
+		image: IMAGES["Copper Wire"],
 		description: "Conductive wire for circuits and motors.",
 		energy: 0,
 		value: 20,
@@ -95,7 +95,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Steel Frame": {
 		index: 11,
-		image: IMAGES.ui["Steel Frame"],
+		image: IMAGES["Steel Frame"],
 		description: "Reinforced structural frame for machinery.",
 		energy: 0,
 		value: 40,
@@ -103,7 +103,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Glass Panel": {
 		index: 12,
-		image: IMAGES.ui["Glass Panel"],
+		image: IMAGES["Glass Panel"],
 		description: "Transparent panel for sensors and displays.",
 		energy: 0,
 		value: 35,
@@ -112,7 +112,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 
 	"Circuit Board": {
 		index: 13,
-		image: IMAGES.ui["Circuit Board"],
+		image: IMAGES["Circuit Board"],
 		description: "Electronic control board used in automation.",
 		energy: 0,
 		value: 50,
@@ -120,7 +120,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	Motor: {
 		index: 14,
-		image: IMAGES.ui.Motor,
+		image: IMAGES.Motor,
 		description: "Converts electricity into mechanical motion.",
 		energy: 0,
 		value: 70,
@@ -128,7 +128,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	Battery: {
 		index: 15,
-		image: IMAGES.ui.Battery,
+		image: IMAGES.Battery,
 		description: "Stores electrical energy for machines.",
 		energy: 0,
 		value: 60,
@@ -136,7 +136,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 	},
 	"Control Unit": {
 		index: 16,
-		image: IMAGES.ui["Control Unit"],
+		image: IMAGES["Control Unit"],
 		description: "Advanced processor for smart automation.",
 		energy: 0,
 		value: 120,
@@ -145,7 +145,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 
 	Water: {
 		index: 17,
-		image: IMAGES.ui["Water"],
+		image: IMAGES["Water"],
 		description: "gloo gloo glo.",
 		energy: 0,
 		value: 0,
@@ -154,7 +154,7 @@ export const ITEMS: Record<string, ItemDefintion> = {
 
 	Elixir: {
 		index: 18,
-		image: IMAGES.ui["Elixir"],
+		image: IMAGES["Elixir"],
 		description: "Gloo gloooo glooo.",
 		energy: 0,
 		value: 0,

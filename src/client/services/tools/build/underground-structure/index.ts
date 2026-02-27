@@ -146,7 +146,7 @@ export class UndergroundStructureBuildingService extends BaseBuildingService {
 			this.baseStructurePreviewService.resetStructurePlacementPreview();
 			this.startPosition = cell.worldPosition;
 			this.endPosition = (
-				this.gridService.getNeighborsCells(Players.LocalPlayer, cell).find((cell) => cell.unlocked) ??
+				this.gridService.getNeighborsCells(Players.LocalPlayer, cell).find((cell) => cell.isUnlocked) ??
 				this.gridService.getNeighborsCells(Players.LocalPlayer, cell)[0]
 			).worldPosition;
 			this.rebuildUndergroundStructure();

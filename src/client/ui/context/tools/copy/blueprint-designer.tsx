@@ -62,7 +62,7 @@ export function BlueprintDesigner() {
 							AnchorPoint={new Vector2(0.5, 0.5)}
 							Position={UDim2.fromScale(0.5, 0.5)}
 							Size={UDim2.fromScale(0.65, 0.65)}
-							Image={IMAGES.ui.Blueprints}
+							Image={IMAGES.Blueprints}
 						></Image>
 					</Frame>
 				</Frame>
@@ -89,7 +89,7 @@ export function BlueprintDesigner() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.037, 0.465)}
 						Size={UDim2.fromScale(0.032, 0.61)}
-						Image={IMAGES.ui.Blueprints}
+						Image={IMAGES.Blueprints}
 					></Image>
 
 					<Text
@@ -130,7 +130,7 @@ export function BlueprintDesigner() {
 						SortOrder={Enum.SortOrder.LayoutOrder}
 					></uigridlayout>
 
-					{Object.values(IMAGES.ui).map((image, index) => (
+					{Object.values(IMAGES).map((image, index) => (
 						<Button
 							LayoutOrder={index}
 							Event={{
@@ -362,7 +362,7 @@ export function BlueprintDesigner() {
 							AnchorPoint={new Vector2(0.5, 0.5)}
 							Position={UDim2.fromScale(0.5, 0.5)}
 							Size={UDim2.fromScale(0.6, 1.5)}
-							Image={IMAGES.ui.Glow}
+							Image={IMAGES.Glow}
 							ImageColor3={colors.lightblue}
 							ImageTransparency={0.9}
 						></Image>

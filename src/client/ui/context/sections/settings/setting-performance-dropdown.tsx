@@ -1,6 +1,6 @@
 import React, { useState } from "@rbxts/react";
 import { Players } from "@rbxts/services";
-import { EventBus } from "client/event-bus";
+import { useStore } from "client/hooks";
 import { Events } from "client/network";
 import { colors } from "client/ui/constants";
 import { Button, Frame, Image, ScrollingFrame, Text } from "client/ui/core";
@@ -17,6 +17,7 @@ export function SettingsMenuSettingPerformanceDropdown({
 	performanceDropdownSettingDefinition,
 	userIds,
 }: SettingsMenuSettingPerformanceDropdownProps) {
+	const store = useStore();
 	const [isDropdownOpen, setIsDropdownOpen] = useState<boolean>(false);
 
 	return (
@@ -91,13 +92,13 @@ export function SettingsMenuSettingPerformanceDropdown({
 							Size={UDim2.fromScale(0.085, 0.44)}
 							Event={{
 								MouseButton1Click: () => {
-									Events.SetSetting(
+									store.setSetting(
 										settingName,
 										userIds.includes(player.UserId)
 											? userIds.filter((userId) => userId !== player.UserId)
 											: [...userIds, player.UserId],
 									);
-									EventBus.OnSettingChange.Fire(
+									Events.SetSetting(
 										settingName,
 										userIds.includes(player.UserId)
 											? userIds.filter((userId) => userId !== player.UserId)

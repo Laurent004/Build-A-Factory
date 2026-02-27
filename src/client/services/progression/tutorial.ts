@@ -1,8 +1,7 @@
 import { Players, ReplicatedStorage, TweenService, Workspace } from "@rbxts/services";
 import { Events } from "client/network";
-import { STRUCTURES } from "shared/constants/structures";
+import { createStructure, STRUCTURES } from "shared/constants/structures";
 import { TUTORIAL, TutorialStepDefinition } from "shared/constants/tutorial";
-import FactoryService from "shared/services/factory";
 
 export default class TutorialService {
 	//#region Singleton
@@ -13,11 +12,10 @@ export default class TutorialService {
 	}
 	//#endregion
 
-	private readonly factoryService = FactoryService.getInst();
+	private tutorialStep: number = 0;
 	private readonly structuresModels: Model[] = [];
 	private readonly highlights: Highlight[] = [];
 	private readonly beams: Beam[] = [];
-	private tutorialStep!: number;
 
 	private constructor() {
 		this.initEvents();
@@ -25,14 +23,13 @@ export default class TutorialService {
 
 	private initEvents(): void {
 		Events.OnPlotReset.connect((player) => {
-			if (player === Players.LocalPlayer) {
-				this.tutorialStep = 0;
-				this.resetTutorialStep();
-			}
+			if (player !== Players.LocalPlayer) return;
+			this.resetTutorialStep();
+			this.tutorialStep = 0;
 		});
 		Events.OnTutorialStepUpdate.connect((newTutorialStep) => {
-			this.tutorialStep = newTutorialStep;
 			this.resetTutorialStep();
+			this.tutorialStep = newTutorialStep;
 			if (newTutorialStep < TUTORIAL.size()) {
 				this.initTutorialStep(TUTORIAL[newTutorialStep]);
 			}
@@ -45,7 +42,7 @@ export default class TutorialService {
 			.find((plot): plot is Model => plot.GetAttribute("UserId") === Players.LocalPlayer.UserId)!;
 		if (tutorialStep.type === "Build") {
 			for (const structureData of tutorialStep.structuresData) {
-				const newStructureModel = this.factoryService.createStructure(
+				const newStructureModel = createStructure(
 					{
 						name: structureData.name,
 						cf: structureData.cf.GetComponents(),

@@ -1,10 +1,10 @@
 import React, { useState } from "@rbxts/react";
 import { colors, fonts, springs } from "./constants";
 import { lerpBinding, useEventListener, useMotion } from "@rbxts/pretty-react-hooks";
-import { Data } from "shared/types";
 import { Events } from "client/network";
 import { Button, CanvasGroup, Frame, ScrollingFrame, Text } from "./core";
 import { round } from "shared/utils/math";
+import { Data } from "shared/types/data";
 
 export function SaveSelector() {
 	const [games, setGames] = useState<Data["games"]>();

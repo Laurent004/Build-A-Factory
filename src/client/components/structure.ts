@@ -1,36 +1,23 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
 import { OnStart } from "@flamework/core";
+import { Janitor } from "@rbxts/janitor";
 import { Players, Workspace } from "@rbxts/services";
 import Signal from "@rbxts/signal";
 import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
 import GridService from "client/services/plot/grid";
-
-let simulateFactories: number[];
-Events.OnDataInitialization.connect((data) => {
-	simulateFactories = data.settings.simulateFactories;
-});
-EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	simulateFactories = settingName === "simulateFactories" ? (settingValue as number[]) : simulateFactories;
-});
-
-const initializedPlayers = new Set<Player>();
-EventBus.OnPlotInitialization.Connect((player) => {
-	initializedPlayers.add(player);
-});
-Events.OnPlotReset.connect((player) => {
-	initializedPlayers.delete(player);
-});
+import { store } from "client/store";
+import { selectSettings } from "client/store/context/sections";
 
 @Component({})
 export default class StructureComponent extends BaseComponent<{}, Model> implements OnStart {
 	protected readonly gridService = GridService.getInst();
-	protected player!: Player;
+	public player!: Player;
 	public active: boolean = false;
 	public state: string = "No Connection";
 	public readonly OnActiveChanged = new Signal<() => void>();
 	public readonly OnStateChanged = new Signal<() => void>();
-	protected readonly connections: RBXScriptConnection[] = [];
+	protected readonly janitor = new Janitor();
 
 	constructor(protected readonly components: Components) {
 		super();
@@ -43,27 +30,13 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 				.find((plot) => plot.IsAncestorOf(this.instance))!
 				.GetAttribute("UserId") as number,
 		)!;
+		this.janitor.LinkToInstance(this.instance, false);
 		this.initEvents();
 	}
 
 	protected initEvents(): void {
-		if (initializedPlayers.has(this.player)) {
-			this.active = simulateFactories.includes(this.player.UserId);
-			this.OnActiveChanged.Fire();
-		} else {
-			this.connections.push(
-				EventBus.OnPlotInitialization.Connect((player) => {
-					if (player !== this.player) return;
-					this.active = simulateFactories.includes(this.player.UserId);
-					this.OnActiveChanged.Fire();
-				}),
-			);
-		}
-		this.connections.push(
-			Events.OnPlotReset.connect((player) => {
-				if (player !== this.player) return;
-				this.onStructuresDestroying([this.instance]);
-			}),
+		this.setActive(store.getState().settings.settings["simulateFactories"].includes(this.player.UserId));
+		for (const connection of [
 			EventBus.OnStructuresPlacement.Connect((player, structuresModels) => {
 				if (player !== this.player) return;
 				this.onStructuresPlacement(structuresModels);
@@ -76,46 +49,41 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 				if (player !== this.player) return;
 				this.onStructuresMovement(structuresModels);
 			}),
-			Events.OnStructuresDestroying.connect((player, structuresModels) => {
-				if (player !== this.player) return;
-				this.onStructuresDestroying(structuresModels);
+			this.instance.Destroying.Once(() => {
+				this.onDestroying();
 			}),
-			EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-				if (settingName === "simulateFactories") {
-					this.active = (settingValue as number[]).includes(this.player.UserId);
-					this.OnActiveChanged.Fire();
-				}
-			}),
-		);
+		]) {
+			this.janitor.Add(connection);
+		}
+		store.subscribe(selectSettings, (settings) => {
+			this.setActive((settings["simulateFactories"] as number[]).includes(this.player.UserId));
+		});
 	}
 
 	protected onStructuresPlacement(structuresModels: Model[]): void {}
 
 	protected onStructuresMovementStart(structuresModels: Model[]): void {
-		if (structuresModels.includes(this.instance)) {
-			this.active = false;
-			this.OnActiveChanged.Fire();
-		}
+		if (!structuresModels.includes(this.instance)) return;
+		this.setActive(false);
 	}
 
 	protected onStructuresMovement(structuresModels: Model[]): void {
-		if (structuresModels.includes(this.instance)) {
-			this.active = simulateFactories.includes(this.player.UserId);
-			this.OnActiveChanged.Fire();
-		}
+		if (!structuresModels.includes(this.instance)) return;
+		this.setActive(store.getState().settings.settings["simulateFactories"].includes(this.player.UserId));
 	}
 
-	protected onStructuresDestroying(structuresModels: Model[]): void {
-		if (structuresModels.includes(this.instance)) {
-			this.active = false;
-			this.OnActiveChanged.Fire();
-			for (const connection of this.connections) {
-				connection.Disconnect();
-			}
-		}
+	protected onDestroying(): void {
+		this.setActive(false);
 	}
 
 	public updateState(): void {}
+
+	private setActive(active: boolean): void {
+		if (this.active !== active) {
+			this.active = active;
+			this.OnActiveChanged.Fire();
+		}
+	}
 
 	public setState(state: string): void {
 		if (this.state !== state) {

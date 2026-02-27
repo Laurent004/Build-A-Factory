@@ -1,25 +1,20 @@
 import { BlueprintData, PowerLineData, StructureData } from "shared/constants/structures";
+import { Data } from "shared/types/data";
 
 export interface DataTemplate {
 	games: {
 		id: string;
-		name: string;
-		lastPlaytime: number;
 		tutorialStep: number;
 		cash: number;
+		logisticsData: number;
+		productionData: number;
+		powerData: number;
 		expansions: [number, number, number][];
 		structures: StructureData[];
 		powerLines: PowerLineData[];
 	}[];
 	blueprints: BlueprintData[];
-	settings: {
-		music: number;
-		ambient: number;
-		sfx: number;
-		ui: number;
-		simulateFactories: number[];
-		renderItems: number[];
-	};
+	settings: Data["settings"];
 }
 
 export const DATA_TEMPLATE: DataTemplate = {

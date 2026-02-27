@@ -44,7 +44,7 @@ export function ItemsMenu() {
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.033, 0.465)}
 					Size={UDim2.fromScale(0.035, 0.5)}
-					Image={IMAGES.ui.Items}
+					Image={IMAGES.Items}
 				></Image>
 
 				<Text
@@ -67,7 +67,7 @@ export function ItemsMenu() {
 						},
 					}}
 				>
-					<Image Size={UDim2.fromScale(1, 1)} Image={IMAGES.ui.Close}></Image>
+					<Image Size={UDim2.fromScale(1, 1)} Image="rbxassetid://85748466046800"></Image>
 				</Button>
 			</Frame>
 
@@ -175,18 +175,16 @@ export function ItemsMenu() {
 					Text={selectedItemName}
 					TextSize={30}
 					TextXAlignment={Enum.TextXAlignment.Left}
-					TextYAlignment={Enum.TextYAlignment.Top}
 				></Text>
 
 				<Text
 					AnchorPoint={new Vector2(0.5, 0.5)}
-					Position={UDim2.fromScale(0.638, 0.29)}
+					Position={UDim2.fromScale(0.638, 0.28)}
 					Size={UDim2.fromScale(0.571, 0.07)}
 					FontFace={fonts.josefinSans.italic}
 					Text={ITEMS[selectedItemName].description}
 					TextSize={13}
 					TextXAlignment={Enum.TextXAlignment.Left}
-					TextYAlignment={Enum.TextYAlignment.Top}
 				></Text>
 
 				<Text
@@ -196,38 +194,85 @@ export function ItemsMenu() {
 					Text={"Value :"}
 					TextSize={13}
 					TextXAlignment={Enum.TextXAlignment.Left}
-					TextYAlignment={Enum.TextYAlignment.Top}
 				></Text>
 
-				<NumberSpinner
+				<Frame
 					AnchorPoint={new Vector2(0.5, 0.5)}
-					Position={UDim2.fromScale(0.47, 0.4)}
-					Size={UDim2.fromScale(0.083, 0.068)}
-					FontFace={fonts.josefinSans.italic}
-					TextSize={13}
-					TextColor3={colors.lightblue}
-					TextXAlignment={Enum.TextXAlignment.Left}
-					TextYAlignment={Enum.TextYAlignment.Top}
-					value={ITEMS[selectedItemName].value}
-					duration={0.3}
-					decimals={2}
-					prefix="$"
-					suffix=""
-					commas={true}
-					digitSize={new UDim2(0, 9, 1, 0)}
-					prefixSize={UDim2.fromScale(0.16, 1)}
-					suffixSize={UDim2.fromScale(0.16, 1)}
-					commaSize={UDim2.fromScale(0.04, 1)}
-				></NumberSpinner>
+					Position={UDim2.fromScale(0.524, 0.4)}
+					Size={UDim2.fromScale(0.188, 0.07)}
+					BackgroundTransparency={1}
+				>
+					<uilistlayout
+						Padding={new UDim(0,6)}
+						FillDirection={Enum.FillDirection.Horizontal}
+						SortOrder={Enum.SortOrder.LayoutOrder}
+					></uilistlayout>
 
-				<Image
-					AnchorPoint={new Vector2(0.5, 0.5)}
-					Position={UDim2.fromScale(0.441, 0.4)}
-					Size={UDim2.fromScale(0.06, 0.179)}
-					Image={IMAGES.ui.Glow}
-					ImageColor3={colors.lightblue}
-					ImageTransparency={0.9}
-				></Image>
+					<NumberSpinner
+						LayoutOrder={0}
+						FontFace={fonts.josefinSans.italic}
+						TextSize={13}
+						TextColor3={colors.lightblue}
+						TextXAlignment={Enum.TextXAlignment.Left}
+						value={ITEMS[selectedItemName].value.cash}
+						duration={0.3}
+						decimals={2}
+						prefix="$"
+						suffix=""
+						commas={true}
+					></NumberSpinner>
+
+					<Text
+						AutomaticSize={Enum.AutomaticSize.X}
+						Size={UDim2.fromScale(0,1)}
+						LayoutOrder={1}
+						FontFace={fonts.josefinSans.italic}
+						Text="/"
+						TextSize={13}
+						TextXAlignment={Enum.TextXAlignment.Left}
+					></Text>
+
+					<Frame
+						AutomaticSize={Enum.AutomaticSize.X}
+						Size={UDim2.fromScale(0, 1)}
+						BackgroundTransparency={1}
+						LayoutOrder={2}
+					>
+						<Frame
+							AnchorPoint={new Vector2(0.5, 0.5)}
+							Position={UDim2.fromScale(0.12, 0.5)}
+							Rotation={45}
+							Size={UDim2.fromScale(0, 0.4)}
+							BackgroundColor3={colors.white}
+						>
+							<uiaspectratioconstraint
+								AspectType={Enum.AspectType.ScaleWithParentSize}
+								DominantAxis={Enum.DominantAxis.Height}
+							></uiaspectratioconstraint>
+
+							<Image
+								AnchorPoint={new Vector2(0.5, 0.5)}
+								Position={UDim2.fromScale(0.5, 0.5)}
+								Size={UDim2.fromScale(4, 4)}
+								Image={IMAGES.Glow}
+								ImageTransparency={0.8}
+							></Image>
+						</Frame>
+
+						<NumberSpinner
+							FontFace={fonts.josefinSans.bold}
+							TextSize={13}
+							value={[ITEMS[selectedItemName].value.logisticData,ITEMS[selectedItemName].value.productionData,ITEMS[selectedItemName].value.powerData].filterUndefined()[0]}
+							duration={0.3}
+							decimals={2}
+							prefix=""
+							suffix=""
+							commas={true}
+						>
+							<uipadding PaddingLeft={new UDim(0, 22)}></uipadding>
+						</NumberSpinner>
+					</Frame>
+				</Frame>		
 			</Frame>
 
 			<ScrollingFrame
@@ -370,7 +415,7 @@ export function ItemsMenu() {
 											AnchorPoint={new Vector2(0.5, 0.5)}
 											Position={UDim2.fromScale(0.5, 0.5)}
 											Size={UDim2.fromScale(1.65, 2)}
-											Image={IMAGES.ui.Glow}
+											Image={IMAGES.Glow}
 											ImageColor3={colors.lightblue}
 											ImageTransparency={0.9}
 										></Image>
@@ -421,7 +466,7 @@ export function ItemsMenu() {
 											AnchorPoint={new Vector2(0.5, 0.5)}
 											Position={UDim2.fromScale(0.5, 0.5)}
 											Size={UDim2.fromScale(1.65, 2)}
-											Image={IMAGES.ui.Glow}
+											Image={IMAGES.Glow}
 											ImageColor3={colors.lightblue}
 											ImageTransparency={0.9}
 										></Image>

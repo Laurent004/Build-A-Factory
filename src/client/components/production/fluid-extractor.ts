@@ -16,14 +16,16 @@ export default class FluidExtractorComponent extends TransporterComponent implem
 	protected override initEvents(): void {
 		super.initEvents();
 		if (this.active && this.canExtract()) this.startExtraction();
-		this.connections.push(
+		for (const connection of [
 			this.OnActiveChanged.Connect(() => {
 				if (this.canExtract()) this.startExtraction();
 			}),
 			this.OnStateChanged.Connect(() => {
 				if (this.canExtract()) this.startExtraction();
 			}),
-		);
+		]) {
+			this.janitor.Add(connection);
+		}
 	}
 
 	private startExtraction(): void {

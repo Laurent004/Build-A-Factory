@@ -1,6 +1,6 @@
 import { createProducer } from "@rbxts/reflex";
 
-export interface TooltipState {
+interface TooltipState {
 	tips: string[];
 }
 

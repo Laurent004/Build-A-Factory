@@ -95,7 +95,7 @@ export function InfoPanelFluidIndicator({ fluid }: InfoPanelFluidIndicatorProps)
 					Position={UDim2.fromScale(0.5, 0.79)}
 					Size={UDim2.fromScale(0.9, 0.9)}
 					ZIndex={3}
-					Image={IMAGES.ui.Glow}
+					Image={IMAGES.Glow}
 					ImageTransparency={0.8}
 				></Image>
 

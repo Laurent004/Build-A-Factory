@@ -1,6 +1,6 @@
 import { Networking } from "@flamework/networking";
 import { PowerLineData, StructureData, StructureMovementData } from "./constants/structures";
-import { Data } from "./types";
+import { Data } from "./types/data";
 
 interface ClientToServerEvents {
 	CreateGame: () => void;
@@ -8,6 +8,7 @@ interface ClientToServerEvents {
 	UnloadGame: () => void;
 	DeleteGame: () => void;
 
+	OnPlotInitialization: () => void;
 	PurchaseExpansion: (expansion: Part) => void;
 	PlaceStructures: (structuresData: StructureData[], powerLinesData: PowerLineData[]) => void;
 	StartStructuresMovement: (structuresModels: Model[]) => void;
@@ -40,8 +41,6 @@ interface ClientToServerEvents {
 }
 
 interface ServerToClientEvents {
-	OnGamesUpdate: (games: Data["games"]) => void;
-
 	OnDataInitialization: (data: Data) => void;
 	OnPlotInitialization: (player: Player, plot: Model) => void;
 	OnPlotReset: (player: Player) => void;
@@ -51,8 +50,6 @@ interface ServerToClientEvents {
 	OnStructuresMovement: (player: Player, structuresModels: Model[]) => void;
 	OnStructuresDestroying: (player: Player, structuresModels: Model[]) => void;
 	OnStructuresItemsClear: (player: Player, structuresModels: Model[]) => void;
-	OnPowerLineCreation: (player: Player, powerLine: RopeConstraint) => void;
-	OnPowerLineDestroying: (player: Player, startAttachment: Attachment, endAttachment: Attachment) => void;
 	OnBlueprintCreation: (
 		blueprintModel: Model,
 		blueprintDescription: string,

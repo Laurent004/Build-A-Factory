@@ -2,13 +2,13 @@ import React from "@rbxts/react";
 import { Frame } from "client/ui/core/frame";
 import { colors, springs } from "client/ui/constants";
 import { Object } from "@rbxts/luau-polyfill";
-import { SECTIONS } from "client/constants/navigation/sections";
 import { useStore } from "client/hooks";
 import { useSelector } from "@rbxts/react-reflex";
 import { selectContext } from "client/store/context";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { IMAGES } from "shared/assets/images";
 import { Button, Image } from "client/ui/core";
+import { SECTIONS } from "client/constants/context/sections";
 
 export function SectionBar() {
 	const context = useSelector(selectContext);
@@ -69,14 +69,14 @@ function SectionButton({ section, isSelected }: SectionButtonProps) {
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={UDim2.fromScale(0.5, 0.5)}
 				Size={UDim2.fromScale(0.58, 0.58)}
-				Image={IMAGES.ui[section]}
+				Image={IMAGES[section]}
 			></Image>
 
 			<Image
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={UDim2.fromScale(0.5, 0.5)}
 				Size={UDim2.fromScale(1.4, 1.4)}
-				Image={IMAGES.ui.Glow}
+				Image={IMAGES.Glow}
 				ImageColor3={colors.lightblue}
 				ImageTransparency={lerpBinding(clickAnimation, 1, 0.7)}
 			></Image>

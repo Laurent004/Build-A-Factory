@@ -1,8 +1,8 @@
 import { lerpBinding, useEventListener, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import React, { useState } from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { Players, TweenService, UserInputService, Workspace } from "@rbxts/services";
-import { TOOLS } from "client/constants/navigation/tools";
+import { Players, Workspace } from "@rbxts/services";
+import { TOOLS } from "client/constants/context/tools/definitions";
 import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
 import { selectContext } from "client/store/context";
@@ -15,67 +15,13 @@ export function ExpansionModal() {
 	const [expansion, setExpansion] = useState<Part>();
 	const [mountAnimation, mountAnimationMotion] = useMotion(0);
 
-	useEventListener(EventBus.OnPlotInitialization, (player, plot) => {
+	useEventListener(Events.OnPlotInitialization, (player, plot) => {
 		if (player !== Players.LocalPlayer) return;
 		for (const expansion of plot.WaitForChild("Expansions").GetChildren() as Part[]) {
-			const frame = expansion.GetDescendants().find((instance): instance is Frame => instance.IsA("Frame"))!;
-			const textLabel = expansion
-				.GetDescendants()
-				.find((instance): instance is TextLabel => instance.IsA("TextLabel"))!;
-			const button = expansion
-				.GetDescendants()
-				.find((instance): instance is TextButton => instance.IsA("TextButton"))!;
-			const beam = expansion.GetDescendants().find((instance): instance is Beam => instance.IsA("Beam"))!;
-
-			if (expansion.GetAttribute("Owned") === true) {
-				expansion.CanQuery = false;
-				frame.BackgroundTransparency = 1;
-				textLabel.TextTransparency = 1;
-				button.Active = false;
-				button.Interactable = false;
-				beam.Enabled = false;
-			} else {
-				const connections = [
-					UserInputService.InputBegan.Connect((input) => {
-						if (input.UserInputType === Enum.UserInputType.MouseButton1) {
-							expansion.CanQuery = false;
-							button.Active = false;
-							button.Interactable = false;
-						}
-					}),
-					UserInputService.InputEnded.Connect((input) => {
-						if (input.UserInputType === Enum.UserInputType.MouseButton1) {
-							expansion.CanQuery = true;
-							button.Active = true;
-							button.Interactable = true;
-						}
-					}),
-					button.MouseButton1Down.Connect(() => {
-						setExpansion(expansion);
-					}),
-					Events.OnPlotReset.connect((player) => {
-						if (player !== Players.LocalPlayer) return;
-						for (const connection of connections) {
-							connection.Disconnect();
-						}
-						connections.clear();
-					}),
-					Events.OnExpansionPurchase.connect((player, expansion_) => {
-						if (player === Players.LocalPlayer && expansion_ === expansion) {
-							expansion.CanQuery = false;
-							frame.BackgroundTransparency = 1;
-							textLabel.TextTransparency = 1;
-							button.Active = false;
-							button.Interactable = false;
-							beam.Enabled = false;
-							for (const connection of connections) {
-								connection.Disconnect();
-							}
-							connections.clear();
-						}
-					}),
-				];
-			}
+			expansion.FindFirstChildOfClass("ClickDetector")!.MouseClick.Connect((player) => {
+				if (player !== Players.LocalPlayer) return;
+				setExpansion(expansion);
+			});
 		}
 	});
 
@@ -89,20 +35,7 @@ export function ExpansionModal() {
 			.WaitForChild("Expansions")
 			.GetChildren()
 			.filter((expansion): expansion is Part => expansion.GetAttribute("Owned") === false)) {
-			expansion.CanQuery = context !== undefined && context in TOOLS;
-			TweenService.Create(
-				expansion.FindFirstChildOfClass("SurfaceGui")!.FindFirstChildOfClass("Frame")!,
-				new TweenInfo(0.5),
-				{ BackgroundTransparency: context !== undefined && context in TOOLS ? 0.25 : 1 },
-			).Play();
-			TweenService.Create(
-				expansion.FindFirstChildOfClass("SurfaceGui")!.FindFirstChildOfClass("TextLabel")!,
-				new TweenInfo(0.5),
-				{ TextTransparency: context !== undefined && context in TOOLS ? 0 : 1 },
-			).Play();
-			expansion.FindFirstChildOfClass("SurfaceGui")!.FindFirstChildOfClass("TextButton")!.Interactable =
-				context !== undefined && context in TOOLS;
-			expansion.FindFirstChildOfClass("Beam")!.Enabled = context !== undefined && context in TOOLS;
+			expansion.Transparency = context !== undefined && context in TOOLS ? 0 : 1;
 		}
 	}, [context]);
 
@@ -140,14 +73,9 @@ export function ExpansionModal() {
 				Position={UDim2.fromScale(0.493, 0.49)}
 				Size={UDim2.fromScale(0.91, 0.253)}
 				LineHeight={1.5}
-				Text={`You can unlock this expansion for $${
-					expansion !== undefined
-						? expansion
-								.FindFirstChildOfClass("SurfaceGui")!
-								.FindFirstChildOfClass("TextLabel")!
-								.Text.gsub("%D", "")[0]
-						: ""
-				}. Are you sure you want to unlock this expansion ?`}
+				Text={`You can unlock this expansion for $${expansion?.GetAttribute(
+					"Price",
+				)}. Are you sure you want to unlock this expansion ?`}
 				TextSize={16}
 				TextWrapped={true}
 				TextXAlignment={Enum.TextXAlignment.Left}
@@ -185,24 +113,13 @@ export function ExpansionModal() {
 						MouseButton1Click: () => {
 							if (
 								(Players.LocalPlayer.WaitForChild("leaderstats").WaitForChild("Cash") as NumberValue)
-									.Value >=
-								tonumber(
-									expansion!
-										.FindFirstChildOfClass("SurfaceGui")!
-										.FindFirstChildOfClass("TextLabel")!
-										.Text.gsub("%D", "")[0],
-								)!
+									.Value >= (expansion!.GetAttribute("Price") as number)
 							) {
 								Events.PurchaseExpansion(expansion!);
 							} else {
 								EventBus.OnNotification.Fire(
 									`<FontFace color="rgb(255, 98, 98)">You need $${
-										tonumber(
-											expansion!
-												.FindFirstChildOfClass("SurfaceGui")!
-												.FindFirstChildOfClass("TextLabel")!
-												.Text.gsub("%D", "")[0],
-										)! -
+										(expansion!.GetAttribute("Price") as number) -
 										(
 											Players.LocalPlayer.WaitForChild("leaderstats").WaitForChild(
 												"Cash",
@@ -233,7 +150,7 @@ export function ExpansionModal() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.5, 0.5)}
 						Size={UDim2.fromScale(0.8, 1)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightblue}
 						ImageTransparency={0.8}
 					></Image>

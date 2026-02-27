@@ -1,25 +1,8 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
 import { OnStart } from "@flamework/core";
-import { Players, TweenService, Workspace } from "@rbxts/services";
+import { TweenService } from "@rbxts/services";
 import StructureComponent from "./structure";
-import { Events } from "client/network";
-import { EventBus } from "client/event-bus";
-
-let simulateFactories: number[];
-Events.OnDataInitialization.connect((data) => {
-	simulateFactories = data.settings.simulateFactories;
-});
-EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	simulateFactories = settingName === "simulateFactories" ? (settingValue as number[]) : simulateFactories;
-});
-
-const initializedPlayers = new Set<Player>();
-EventBus.OnPlotInitialization.Connect((player) => {
-	initializedPlayers.add(player);
-});
-Events.OnPlotReset.connect((player) => {
-	initializedPlayers.delete(player);
-});
+import { Janitor } from "@rbxts/janitor";
 
 @Component({ tag: "IndicatorLight" })
 export default class IndicatorLightComponent extends BaseComponent<{}, Model> implements OnStart {
@@ -29,52 +12,27 @@ export default class IndicatorLightComponent extends BaseComponent<{}, Model> im
 		Standby: Color3.fromRGB(190, 190, 6),
 		Working: Color3.fromRGB(20, 182, 74),
 	};
-	private player!: Player;
 	private indicatorLight!: Part;
 	private structureComponent!: StructureComponent;
-	private readonly connections: RBXScriptConnection[] = [];
 	private blinkTween: Tween | undefined;
+	private readonly janitor = new Janitor();
 
 	constructor(private readonly components: Components) {
 		super();
 	}
 
 	onStart(): void {
-		this.player = Players.GetPlayerByUserId(
-			Workspace.WaitForChild("Plots")
-				.GetChildren()
-				.find((plot) => plot.IsAncestorOf(this.instance))!
-				.GetAttribute("UserId") as number,
-		)!;
 		this.indicatorLight = this.instance.WaitForChild("IndicatorLight") as Part;
-		if (initializedPlayers.has(this.player)) {
-			this.structureComponent = this.components.getComponents<StructureComponent>(this.instance)[0];
-			this.initEvents();
-		} else {
-			this.connections.push(
-				EventBus.OnPlotInitialization.Connect((player) => {
-					if (player === this.player && simulateFactories.includes(this.player.UserId)) {
-						this.structureComponent = this.components.getComponents<StructureComponent>(this.instance)[0];
-						this.updateIndicatorLight();
-						this.initEvents();
-					}
-				}),
-			);
-		}
+		this.structureComponent = this.components.getComponents<StructureComponent>(this.instance)[0];
+		this.janitor.LinkToInstance(this.instance, false);
+		this.updateIndicatorLight();
+		this.initEvents();
 	}
 
 	private initEvents(): void {
-		this.connections.push(
+		this.janitor.Add(
 			this.structureComponent.OnStateChanged.Connect(() => {
 				this.updateIndicatorLight();
-			}),
-			Events.OnStructuresDestroying.connect((player, structuresModels) => {
-				if (player !== this.player) return;
-				if (structuresModels.includes(this.instance)) {
-					for (const connection of this.connections) {
-						connection.Disconnect();
-					}
-				}
 			}),
 		);
 	}

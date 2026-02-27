@@ -1,9 +1,7 @@
 import { Flamework } from "@flamework/core";
 import { Object } from "@rbxts/luau-polyfill";
 import { STRUCTURES } from "shared/constants/structures";
-import WeatherService from "./services/world/weather";
 
-WeatherService.getInst();
 Flamework.addPaths("src/client/controllers");
 Flamework.addPaths("src/client/components");
 Flamework.addPaths("src/shared/components");

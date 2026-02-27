@@ -1,6 +1,6 @@
 import { STRUCTURES, StructureData } from "shared/constants/structures";
 import { Service } from "@flamework/core";
-import { GridCell } from "shared/types";
+import { GridCell } from "shared/types/grid";
 
 @Service({})
 export default class GridService {
@@ -31,7 +31,7 @@ export default class GridService {
 							y * this.cellSize,
 							gridData.startZ + z * this.cellSize - this.cellSize / 2,
 						),
-						unlocked: false,
+						isUnlocked: false,
 						structureModel: undefined,
 					};
 				}
@@ -53,7 +53,7 @@ export default class GridService {
 				z += this.cellSize
 			) {
 				for (let y = 0; y < this.layers; y++) {
-					this.getCellAtWorldPosition(player, new Vector3(x, y * this.cellSize, z))!.unlocked = true;
+					this.getCellAtWorldPosition(player, new Vector3(x, y * this.cellSize, z))!.isUnlocked = true;
 				}
 			}
 		}
@@ -88,7 +88,7 @@ export default class GridService {
 					player,
 					new CFrame(...structureData.cf).PointToWorldSpace(cellNodeLocalPosition),
 				);
-				return cell !== undefined && cell.unlocked && cell.structureModel === undefined;
+				return cell !== undefined && cell.isUnlocked && cell.structureModel === undefined;
 			}),
 		);
 	}

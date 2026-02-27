@@ -3,14 +3,12 @@ import { OnInit, OnStart, Service } from "@flamework/core";
 import { Object } from "@rbxts/luau-polyfill";
 import { Workspace } from "@rbxts/services";
 import StructureComponent from "server/components/structure";
-import { STRUCTURES } from "shared/constants/structures";
+import { createPowerLine, STRUCTURES } from "shared/constants/structures";
 import { Events } from "server/network";
 import { EventBus } from "server/event-bus";
-import FactoryService from "shared/services/factory";
 
 @Service({})
 export default class PowerService implements OnInit, OnStart {
-	private readonly factoryService = FactoryService.getInst();
 	private readonly structures = new Set<StructureComponent>();
 	private readonly powerNetworks = new Map<Attachment, Set<Attachment>>();
 
@@ -91,20 +89,6 @@ export default class PowerService implements OnInit, OnStart {
 	public attemptConnect(player: Player, startAttachment: Attachment, endAttachment: Attachment): void {
 		if (!this.canConnect(startAttachment, endAttachment)) return;
 		this.connect(player, startAttachment, endAttachment);
-		Events.OnPowerLineCreation.broadcast(
-			player,
-			Workspace.WaitForChild("Plots")
-				.GetChildren()
-				.find((plot): plot is Model => plot.GetAttribute("UserId") === player.UserId)!
-				.WaitForChild("Power Lines")
-				.GetChildren()
-				.find(
-					(powerLine): powerLine is RopeConstraint =>
-						powerLine.IsA("RopeConstraint") &&
-						powerLine.Attachment0 === startAttachment &&
-						powerLine.Attachment1 === endAttachment,
-				)!,
-		);
 	}
 
 	public connect(player: Player, startAttachment: Attachment, endAttachment: Attachment): void {
@@ -134,7 +118,7 @@ export default class PowerService implements OnInit, OnStart {
 			this.powerNetworks.set(endAttachment, newPowerNetwork);
 		}
 
-		this.factoryService.createPowerLine(
+		createPowerLine(
 			startAttachment,
 			endAttachment,
 			Workspace.WaitForChild("Plots")
@@ -231,7 +215,6 @@ export default class PowerService implements OnInit, OnStart {
 			}
 		}
 
-		Events.OnPowerLineDestroying.broadcast(player, startAttachment, endAttachment);
 		(
 			Workspace.WaitForChild("Plots")
 				.GetChildren()

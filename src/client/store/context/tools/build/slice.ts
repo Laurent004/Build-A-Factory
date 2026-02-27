@@ -1,7 +1,7 @@
 import { createProducer } from "@rbxts/reflex";
 import { STRUCTURES } from "shared/constants/structures";
 
-export interface BuildState {
+interface BuildState {
 	structureCategory: string;
 	structureInfo: {
 		structureImage: string;

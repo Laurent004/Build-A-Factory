@@ -172,7 +172,7 @@ function ProgrammableSplitterInfoPanelFilter({
 					AnchorPoint={new Vector2(0.5, 0.5)}
 					Position={UDim2.fromScale(0.12, 0.5)}
 					Size={UDim2.fromScale(0.15, 0.42)}
-					Image={IMAGES.ui[selectedFilter]}
+					Image={IMAGES[selectedFilter]}
 					Visible={!isSearching}
 				></Image>
 

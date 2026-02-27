@@ -108,7 +108,7 @@ function SmartSplitterInfoPanelFilter({ outputDirection }: SmartSplitterInfoPane
 						Position={UDim2.fromScale(0.12, 0.5)}
 						Size={UDim2.fromScale(0.148, 0.41)}
 						Visible={!isSearching}
-						Image={selectedFilter !== undefined ? IMAGES.ui[selectedFilter] : undefined}
+						Image={selectedFilter !== undefined ? IMAGES[selectedFilter] : undefined}
 					></Image>
 
 					<Text

@@ -2,7 +2,7 @@ import { Object } from "@rbxts/luau-polyfill";
 import { lerpBinding, useEventListener, useKeyPress, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { TOOLS } from "client/constants/navigation";
+import { TOOLS } from "client/constants/context/tools";
 import { EventBus } from "client/event-bus";
 import { useStore } from "client/hooks";
 import { selectContext } from "client/store/context";
@@ -92,7 +92,7 @@ function ToolButton({ tool, isSelected }: ToolButtonProps) {
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={UDim2.fromScale(0.5, 0.5)}
 				Size={UDim2.fromScale(0.58, 0.58)}
-				Image={IMAGES.ui[tool]}
+				Image={IMAGES[tool]}
 				ImageColor3={lerpBinding(
 					clickAnimation,
 					colors.white,
@@ -104,7 +104,7 @@ function ToolButton({ tool, isSelected }: ToolButtonProps) {
 				AnchorPoint={new Vector2(0.5, 0.5)}
 				Position={UDim2.fromScale(0.5, 0.5)}
 				Size={UDim2.fromScale(1.4, 1.4)}
-				Image={IMAGES.ui.Glow}
+				Image={IMAGES.Glow}
 				ImageColor3={tool === "Delete" ? colors.lightred : colors.lightblue}
 				ImageTransparency={lerpBinding(clickAnimation, 1, 0.7)}
 			></Image>
@@ -165,7 +165,7 @@ function ToolButton({ tool, isSelected }: ToolButtonProps) {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.4, 0.5)}
 						Size={UDim2.fromScale(1.5, 2)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={tool === "Delete" ? colors.lightred : colors.lightblue}
 						ImageTransparency={lerpBinding(clickAnimation, 1, 0.7)}
 					></Image>

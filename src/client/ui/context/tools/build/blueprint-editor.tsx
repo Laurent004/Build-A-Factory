@@ -6,7 +6,7 @@ import { Button } from "client/ui/core/button";
 import { colors, fonts, springs } from "client/ui/constants";
 import { IMAGES } from "shared/assets/images";
 import { Events } from "client/network";
-import { selectIsBlueprintEditorOpen, selectStructureInfo } from "client/store/context/build";
+import { selectIsBlueprintEditorOpen, selectStructureInfo } from "client/store/context/tools/build";
 import { useStore } from "client/hooks";
 import { MarketplaceService } from "@rbxts/services";
 import { Object } from "@rbxts/luau-polyfill";
@@ -99,7 +99,7 @@ export function BlueprintEditor() {
 					SortOrder={Enum.SortOrder.LayoutOrder}
 				></uigridlayout>
 
-				{Object.values(IMAGES.ui).map((image, index) => (
+				{Object.values(IMAGES).map((image, index) => (
 					<Button
 						LayoutOrder={index}
 						Event={{
@@ -288,7 +288,7 @@ export function BlueprintEditor() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.5, 0.5)}
 						Size={UDim2.fromScale(0.6, 1.5)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightred}
 						ImageTransparency={0.9}
 					></Image>
@@ -321,7 +321,7 @@ export function BlueprintEditor() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.5, 0.5)}
 						Size={UDim2.fromScale(0.6, 1.5)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightblue}
 						ImageTransparency={0.9}
 					></Image>

@@ -1,7 +1,7 @@
 import { Events } from "../../network";
 import { STRUCTURES } from "shared/constants/structures";
 import { EventBus } from "client/event-bus";
-import { GridCell } from "shared/types";
+import { GridCell } from "shared/types/grid";
 
 export default class GridService {
 	//#region Singleton
@@ -41,7 +41,7 @@ export default class GridService {
 					.GetDescendants()
 					.filter((instance): instance is Model => instance.IsA("Model") && instance.Name in STRUCTURES),
 			);
-			EventBus.OnPlotInitialization.Fire(player, plot);
+			Events.OnPlotInitialization.fire();
 		});
 
 		Events.OnExpansionPurchase.connect((player, expansion) => {
@@ -54,7 +54,7 @@ export default class GridService {
 		});
 
 		Events.OnStructuresMovementStart.connect((_, structuresModels) => {
-			this.clearStructuresCells(structuresModels);
+			this.clearStructureCells(structuresModels);
 		});
 
 		Events.OnStructuresMovement.connect((player, structuresModels) => {
@@ -63,7 +63,7 @@ export default class GridService {
 		});
 
 		Events.OnStructuresDestroying.connect((_, structuresModels) => {
-			this.clearStructuresCells(structuresModels);
+			this.clearStructureCells(structuresModels);
 		});
 	}
 
@@ -85,7 +85,7 @@ export default class GridService {
 							y * this.cellSize,
 							gridData.startZ + z * this.cellSize - this.cellSize / 2,
 						),
-						unlocked: false,
+						isUnlocked: false,
 						structureModel: undefined,
 					};
 				}
@@ -107,7 +107,7 @@ export default class GridService {
 				z += this.cellSize
 			) {
 				for (let y = 0; y < this.layers; y++) {
-					this.getCellAtWorldPosition(player, new Vector3(x, y * this.cellSize, z))!.unlocked = true;
+					this.getCellAtWorldPosition(player, new Vector3(x, y * this.cellSize, z))!.isUnlocked = true;
 				}
 			}
 		}
@@ -125,7 +125,7 @@ export default class GridService {
 		}
 	}
 
-	private clearStructuresCells(structuresModels: Model[]): void {
+	private clearStructureCells(structuresModels: Model[]): void {
 		for (const structureModel of structuresModels) {
 			const cells = this.cells.get(structureModel);
 			if (cells === undefined) continue;
@@ -143,7 +143,7 @@ export default class GridService {
 					player,
 					structureModel.GetPivot().PointToWorldSpace(cellNodeLocalPosition),
 				);
-				return cell !== undefined && cell.unlocked && cell.structureModel === undefined;
+				return cell !== undefined && cell.isUnlocked && cell.structureModel === undefined;
 			}),
 		);
 	}

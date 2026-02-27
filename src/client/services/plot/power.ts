@@ -5,11 +5,10 @@ import { Players, Workspace } from "@rbxts/services";
 import IndicatorLightComponent from "client/components/indicator-light";
 import PowerGeneratorComponent from "client/components/power/power-generator";
 import StructureComponent from "client/components/structure";
-import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
 import { STRUCTURES } from "shared/constants/structures";
 
-export class PowerService {
+export default class PowerService {
 	//#region Singleton
 	private static _inst: PowerService;
 	public static getInst(): PowerService {
@@ -28,34 +27,25 @@ export class PowerService {
 	}
 
 	private initEvents(): void {
-		EventBus.OnPlotInitialization.Connect((_, plot) => {
-			for (const powerLine of plot.WaitForChild("Power Lines").GetChildren() as RopeConstraint[]) {
-				while (powerLine.Attachment0 === undefined || powerLine.Attachment1 === undefined) task.wait();
-				this.connect(powerLine.Attachment0!, powerLine.Attachment1!);
-			}
-		});
-
-		Events.OnPlotReset.connect(() => {
-			for (const [attachment] of this.powerNetworks) {
-				if (attachment.Parent === undefined) {
-					this.powerNetworks.delete(attachment);
-				}
-			}
-		});
-
-		Events.OnPowerLineCreation.connect((_, powerLine) => {
-			while (powerLine.Attachment0 === undefined || powerLine.Attachment1 === undefined) task.wait();
-			this.connect(powerLine.Attachment0, powerLine.Attachment1);
-		});
-
-		Events.OnPowerLineDestroying.connect((player, startAttachment, endAttachment) => {
-			this.disconnect(player, startAttachment, endAttachment);
-		});
+		for (const plot of Workspace.WaitForChild("Plots").GetChildren()) {
+			plot.WaitForChild("Power Lines").ChildAdded.Connect((child) => {
+				if (!child.IsA("RopeConstraint")) return;
+				while (child.Attachment0 === undefined || child.Attachment1 === undefined) task.wait();
+				this.connect(child.Attachment0, child.Attachment1);
+			});
+			plot.WaitForChild("Power Lines").ChildRemoved.Connect((child) => {
+				if (!child.IsA("RopeConstraint")) return;
+				this.disconnect(
+					Players.GetPlayerByUserId(plot.GetAttribute("UserId") as number)!,
+					child.Attachment0!,
+					child.Attachment1!,
+				);
+			});
+		}
 
 		this.components.onComponentAdded<StructureComponent>((structureComponent, structureModel) => {
-			if (this.components.getComponent<IndicatorLightComponent>(structureModel) !== undefined) {
-				this.structures.add(structureComponent);
-			}
+			if (this.components.getComponent<IndicatorLightComponent>(structureModel) === undefined) return;
+			this.structures.add(structureComponent);
 		});
 
 		this.components.onComponentRemoved<StructureComponent>((structureComponent) => {

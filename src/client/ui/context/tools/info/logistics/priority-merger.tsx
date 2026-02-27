@@ -123,7 +123,7 @@ function PriorityMergerInfoPanelPriority({ inputDirection }: PriorityMergerInfoP
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.5, 0.5)}
 						Size={UDim2.fromScale(2, 3)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightblue}
 						ImageTransparency={0.75}
 					></Image>

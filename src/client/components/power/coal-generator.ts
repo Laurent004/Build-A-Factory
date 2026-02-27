@@ -30,7 +30,7 @@ export default class CoalGeneratorComponent extends TransporterComponent impleme
 		if (this.active) {
 			this.powerGeneratorComponent = this.components.getComponent<PowerGeneratorComponent>(this.instance)!;
 		} else {
-			this.connections.push(
+			this.janitor.push(
 				this.OnActiveChanged.Connect(() => {
 					if (!this.active) return;
 					this.powerGeneratorComponent = this.components.getComponent<PowerGeneratorComponent>(

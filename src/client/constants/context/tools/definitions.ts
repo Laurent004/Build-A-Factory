@@ -1,6 +1,6 @@
-import { KeyCode } from "@rbxts/pretty-react-hooks";
+import { ToolDefinition } from "./types";
 
-export const TOOLS = {
+export const TOOLS: Record<string, ToolDefinition> = {
 	Info: {
 		index: 0,
 		description: "View or configure structures.",
@@ -31,4 +31,4 @@ export const TOOLS = {
 		description: "Remove structures.",
 		key: "Six",
 	},
-} as Record<string, { index: number; description: string; key: KeyCode }>;
+};

@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "@rbxts/react";
 import { SoundService } from "@rbxts/services";
-import { EventBus } from "client/event-bus";
 import { Events } from "client/network";
+import { store } from "client/store";
 import { colors } from "client/ui/constants";
 import { Frame, Text } from "client/ui/core";
 
@@ -50,7 +50,6 @@ export function SettingsMenuSettingSoundSlider({ settingName, volume }: Settings
 					></uistroke>
 
 					<uidragdetector
-						key={"debugd"}
 						DragStyle={Enum.UIDragDetectorDragStyle.TranslateLine}
 						ReferenceUIInstance={frameRef.current}
 						ResponseStyle={Enum.UIDragDetectorResponseStyle.Scale}
@@ -60,11 +59,8 @@ export function SettingsMenuSettingSoundSlider({ settingName, volume }: Settings
 						DragUDim2={UDim2.fromScale((volume ?? 0) - 0.5, 0)}
 						Event={{
 							DragEnd: (uiDragDetector) => {
+								store.setSetting(settingName, math.max(0, uiDragDetector.DragUDim2.X.Scale + 0.5));
 								Events.SetSetting(settingName, math.max(0, uiDragDetector.DragUDim2.X.Scale + 0.5));
-								EventBus.OnSettingChange.Fire(
-									settingName,
-									math.max(0, uiDragDetector.DragUDim2.X.Scale + 0.5),
-								);
 							},
 						}}
 					></uidragdetector>

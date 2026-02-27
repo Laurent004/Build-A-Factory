@@ -1,3 +1,11 @@
+export const STRUCTURE_CATEGORIES: string[] = ["Logistics", "Production", "Power", "Blueprints"];
+export const STRUCTURE_SUB_CATEGORIES: Record<string, string[]> = {
+	Logistics: ["Conveyor Belts", "Pipelines", "Sorting", "Miscellaneous"],
+	Production: ["Extractors", "Smelters", "Manufacturers"],
+	Power: ["Generators", "Power Poles"],
+	Blueprints: [],
+};
+
 export interface StructureDefinition {
 	category: string;
 	subcategory: string;
@@ -9,7 +17,7 @@ export interface StructureDefinition {
 
 	model: Model;
 	tags: string[];
-	constants: Record<string, AttributeValue>;
+	constants: Record<string, unknown>;
 	attributes: Record<string, AttributeValue | undefined>;
 	nodes: {
 		cells: Vector3[];
@@ -22,15 +30,6 @@ export interface StructureDefinition {
 			fluids: Map<CFrame, boolean>;
 		};
 		connections: Map<CFrame, boolean>;
-		railway: Vector3[];
 	};
 	priority: number;
 }
-
-export const STRUCTURE_CATEGORIES: string[] = ["Logistics", "Production", "Power", "Blueprints"];
-export const STRUCTURE_SUB_CATEGORIES: Record<string, string[]> = {
-	Logistics: ["Conveyor Belts", "Pipelines", "Sorting", "Miscellaneous"],
-	Production: ["Extractors", "Smelters", "Manufacturers"],
-	Power: ["Generators", "Power Poles"],
-	Blueprints: [],
-};

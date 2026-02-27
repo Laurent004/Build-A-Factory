@@ -1,22 +1,12 @@
 import { Component } from "@flamework/components";
-import { OnStart } from "@flamework/core";
 import { ItemRecipe, Solid } from "shared/constants/items/types";
 import TransporterComponent from "../logistics/transporter";
 import { ITEM_RECIPES, ITEMS } from "shared/constants/items";
 import { Object } from "@rbxts/luau-polyfill";
-import { Events } from "client/network";
-import { EventBus } from "client/event-bus";
-
-let renderItems: number[];
-Events.OnDataInitialization.connect((data) => {
-	renderItems = data.settings.renderItems;
-});
-EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	renderItems = settingName === "renderItems" ? (settingValue as number[]) : renderItems;
-});
+import { store } from "client/store";
 
 @Component({ tag: "Manufacturer" })
-export default class ManufacturerComponent extends TransporterComponent implements OnStart {
+export default class ManufacturerComponent extends TransporterComponent {
 	private recipe: ItemRecipe | undefined;
 	private productionStartTime: number | undefined;
 	private productionRecipe: ItemRecipe | undefined;
@@ -25,7 +15,7 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 	protected override initEvents(): void {
 		super.initEvents();
 		this.updateRecipe()
-		this.connections.push(
+		for(const connection of [
 			this.OnActiveChanged.Connect(() => {
 				if (this.canStartProduction()) this.startProduction();
 			}),
@@ -35,7 +25,9 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 			this.instance.GetAttributeChangedSignal("Recipe").Connect(() => {
 				this.updateRecipe()
 			})
-		);
+		]){
+			this.janitor.Add(connection)
+		}
 	}
 
 	private updateRecipe():void{
@@ -62,7 +54,7 @@ export default class ManufacturerComponent extends TransporterComponent implemen
 			for (const [itemName, count] of Object.entries(this.recipe!.outputItems)) {
 				if (ITEMS[itemName].model !== undefined) {
 					for (let i = 0; i < count; i++) {
-						const newSolid = new Solid(itemName, renderItems.includes(this.player.UserId));
+						const newSolid = new Solid(itemName, store.getState().settings.settings.renderItems.includes(this.player.UserId));
 						newSolid.model?.PivotTo(new CFrame(this.instance.GetPivot().Position));
 						this.solids.push(newSolid);
 					}

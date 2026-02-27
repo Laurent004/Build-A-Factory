@@ -89,7 +89,7 @@ export function CoalGeneratorInfoPanel() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.062, 0.5)}
 						Size={UDim2.fromScale(0.2, 1.6)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightblue}
 						ImageTransparency={0.8}
 					></Image>
@@ -120,7 +120,7 @@ export function CoalGeneratorInfoPanel() {
 							AnchorPoint={new Vector2(0.5, 0.5)}
 							Position={UDim2.fromScale(0.5, 0.5)}
 							Size={UDim2.fromScale(1.06, 3.306)}
-							Image={IMAGES.ui.Glow}
+							Image={IMAGES.Glow}
 							ImageColor3={colors.lightblue}
 							ImageTransparency={0.7}
 						></Image>
@@ -133,7 +133,12 @@ export function CoalGeneratorInfoPanel() {
 					Size={UDim2.fromScale(1, 0.317)}
 					BackgroundTransparency={1}
 				>
-					<Frame Position={UDim2.fromScale(0, 0)} Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1}>
+					<uilistlayout
+						FillDirection={Enum.FillDirection.Horizontal}
+						SortOrder={Enum.SortOrder.LayoutOrder}	
+					></uilistlayout>
+					
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={0}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
 							Position={UDim2.fromScale(0, 0.5)}
@@ -155,13 +160,11 @@ export function CoalGeneratorInfoPanel() {
 					</Frame>
 
 					<Frame
-						Position={UDim2.fromScale(0.5, 0)}
 						Size={UDim2.fromScale(0.5, 0.5)}
 						BackgroundTransparency={1}
+						LayoutOrder={1}
 					>
 						<Image
-							AnchorPoint={new Vector2(0, 0.5)}
-							Position={UDim2.fromScale(0, 0.5)}
 							Size={UDim2.fromScale(0.145, 0.7)}
 							Image="rbxassetid://136540953943718"
 						></Image>
@@ -179,13 +182,12 @@ export function CoalGeneratorInfoPanel() {
 					</Frame>
 
 					<Frame
-						Position={UDim2.fromScale(0,.5)}
 						Size={UDim2.fromScale(0.5, 0.5)}
 						BackgroundTransparency={1}
+						LayoutOrder={2}
 					>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
-							Position={UDim2.fromScale(0, 0.5)}
 							Size={UDim2.fromScale(0.145, 0.7)}
 							Image="rbxassetid://136540953943718"
 						></Image>
@@ -255,7 +257,7 @@ export function CoalGeneratorInfoPanel() {
 							AnchorPoint={new Vector2(0.5, 0.5)}
 							Position={UDim2.fromScale(0.15, 0.5)}
 							Size={UDim2.fromScale(0.4, 1.6)}
-							Image={IMAGES.ui.Glow}
+							Image={IMAGES.Glow}
 							ImageColor3={colors.lightblue}
 							ImageTransparency={0.8}
 						></Image>

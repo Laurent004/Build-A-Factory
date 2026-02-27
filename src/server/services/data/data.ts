@@ -20,8 +20,9 @@ export default class DataService implements OnInit {
 			this.initProfile(player);
 		});
 		Players.PlayerRemoving.Connect((player) => {
-			this.set(player, "lastPlaytime", os.time());
-			if (this.games.has(player)) EventBus.OnGameUnload.Fire(player);
+			if (this.games.has(player)) {
+				EventBus.OnGameUnload.Fire(player);
+			}
 			task.delay(0.25, () => {
 				this.resetProfile(player);
 				this.games.delete(player);
@@ -32,10 +33,11 @@ export default class DataService implements OnInit {
 			const id = HttpService.GenerateGUID();
 			this.profiles.get(player)!.Data.games.push({
 				id: id,
-				name: `${player.Name}'s Factory`,
-				lastPlaytime: 0,
 				tutorialStep: 0,
 				cash: 2500,
+				logisticsData: 0,
+				productionData: 0,
+				powerData: 0,
 				expansions: [
 					[-30, 0, -90],
 					[30, 0, -90],
@@ -113,9 +115,6 @@ export default class DataService implements OnInit {
 				this.profiles.get(player)!.Data.games.map((game_) => {
 					return {
 						id: game_.id,
-						name: game_.name,
-						lastPlaytime: game_.lastPlaytime,
-						cash: game_.cash,
 						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
 					};
 				}),
@@ -129,44 +128,18 @@ export default class DataService implements OnInit {
 		});
 		Events.UnloadGame.connect((player) => {
 			if (!this.games.has(player)) return;
-			this.set(player, "lastPlaytime", os.time());
-			Events.OnGamesUpdate.fire(
-				player,
-				this.profiles.get(player)!.Data.games.map((game_) => {
-					return {
-						id: game_.id,
-						name: game_.name,
-						lastPlaytime: game_.lastPlaytime,
-						cash: game_.cash,
-						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
-					};
-				}),
-			);
 			EventBus.OnGameUnload.Fire(player);
 			task.delay(0.25, () => {
 				this.games.delete(player);
 			});
 		});
 		Events.DeleteGame.connect((player) => {
-			if (!this.games.has(player)) return;
+			const id = this.games.get(player);
+			if (id === undefined) return;
 			this.profiles
 				.get(player)!
-				.Data.games.remove(
-					this.profiles.get(player)!.Data.games.findIndex((game_) => game_.id === this.games.get(player)!),
-				);
+				.Data.games.remove(this.profiles.get(player)!.Data.games.findIndex((game_) => game_.id === id));
 			this.games.delete(player);
-			Events.OnGamesUpdate.fire(
-				player,
-				this.profiles.get(player)!.Data.games.map((game_) => {
-					return {
-						id: game_.id,
-						name: game_.name,
-						lastPlaytime: game_.lastPlaytime,
-						cash: game_.cash,
-						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
-					};
-				}),
-			);
 			EventBus.OnGameUnload.Fire(player);
 		});
 		Events.SetSetting.connect((player, settingName, settingValue) => {
@@ -200,9 +173,6 @@ export default class DataService implements OnInit {
 				games: profile.Data.games.map((game_) => {
 					return {
 						id: game_.id,
-						name: game_.name,
-						lastPlaytime: game_.lastPlaytime,
-						cash: game_.cash,
 						size: HttpService.JSONEncode([...game_.structures, ...game_.powerLines]).size(),
 					};
 				}),

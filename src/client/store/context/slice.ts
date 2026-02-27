@@ -3,7 +3,7 @@ import { createProducer } from "@rbxts/reflex";
 import { Events } from "client/network";
 import { STRUCTURES } from "shared/constants/structures";
 
-export interface ContextState {
+interface ContextState {
 	readonly context: string | undefined;
 	readonly isContextOpen: boolean | undefined;
 	readonly structuresModels: Model[];

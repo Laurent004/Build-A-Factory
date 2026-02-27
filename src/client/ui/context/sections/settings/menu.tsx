@@ -1,8 +1,7 @@
 import { Object } from "@rbxts/luau-polyfill";
 import { lerpBinding, useEventListener, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
-import React, {useState } from "@rbxts/react";
+import React from "@rbxts/react";
 import { useSelector } from "@rbxts/react-reflex";
-import { EventBus } from "client/event-bus";
 import { useStore } from "client/hooks";
 import { Events } from "client/network";
 import { selectContext } from "client/store/context";
@@ -12,25 +11,17 @@ import { IMAGES } from "shared/assets/images";
 import { SETTING_CATEGORIES, SETTINGS } from "shared/constants/settings";
 import { SettingsMenuSettingSoundSlider } from "./setting-sound-slider";
 import { SettingsMenuSettingPerformanceDropdown } from "./setting-performance-dropdown";
+import { selectSettings } from "client/store/context/sections";
 
 export function SettingsMenu() {
 	const store = useStore();
 	const context = useSelector(selectContext);
-	const [settings, setSettings] = useState<Record<string, unknown>>();
+	const settings = useSelector(selectSettings)
 
 	const [mountAnimation, mountAnimationMotion] = useMotion(0);
 
 	useEventListener(Events.OnDataInitialization, (data) => {
-		setSettings(data.settings);
-	});
-
-	useEventListener(EventBus.OnSettingChange, (settingName, settingValue) => {
-		setSettings((previousSettings) => {
-			return {
-				...previousSettings!,
-				[settingName]: settingValue,
-			};
-		});
+		store.setSettings(data.settings);
 	});
 
 	useUpdateEffect(() => {
@@ -82,7 +73,7 @@ export function SettingsMenu() {
 						},
 					}}
 				>
-					<Image Size={UDim2.fromScale(1, 1)} Image={IMAGES.ui.Close}></Image>
+					<Image Size={UDim2.fromScale(1, 1)} Image="rbxassetid://85748466046800"></Image>
 				</Button>
 			</Frame>
 
@@ -149,13 +140,13 @@ export function SettingsMenu() {
 										{settingDefinition.type === "SoundSlider" ? (
 											<SettingsMenuSettingSoundSlider
 												settingName={settingName}
-												volume={(settings?.[settingName] as number | undefined)}
+												volume={settings[settingName] as number}
 											></SettingsMenuSettingSoundSlider>
 										) : (
 											<SettingsMenuSettingPerformanceDropdown
 												settingName={settingName}
 												performanceDropdownSettingDefinition={settingDefinition}
-												userIds={(settings?.[settingName] as number[] | undefined) ?? []}
+												userIds={settings[settingName] as number[]}
 											></SettingsMenuSettingPerformanceDropdown>
 										)}
 									</Frame>
@@ -217,7 +208,7 @@ export function SettingsMenu() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.5, 0.5)}
 						Size={UDim2.fromScale(0.8, 1)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightred}
 						ImageTransparency={0.9}
 					></Image>

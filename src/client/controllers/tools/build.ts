@@ -4,7 +4,7 @@ import GridService from "client/services/plot/grid";
 import { store } from "client/store";
 import { BaseStructureBuildingService } from "client/services/tools/build/base-structure";
 import PathStructureBuildingService from "client/services/tools/build/path-structure";
-import { selectBuildingStructureModel } from "client/store/context/build";
+import { selectBuildingStructureModel } from "client/store/context/tools/build";
 import { StandardActionBuilder } from "@rbxts/mechanism";
 import MouseService from "client/services/tools/mouse";
 import { PowerService } from "client/services/plot/power";

@@ -73,10 +73,6 @@ export function TutorialPanel() {
 					prefix=""
 					suffix=""
 					commas={false}
-					digitSize={new UDim2(0, 16, 1, 0)}
-					prefixSize={UDim2.fromScale(0, 1)}
-					suffixSize={UDim2.fromScale(0, 1)}
-					commaSize={UDim2.fromScale(0, 1)}
 				></NumberSpinner>
 			</Frame>
 

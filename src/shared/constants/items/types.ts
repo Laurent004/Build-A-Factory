@@ -6,7 +6,12 @@ export interface ItemDefintion {
 	image: string;
 	description: string;
 	energy: number;
-	value: number;
+	value: {
+		cash: number;
+		logisticData?: number;
+		productionData?: number;
+		powerData?: number;
+	};
 	model: Model | undefined;
 }
 

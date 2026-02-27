@@ -7,7 +7,7 @@ import { useStore } from "client/hooks";
 import { lerpBinding, useMotion, useUpdateEffect } from "@rbxts/pretty-react-hooks";
 import { useSelector } from "@rbxts/react-reflex";
 import { selectContext, selectContextOpen } from "client/store/context";
-import { selectIsBlueprintEditorOpen, selectStructureCategory, selectStructureInfo } from "client/store/context/build";
+import { selectIsBlueprintEditorOpen, selectStructureCategory, selectStructureInfo } from "client/store/context/tools/build";
 import { IMAGES } from "shared/assets/images";
 import { BlueprintEditor } from "./blueprint-editor";
 import { Button, CanvasGroup, Frame, Image, Text, ViewportFrame } from "client/ui/core";
@@ -67,7 +67,7 @@ export function BuildMenu() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.027, 0.465)}
 						Size={UDim2.fromScale(0.031, 0.54)}
-						Image={IMAGES.ui.Build}
+						Image={IMAGES.Build}
 					></Image>
 
 					<Text
@@ -90,7 +90,7 @@ export function BuildMenu() {
 							},
 						}}
 					>
-						<Image Size={new UDim2(1, 0, 1, 0)} Image={IMAGES.ui.Close}></Image>
+						<Image Size={new UDim2(1, 0, 1, 0)} Image="rbxassetid://85748466046800"></Image>
 					</Button>
 				</Frame>
 

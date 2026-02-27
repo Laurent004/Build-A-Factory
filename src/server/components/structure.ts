@@ -1,10 +1,9 @@
 import { BaseComponent, Component, Components } from "@flamework/components";
-import { OnStart } from "@flamework/core";
 import Signal from "@rbxts/signal";
 import GridService from "server/services/plot/grid";
 
 @Component({})
-export default class StructureComponent extends BaseComponent<{}, Model> implements OnStart {
+export default class StructureComponent extends BaseComponent<{}, Model>  {
 	protected player!: Player;
 	protected active: boolean = false;
 	protected state: string = "No Connection";
@@ -14,19 +13,6 @@ export default class StructureComponent extends BaseComponent<{}, Model> impleme
 		super();
 	}
 
-	onStart(): void {}
-
-	protected initEvents(): void {}
-
-	protected onPlotInitialization(): void {}
-
-	protected onStructuresPlacement(structuresModels: Model[]): void {}
-
-	protected onStructuresMovementStart(structuresModels: Model[]): void {}
-
-	protected onStructuresMovement(structuresModels: Model[]): void {}
-
-	protected onStructuresDestroying(structuresModels: Model[]): void {}
 
 	public updateState(): void {}
 

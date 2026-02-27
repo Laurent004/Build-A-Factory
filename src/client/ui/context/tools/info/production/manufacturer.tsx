@@ -96,7 +96,7 @@ export function ManufacturerInfoPanel() {
 						AnchorPoint={new Vector2(0.5, 0.5)}
 						Position={UDim2.fromScale(0.062, 0.5)}
 						Size={UDim2.fromScale(0.2, 1.6)}
-						Image={IMAGES.ui.Glow}
+						Image={IMAGES.Glow}
 						ImageColor3={colors.lightblue}
 						ImageTransparency={0.8}
 					></Image>
@@ -118,7 +118,7 @@ export function ManufacturerInfoPanel() {
 							AnchorPoint={new Vector2(0.5, 0.5)}
 							Position={UDim2.fromScale(0.5, 0.5)}
 							Size={UDim2.fromScale(1.06, 3.306)}
-							Image={IMAGES.ui.Glow}
+							Image={IMAGES.Glow}
 							ImageColor3={colors.lightblue}
 							ImageTransparency={0.7}
 						></Image>
@@ -131,7 +131,12 @@ export function ManufacturerInfoPanel() {
 					Size={UDim2.fromScale(1, 0.317)}
 					BackgroundTransparency={1}
 				>
-					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1}>
+					<uilistlayout
+						FillDirection={Enum.FillDirection.Horizontal}
+						SortOrder={Enum.SortOrder.LayoutOrder}
+					></uilistlayout>
+
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={0}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
 							Position={UDim2.fromScale(0, 0.5)}
@@ -144,7 +149,7 @@ export function ManufacturerInfoPanel() {
 							Text={`Value : $${
 								recipe !== undefined
 									? Object.entries(ITEM_RECIPES[recipe].outputItems).reduce(
-											(value, [itemName, count]) => (value += ITEMS[itemName].value * count),
+											(value, [itemName, count]) => (value += ITEMS[itemName].value.cash * count),
 											0,
 									  )
 									: 0
@@ -156,11 +161,7 @@ export function ManufacturerInfoPanel() {
 						</Text>
 					</Frame>
 
-					<Frame
-						Position={UDim2.fromScale(0.5, 0)}
-						Size={UDim2.fromScale(0.5, 0.5)}
-						BackgroundTransparency={1}
-					>
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={1}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
 							Position={UDim2.fromScale(0, 0.5)}
@@ -178,11 +179,7 @@ export function ManufacturerInfoPanel() {
 						</Text>
 					</Frame>
 
-					<Frame
-						Position={UDim2.fromScale(0, 0.5)}
-						Size={UDim2.fromScale(0.5, 0.5)}
-						BackgroundTransparency={1}
-					>
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={2}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
 							Position={UDim2.fromScale(0, 0.5)}
@@ -204,11 +201,7 @@ export function ManufacturerInfoPanel() {
 						</Text>
 					</Frame>
 
-					<Frame
-						Position={UDim2.fromScale(0.5, 0.5)}
-						Size={UDim2.fromScale(0.5, 0.5)}
-						BackgroundTransparency={1}
-					>
+					<Frame Size={UDim2.fromScale(0.5, 0.5)} BackgroundTransparency={1} LayoutOrder={3}>
 						<Image
 							AnchorPoint={new Vector2(0, 0.5)}
 							Position={UDim2.fromScale(0, 0.5)}

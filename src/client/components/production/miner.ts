@@ -1,35 +1,22 @@
 import { Component } from "@flamework/components";
-import { OnStart } from "@flamework/core";
 import { ItemRecipe, Solid } from "shared/constants/items/types";
 import { ITEM_RECIPES } from "shared/constants/items";
 import TransporterComponent from "../logistics/transporter";
 import { Object } from "@rbxts/luau-polyfill";
-import { Events } from "client/network";
-import { EventBus } from "client/event-bus";
-let renderItems: number[];
-Events.OnDataInitialization.connect((data) => {
-	renderItems = data.settings.renderItems;
-});
-EventBus.OnSettingChange.Connect((settingName, settingValue) => {
-	renderItems = settingName === "renderItems" ? (settingValue as number[]) : renderItems;
-});
+import { store } from "client/store";
 
 @Component({ tag: "Miner" })
-export default class MinerComponent extends TransporterComponent implements OnStart {
+export default class MinerComponent extends TransporterComponent {
 	private recipe: ItemRecipe | undefined;
 	private miningStartTime: number | undefined;
 	private miningRecipe: ItemRecipe | undefined;
 	private miningThread: thread | undefined;
 
-	onStart(): void {
-		super.onStart();
-	}
-
 	protected override initEvents(): void {
 		super.initEvents();
 		this.updateRecipe()
 		if (this.active && this.canStartMining()) this.startMining();
-		this.connections.push(
+		for(const connection of [
 			this.OnActiveChanged.Connect(() => {
 				if (this.canStartMining()) this.startMining();
 			}),
@@ -39,7 +26,9 @@ export default class MinerComponent extends TransporterComponent implements OnSt
 			this.instance.GetAttributeChangedSignal("Recipe").Connect(() => {
 				this.updateRecipe()
 			})
-		);
+		]){
+			this.janitor.Add(connection);
+		}
 	}
 
 	private updateRecipe():void{
@@ -60,7 +49,7 @@ export default class MinerComponent extends TransporterComponent implements OnSt
 		this.miningThread = task.delay(this.miningRecipe!.time, () => {
 			for (const [itemName, count] of Object.entries(this.recipe!.outputItems)) {
 				for (let i = 0; i < count; i++) {
-					const newSolid = new Solid(itemName, renderItems.includes(this.player.UserId));
+					const newSolid = new Solid(itemName, store.getState().settings.settings.renderItems.includes(this.player.UserId));
 					newSolid.model?.PivotTo(new CFrame(this.instance.GetPivot().Position));
 					this.solids.push(newSolid);
 				}

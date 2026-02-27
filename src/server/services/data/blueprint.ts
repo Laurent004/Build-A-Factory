@@ -1,14 +1,12 @@
 import { OnInit, Service } from "@flamework/core";
 import { Events } from "server/network";
 import DataService from "./data";
-import { BlueprintData, getStructureData, STRUCTURES } from "shared/constants/structures";
+import { BlueprintData, createStructure, getStructureData, STRUCTURES } from "shared/constants/structures";
 import { HttpService, Players, ReplicatedStorage, Workspace } from "@rbxts/services";
 import { Array } from "@rbxts/luau-polyfill";
-import FactoryService from "shared/services/factory";
 
 @Service({})
 export default class BlueprintService implements OnInit {
-	private readonly factoryService = FactoryService.getInst();
 	private readonly blueprintsModels = new Map<Player, Set<Model>>();
 
 	constructor(private readonly dataService: DataService) {}
@@ -141,7 +139,7 @@ export default class BlueprintService implements OnInit {
 		newBlueprintModel.SetAttribute("Id", blueprint.id);
 
 		for (const structure of blueprint.structures) {
-			this.factoryService.createStructure(structure, undefined, false, newBlueprintModel);
+			createStructure(structure, undefined, false, newBlueprintModel);
 		}
 
 		const attachments = newBlueprintModel
