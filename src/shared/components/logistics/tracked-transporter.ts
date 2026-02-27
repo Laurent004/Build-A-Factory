@@ -6,7 +6,7 @@ import { Janitor } from "@rbxts/janitor";
 
 @Component({tag:"TrackedTransporter"})
 export default class TrackedTransporterComponent extends TransporterComponent implements OnStart {
-    protected override readonly janitor=new Janitor<{"Soli,"FldInput":thread,"SolidOutput":threaduidInput":thread,"FluidOutput":thread}>()
+    protected override readonly janitor=new Janitor<{"SolidInput":thread,"SolidOutput":thread,"FluidInput":thread,"FluidOutput":thread}>()
     protected readonly trackingWindow:number=8;
     protected readonly solidInputs:[Solid,number][]=[];
     protected readonly solidOutputs:[Solid,number][]=[];
